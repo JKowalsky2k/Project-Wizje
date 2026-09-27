@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090909">
+    <meta name="description" content="Original photography, posters and fine art prints." data-i18n-content="metaDescription">
+    <title data-i18n="pageTitle">Wizje — Photography &amp; Prints</title>
+    <link rel="stylesheet" href="styles.css?v=1c6918c726">
+    <script src="assets/collections/manifest.js" defer></script>
+    <script src="script.js?v=fa7d0d1e03" defer></script>
+    <script src="collections.js?v=2cb1c231a0" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="logo-link" href="#start" aria-label="Wizje — Home" data-i18n-aria-label="homeLabel">
+        <span class="site-logo" aria-hidden="true"><span class="logo-letter logo-letter--z">w</span><span class="logo-letter logo-letter--w">i</span><span class="logo-letter logo-letter--i">z</span><span class="logo-letter logo-letter--d">j</span><span class="logo-letter logo-letter--y">e</span></span>
+      </a>
+      <p class="header-note" data-i18n="headerNote">Photography · posters · prints</p>
+      <nav class="language-switch" aria-label="Choose language" data-i18n-aria-label="languageLabel">
+        <button type="button" data-language="en" aria-pressed="true">EN</button>
+        <button type="button" data-language="pl" aria-pressed="false">PL</button>
+      </nav>
+    </header>
+
+    <main id="start">
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow" data-i18n="eyebrow">Original images for everyday life</p>
+        <h1 id="page-title"><span data-i18n="headlineFirst">Images worth</span><br><span data-i18n="headlineSecond">keeping.</span></h1>
+        <p class="intro__copy" data-i18n="introCopy">Photographs and posters for your space.</p>
+      </section>
+
+      <section class="collections" aria-labelledby="collections-title">
+        <div class="year-picker" role="group" aria-label="Collection year" data-i18n-aria-label="yearLabel">
+          <button id="year-up" class="year-picker__arrow" type="button" aria-label="Newer year" data-i18n-aria-label="yearUp"><span aria-hidden="true">↑</span></button>
+          <div id="year-wheel" class="year-wheel" aria-hidden="true"></div>
+          <button id="year-down" class="year-picker__arrow" type="button" aria-label="Older year" data-i18n-aria-label="yearDown"><span aria-hidden="true">↓</span></button>
+        </div>
+        <p id="year-status" class="sr-only" role="status" aria-live="polite"></p>
+        <div class="section-heading">
+          <h2 id="collections-title" data-i18n="collectionsTitle">Collections</h2>
+          <span data-collection-count>01 — 04</span>
+        </div>
+
+        <p id="year-empty" class="year-empty" data-i18n="yearUpcoming" hidden>Collections for this year are coming soon.</p>
+        <div id="collection-list"></div>
+        <noscript><p>Włącz JavaScript, aby zobaczyć kolekcje. Enable JavaScript to view the collections.</p></noscript>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span data-i18n="footerNote">Original photography</span>
+      <span>© 2026</span>
+    </footer>
+  </body>
+</html>

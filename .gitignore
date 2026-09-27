@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+
+# Local administrator credentials; never publish.
+.local-admin/
+
+# Generated public releases
+dist/

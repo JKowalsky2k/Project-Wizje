@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wizje — pracownia</title>
+  <link rel="stylesheet" href="/assets/logo/logo.css">
+  <link rel="stylesheet" href="/admin/editor.css">
+  <script src="/admin/editor.js" defer></script>
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="/admin" aria-label="Wizje — pracowania" data-i18n-aria="brandLabel"><span class="site-logo" aria-hidden="true"><span class="logo-letter logo-letter--z">w</span><span class="logo-letter logo-letter--w">i</span><span class="logo-letter logo-letter--i">z</span><span class="logo-letter logo-letter--d">j</span><span class="logo-letter logo-letter--y">e</span></span><span class="brand-caption" aria-hidden="true" data-i18n="workshop">pracowania</span></a>
+    <div class="header-actions"><div class="language-switch" role="group" data-i18n-aria="languageLabel" aria-label="Język panelu"><button type="button" data-language="pl" aria-pressed="true">PL</button><button type="button" data-language="en" aria-pressed="false">EN</button></div><a href="/" target="_blank" rel="noopener" data-i18n="preview">Podgląd strony ↗</a><button id="logout" data-i18n="logout" class="quiet" type="button">Wyloguj</button></div>
+  </header>
+  <div class="workspace">
+    <aside>
+      <div class="section-label" data-i18n="yourCollections">TWOJE KOLEKCJE</div>
+      <nav id="collections" aria-label="Wybierz kolekcję" data-i18n-aria="chooseCollection"></nav>
+      <form id="create-form" class="create-form">
+        <h2 data-i18n="newCollection">Nowa kolekcja</h2>
+        <label for="collection-year" data-i18n="year">Rok</label>
+        <div class="create-year-row">
+          <input id="collection-year" name="year" type="text" value="2026" readonly>
+          <button id="collection-year-up" class="primary" type="button" aria-label="Następny rok" data-i18n-aria="yearUp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button>
+          <button id="collection-year-down" class="primary" type="button" aria-label="Poprzedni rok" data-i18n-aria="yearDown"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m-6-6 6 6 6-6"/></svg></button>
+        </div>
+        <label for="collection-name" data-i18n="name">Nazwa</label>
+        <div class="create-collection-row">
+          <input id="collection-name" name="name" data-i18n-placeholder="namePlaceholder" placeholder="np. Wieczory nad morzem" maxlength="80" required>
+          <button class="primary" type="submit" aria-label="Utwórz kolekcję" data-i18n-aria="createCollection"><span class="create-plus" aria-hidden="true"></span></button>
+        </div>
+      </form>
+      <section class="export-panel" aria-labelledby="export-title">
+        <h2 id="export-title" data-i18n="exportTitle">Publikacja strony</h2>
+        <p class="crop-note" data-i18n="exportHint">Przygotuj paczkę na hosting. Zawiera wyłącznie publiczną stronę i zdjęcia do wyświetlania.</p>
+        <button id="export-site" class="primary" type="button" data-i18n="exportButton">Przygotuj ZIP</button>
+        <a id="export-download" class="export-download" hidden data-i18n="exportDownload">Pobierz ZIP ↓</a>
+        <p id="export-details" class="crop-note" hidden></p>
+      </section>
+    </aside>
+    <main>
+      <div id="status" role="status" aria-live="polite">Wczytywanie kolekcji…</div>
+      <div id="welcome" hidden><h1 data-i18n="welcomeTitle">Twoje zdjęcia, Twoje kolekcje.</h1><p data-i18n="welcomeCopy">Utwórz pierwszą kolekcję, aby dodać zdjęcia.</p></div>
+      <section id="editor" hidden aria-labelledby="collection-title">
+        <div class="collection-heading"><div><div class="section-label" data-i18n="editingCollection">EDYCJA KOLEKCJI</div><h1 id="collection-title"></h1><p id="photo-count"></p></div><button id="delete-collection" class="danger" type="button" data-i18n="deleteCollection">Usuń kolekcję</button></div>
+        <form id="upload-form" class="upload-form">
+          <label class="dropzone" id="dropzone" for="photos"><span class="upload-symbol" aria-hidden="true">↑</span><strong data-i18n="dropPhotos">Przeciągnij zdjęcia lub wybierz pliki</strong><span data-i18n="fileHint">JPG, PNG, WebP, AVIF · do 50 MB na zdjęcie</span><input id="photos" type="file" accept=".jpg,.jpeg,.png,.webp,.avif" multiple required></label>
+          <p class="crop-note" data-i18n="cropHint">Przygotowane kadry 5:7 zachowają kompozycję. Inne proporcje zostaną przycięte centralnie.</p>
+          <div class="upload-actions">
+            <fieldset class="upload-technique">
+              <legend data-i18n="uploadMedium">Technika dodawanych zdjęć</legend>
+              <div class="technique-options">
+                <label class="technique-option"><input type="radio" name="upload-medium" value="analog" required><span class="technique-choice technique-choice--analog">ANALOG</span></label>
+                <label class="technique-option"><input type="radio" name="upload-medium" value="digital" required><span class="technique-choice technique-choice--digital">DIGITAL</span></label>
+              </div>
+            </fieldset>
+            <button type="submit" class="primary" data-i18n="uploadPhotos">Dodaj zdjęcia</button>
+          </div>
+          <div id="upload-film" hidden></div>
+        </form>
+        <div class="grid-heading"><h2 data-i18n="photos">Zdjęcia</h2><span data-i18n="autoSave">Zmiany techniki zapisują się automatycznie.</span></div>
+        <div id="photo-grid" class="photo-grid"></div>
+        <p id="empty" data-i18n="emptyCollection" class="empty" hidden>Ta kolekcja czeka na pierwsze zdjęcie. Po dodaniu pojawi się na stronie.</p>
+      </section>
+      <section class="library-section" aria-labelledby="library-title">
+        <h2 id="library-title" data-i18n="libraryTitle">Biblioteka zdjęć</h2>
+        <p class="crop-note" data-i18n="libraryHint">Zdjęcia odłączone od kolekcji. Możesz dodać je ponownie bez przesyłania pliku.</p>
+        <p id="library-target" class="crop-note"></p>
+        <div id="library-grid" class="photo-grid"></div>
+        <p id="library-empty" class="empty" data-i18n="libraryEmpty">Nie ma zdjęć odłączonych od kolekcji.</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

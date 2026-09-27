@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Wizje — porównanie czcionek</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    @font-face { font-family: Knewave; src: url("assets/fonts/knewave.ttf") format("truetype"); font-weight:400; font-display:swap; }
+    @font-face { font-family: Anton; src: url("assets/fonts/anton.ttf") format("truetype"); font-weight:400; font-display:swap; }
+    @font-face { font-family: "Spicy Rice"; src: url("assets/fonts/spicy-rice.ttf") format("truetype"); font-weight:400; font-display:swap; }
+    @font-face { font-family: "Berkshire Swash"; src: url("assets/fonts/berkshire-swash.ttf") format("truetype"); font-weight:400; font-display:swap; }
+    main { width:min(960px, calc(100% - 40px)); padding:48px 0; }
+    h1 { font:400 clamp(30px,5vw,52px) Georgia,serif; }
+    h2 { font:400 23px Georgia,serif; }
+    p { color:#aaa; line-height:1.65; }
+    a { text-decoration:underline; text-underline-offset:4px; }
+    .comparisons { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:16px; }
+    .card { border:1px solid #333; padding:24px; min-width:0; }
+    .logo-space { height:190px; display:flex; align-items:center; justify-content:center; }
+    .reference { display:block; width:100%; height:auto; max-width:460px; margin:auto; }
+    .previous .logo-letter--z { font-family:"Permanent Marker",cursive; }
+    .previous .logo-letter--i { font-weight:700; font-synthesis:weight; }
+    .previous .logo-letter--d { font-family:Righteous,sans-serif; font-size:1em; font-style:normal; }
+    .previous .logo-letter--y { font-family:Rye,serif; font-size:.95em; }
+    .proposal .logo-letter { font-weight:400; font-synthesis:none; }
+    .proposal .logo-letter--z { font-family:Knewave,cursive; }
+    .proposal .logo-letter--d { font-family:Georgia,serif; font-size:1em; font-style:italic; }
+    .proposal .logo-letter--y { font-family:"Berkshire Swash",serif; font-size:1.2em; }
+    .alternative .logo-letter--y { font-family:"Spicy Rice",serif; }
+    .glyphs { display:flex; flex-wrap:wrap; gap:36px; align-items:baseline; }
+    .glyph { font-size:90px; line-height:1.5; font-weight:400; font-synthesis:none; }
+    .glyphs figure { margin:0; text-align:center; }
+    figcaption { color:#aaa; font:13px Helvetica,sans-serif; }
+    .samples { display:grid; gap:16px; margin:24px 0; }
+    .note { font-size:14px; }
+  </style>
+</head>
+<body><main>
+  <a href="index.html">← Strona główna</a>
+  <h1>Pięć liter, pięć charakterów.</h1>
+  <p>Porównanie fontów dla logotypu Wizje. Propozycje są bezpłatne do zastosowań komercyjnych i osadzania na stronie. Dobór dotyczy konkretnych liter; zamienniki nie są identycznymi kopiami oryginałów.</p>
+  <h2>Historyczny punkt odniesienia — Zwidy</h2>
+  <img class="reference" src="assets/logo/Logotyp.png" alt="Oryginalny logotyp Zwidy z Canvy">
+  <div class="comparisons">
+    <section class="card"><h2>Poprzedni zestaw</h2><div class="logo-space"><span class="site-logo previous" aria-label="Wizje"><span class="logo-letter logo-letter--z" aria-hidden="true">w</span><span class="logo-letter logo-letter--w" aria-hidden="true">i</span><span class="logo-letter logo-letter--i" aria-hidden="true">z</span><span class="logo-letter logo-letter--d" aria-hidden="true">j</span><span class="logo-letter logo-letter--y" aria-hidden="true">e</span></span></div><p class="note">Permanent Marker · Lemon Tuesday · Bungee Shade · Righteous · Rye</p></section>
+    <section class="card"><h2>Zastosowany zestaw</h2><div class="logo-space"><span class="site-logo proposal" aria-label="Wizje"><span class="logo-letter logo-letter--z" aria-hidden="true">w</span><span class="logo-letter logo-letter--w" aria-hidden="true">i</span><span class="logo-letter logo-letter--i" aria-hidden="true">z</span><span class="logo-letter logo-letter--d" aria-hidden="true">j</span><span class="logo-letter logo-letter--y" aria-hidden="true">e</span></span></div><p class="note">Knewave · Lemon Tuesday · Bungee Shade · Georgia Italic · Berkshire Swash</p></section>
+    <section class="card"><h2>Alternatywne „y”</h2><div class="logo-space"><span class="site-logo proposal alternative" aria-label="Wizje"><span class="logo-letter logo-letter--z" aria-hidden="true">w</span><span class="logo-letter logo-letter--w" aria-hidden="true">i</span><span class="logo-letter logo-letter--i" aria-hidden="true">z</span><span class="logo-letter logo-letter--d" aria-hidden="true">j</span><span class="logo-letter logo-letter--y" aria-hidden="true">e</span></span></div><p class="note">Poprzednia propozycja z cięższym Spicy Rice.</p></section>
+  </div>
+  <div class="samples">
+    <section class="card"><h2>z — Six Hands Black</h2><div class="glyphs"><figure><span class="glyph" style="font-family:'Permanent Marker'">z</span><figcaption>Permanent Marker</figcaption></figure><figure><span class="glyph" style="font-family:'Knewave'">z</span><figcaption>Knewave</figcaption></figure></div><p>Knewave daje cięższy, pędzlowy znak. Permanent Marker jest bardziej szkicowy i pozostaje sensowną alternatywą.</p></section>
+    <section class="card"><h2>w — Lemon Tuesday</h2><div class="glyphs"><figure><span class="glyph" style="font-family:'Lemon Tuesday'">w</span><figcaption>Lemon Tuesday</figcaption></figure></div><p>Oryginalna czcionka. Potwierdzona zgodność pliku w projekcie z paczką autora; dołączono brakującą licencję OFL.</p></section>
+    <section class="card"><h2>i — Rig Solid Medium Fill</h2><div class="glyphs"><figure><span class="glyph" style="font-family:'Bungee Shade'">i</span><figcaption>Bungee Shade</figcaption></figure></div><p>Przybliżenie efektu przestrzennego. Bungee Shade ma inną budowę i szeryfy; nie odwzorowuje wąskiego znaku z oryginału.</p></section>
+    <section class="card"><h2>d — Cayento</h2><div class="glyphs"><figure><span class="glyph" style="font-family:'Righteous'">d</span><figcaption>Righteous</figcaption></figure><figure><span class="glyph" style="font-family:'Anton'">d</span><figcaption>Anton</figcaption></figure></div><p>Anton przybliża ciężar, pionową konstrukcję i wąskie światło oryginalnego „d”. Righteous jest zbyt lekki i geometryczny.</p></section>
+    <section class="card"><h2>y — Barbra</h2><div class="glyphs"><figure><span class="glyph" style="font-family:'Rye'">y</span><figcaption>Rye</figcaption></figure><figure><span class="glyph" style="font-family:'Spicy Rice'">y</span><figcaption>Spicy Rice</figcaption></figure><figure><span class="glyph" style="font-family:'Berkshire Swash'">y</span><figcaption>Berkshire Swash</figcaption></figure></div><p>Spicy Rice przybliża ozdobny, retro charakter; Berkshire Swash to bardziej kaligraficzny kierunek. Żaden nie odtwarza dokładnie charakterystycznego „y” Barbra. Rye ma wyraźnie westernowy charakter.</p></section>
+  </div>
+  <p class="note">Źródła, licencje i uwagi o kodzie: <a href="assets/fonts/README.md">dokumentacja fontów</a>. Zestaw Knewave / Lemon Tuesday / Bungee Shade / Georgia Italic / Berkshire Swash jest zastosowany na stronie głównej.</p>
+</main></body></html>

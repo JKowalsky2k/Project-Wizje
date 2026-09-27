@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wizje — pracownia</title>
+  <link rel="stylesheet" href="/assets/logo/logo.css">
+  <link rel="stylesheet" href="/admin/editor.css">
+  <script src="/admin/login.js" defer></script>
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="/admin" aria-label="Wizje — pracowania" data-i18n-aria="brandLabel"><span class="site-logo" aria-hidden="true"><span class="logo-letter logo-letter--z">w</span><span class="logo-letter logo-letter--w">i</span><span class="logo-letter logo-letter--i">z</span><span class="logo-letter logo-letter--d">j</span><span class="logo-letter logo-letter--y">e</span></span><span class="brand-caption" aria-hidden="true" data-i18n="workshop">pracowania</span></a>
+    <div class="header-actions"><div class="language-switch" role="group" data-i18n-aria="languageLabel" aria-label="Język panelu"><button type="button" data-language="pl" aria-pressed="true">PL</button><button type="button" data-language="en" aria-pressed="false">EN</button></div><a href="/" target="_blank" rel="noopener" data-i18n="preview">Podgląd strony ↗</a></div>
+  </header>
+  <main class="login-main">
+    <form id="login-form" class="login-card">
+      <h1 id="login-title"></h1>
+      <p id="login-description" class="crop-note"></p>
+      <label for="password" data-i18n="password">Hasło</label>
+      <input id="password" name="password" type="password" minlength="8" maxlength="128" autocomplete="current-password" required disabled>
+      <div id="confirmation-row" hidden>
+        <label for="confirmation" data-i18n="confirmation">Powtórz hasło</label>
+        <input id="confirmation" name="confirmation" type="password" minlength="8" maxlength="128" autocomplete="new-password" disabled>
+      </div>
+      <button id="login-submit" class="primary" type="submit" disabled></button>
+      <p id="status" role="status" aria-live="polite"></p>
+    </form>
+  </main>
+</body>
+</html>
