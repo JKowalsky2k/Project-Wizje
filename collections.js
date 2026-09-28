@@ -187,12 +187,12 @@
       this.element.className = 'collection';
       this.element.setAttribute('aria-labelledby', `collection-${order}-title`);
       this.element.innerHTML = `
+        <h3 class="collection__title" id="collection-${order}-title"></h3>
         <div class="collection__stage">
           <div class="collection__drum"></div>
           <button class="collection__arrow collection__previous" type="button"><span aria-hidden="true">←</span></button>
           <button class="collection__arrow collection__next" type="button"><span aria-hidden="true">→</span></button>
-        </div>
-        <h3 class="collection__title" id="collection-${order}-title"></h3>`;
+        </div>`;
       document.querySelector('#collection-list').append(this.element);
       const drum = this.element.querySelector('.collection__drum');
       // Hidden cards on both edges allow seamless movement in either direction.
@@ -306,6 +306,8 @@
   function selectYear(year) {
     if (!years.includes(year)) return;
     selectedYear = year;
+    document.documentElement.dataset.collectionYear = year;
+    document.dispatchEvent(new CustomEvent('collectionyearchange', { detail: year }));
     if (!mountedYears.has(year)) {
       for (const data of source.filter(item => String(item.year || '2026') === year)) {
         const gallery = new Collection(data, galleries.length);

@@ -85,6 +85,117 @@ class AdminTests(unittest.TestCase):
         with self.assertRaises(EditorError):
             self.admin.year_store('2027', create=True)
 
+    def test_film_upload_edit_library_round_trip_and_digital_conversion(self):
+        self.store.create('Film')
+        self.store.upload('film', 'photo.jpg', 'analog', b'\xff\xd8\xfftest', 'kodak-gold', '200')
+        self.assertEqual(self.store.state()[0]['photos'][0]['iso'], 200)
+        self.store.set_film('film', 'photo.jpg', 'fujicolor-c200', 400)
+        self.store.delete_collection('film')
+        item = self.store.library.state()[0]
+        self.assertEqual((item['film'], item['iso']), ('fujicolor-c200', 400))
+        self.store.create('New')
+        self.store.library.attach(item['id'], 'new')
+        self.assertEqual(self.store.types()['filmDetails']['new/photo.jpg'], {'film': 'fujicolor-c200', 'iso': 400})
+        self.store.set_medium('new', 'photo.jpg', 'digital')
+        self.assertNotIn('new/photo.jpg', self.store.types()['filmDetails'])
+        with self.assertRaises(EditorError):
+            self.store.set_film('new', 'photo.jpg', 'kodak-gold', 200)
+
+    def test_film_validation_and_failed_rebuild_preserve_metadata(self):
+        self.store.create('Film')
+        self.store.upload('film', 'photo.jpg', 'analog', b'\xff\xd8\xfftest', 'kodak-gold', 200)
+        original = self.store.types()
+        for film, iso in [('unknown', 200), ('kodak-gold', 123), ([], 200), ('kodak-gold', True)]:
+            with self.assertRaises(ValueError):
+                self.store.set_film('film', 'photo.jpg', film, iso)
+            self.assertEqual(self.store.types(), original)
+        with patch.object(self.store, 'rebuild', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                self.store.set_film('film', 'photo.jpg', 'ilford-hp5', 400)
+        self.assertEqual(self.store.types(), original)
+        self.store.set_film('film', 'photo.jpg')
+        self.assertNotIn('film/photo.jpg', self.store.types()['filmDetails'])
+
+    def test_film_api_targets_selected_year(self):
+        cookie = self.login()
+        for year in ['2026', '2027']:
+            store = self.admin.year_store(year, create=True)
+            store.create('Film')
+            store.upload('film', 'photo.jpg', 'analog', b'\xff\xd8\xfftest')
+        request = FakeHandler('/admin/api/film', {'Cookie': cookie, 'X-Wizje-CSRF': self.admin.csrf},
+            json.dumps({'collection': 'film', 'year': '2027', 'name': 'photo.jpg', 'film': 'kodak-portra', 'iso': 800}).encode())
+        self.admin.post(request)
+        self.assertEqual(request.status, 200)
+        self.assertEqual(self.admin.year_store('2027').types()['filmDetails']['film/photo.jpg']['iso'], 800)
+        self.assertFalse(self.admin.year_store('2026').types().get('filmDetails'))
+
+    def test_collection_location_validation_save_clear_and_rollback(self):
+        self.store.create('Places')
+        location = {'name': ' Wrocław ', 'lat': 51.1079, 'lon': 17.0385}
+        self.store.set_location('places', location)
+        saved = self.store.state()[0]
+        self.assertEqual(saved['location'], {'name': 'Wrocław', 'lat': 51.11, 'lon': 17.04})
+        self.assertEqual(saved['title'], 'Places')
+        for invalid in [{}, {'name': 'x', 'lat': True, 'lon': 0}, {'name': 'x', 'lat': 91, 'lon': 0},
+                        {'name': 'x', 'lat': 0, 'lon': float('nan')}, {'name': 'x', 'lat': 0, 'lon': 181}]:
+            with self.assertRaises(EditorError): self.store.set_location('places', invalid)
+        with patch.object(self.store, 'rebuild', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError): self.store.set_location('places', None)
+        self.assertEqual(self.store.state()[0]['location'], saved['location'])
+        self.store.set_location('places', None)
+        self.assertIsNone(self.store.state()[0]['location'])
+        self.assertEqual(self.store.state()[0]['title'], 'Places')
+
+    def test_location_api_respects_year_and_preserves_translated_titles(self):
+        cookie = self.login()
+        for year in ['2026', '2027']:
+            store = self.admin.year_store(year, create=True)
+            (store.photo_root / 'alps').mkdir()
+        body = {'collection': 'alps', 'year': '2027', 'location': {'name': 'Alpy', 'lat': 45.83, 'lon': 6.85}}
+        request = FakeHandler('/admin/api/location', {'Cookie': cookie, 'X-Wizje-CSRF': self.admin.csrf}, json.dumps(body).encode())
+        self.admin.post(request)
+        self.assertEqual(request.status, 200)
+        self.assertIsNone(self.admin.year_store('2026').state()[0]['location'])
+        saved = self.admin.year_store('2027').state()[0]
+        self.assertEqual(saved['location']['name'], 'Alpy')
+        self.assertFalse(saved['customTitle'])
+
+    def test_multiple_locations_migrate_legacy_and_keep_independent_entries(self):
+        self.store.create('Trip')
+        first = {'name': 'Toruń', 'lat': 53.01, 'lon': 18.6}
+        second = {'name': 'Wrocław', 'lat': 51.1, 'lon': 17.03}
+        self.store.info_path.write_text(json.dumps({'trip': {'title': 'Trip', 'location': first}}))
+        self.assertEqual(self.store.state()[0]['locations'], [first])
+        self.store.set_locations('trip', [first, second, first])
+        self.assertEqual(self.store.state()[0]['locations'], [first, second])
+        metadata = json.loads(self.store.info_path.read_text())['trip']
+        self.assertNotIn('location', metadata)
+        self.assertEqual(metadata['title'], 'Trip')
+        with self.assertRaises(EditorError):
+            self.store.set_locations('trip', [first, {'name': 'Bad', 'lat': 100, 'lon': 0}])
+        self.assertEqual(self.store.state()[0]['locations'], [first, second])
+        with patch.object(self.store, 'rebuild', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError): self.store.set_locations('trip', [second])
+        self.assertEqual(self.store.state()[0]['locations'], [first, second])
+        self.store.set_locations('trip', [second])
+        self.assertEqual(self.store.state()[0]['locations'], [second])
+        self.store.set_locations('trip', [])
+        self.assertEqual(self.store.state()[0]['locations'], [])
+
+    def test_location_english_name_is_saved_validated_and_optional(self):
+        self.store.create('Trip')
+        place = {'name': 'Jezioro', 'nameEn': ' Lake ', 'lat': 52, 'lon': 18}
+        self.store.set_locations('trip', [place])
+        self.assertEqual(self.store.state()[0]['locations'][0]['nameEn'], 'Lake')
+        for invalid in [None, [], 'x' * 121]:
+            with self.assertRaises(EditorError):
+                self.store.set_locations('trip', [{**place, 'nameEn': invalid}])
+        self.assertEqual(self.store.state()[0]['locations'][0]['nameEn'], 'Lake')
+        self.store.set_locations('trip', [{**place, 'nameEn': ''}])
+        self.assertNotIn('nameEn', self.store.state()[0]['locations'][0])
+        self.store.set_locations('trip', [{'name': 'Alpy Francuskie', 'lat': 45.83, 'lon': 6.85}])
+        self.assertEqual(self.store.state()[0]['locations'][0]['nameEn'], 'French Alps')
+
     def test_private_routes_require_login(self):
         for path in ['/admin/editor.js', '/admin/api/state']:
             request = FakeHandler(path); self.admin.get(request)

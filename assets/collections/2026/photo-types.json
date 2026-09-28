@@ -12,5 +12,11 @@
     "dolomites/F1030009.JPG": "analog",
     "dolomites/F1030010.JPG": "analog",
     "dolomites/F1030033.JPG": "analog"
+  },
+  "filmDetails": {
+    "alps/F1040037.JPG": {
+      "film": "fujifilm-400",
+      "iso": 400
+    }
   }
 }

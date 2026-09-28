@@ -17,14 +17,17 @@ class PublishTests(unittest.TestCase):
         self.write('index.html', '<link rel="stylesheet" href="styles.css">')
         self.write('script.js', '// public')
         self.write('collections.js', '// public gallery')
+        self.write('globe.js', '// public globe')
+        self.write('favicon.svg', '<svg/>')
+        self.write('favicon.ico', 'icon')
         self.write('styles.css', '@import url("assets/logo/logo.css");')
         self.write('assets/logo/logo.css', '@font-face{src:url("../fonts/test.woff2")}')
         self.write('assets/fonts/test.woff2', 'font')
         self.write('assets/fonts/test-OFL.txt', 'license')
         self.write('assets/collections/previews/abcdef-480.jpg', 'current preview')
-        self.data = [{'id': 'test', 'year': '2027', 'title': 'Zdjęcia', 'private': 'secret', 'photos': [
+        self.data = [{'id': 'test', 'year': '2027', 'title': 'Zdjęcia', 'private': 'secret', 'location': {'name': 'Toruń', 'lat': 53.01, 'lon': 18.6, 'private': 'secret'}, 'photos': [
             {'src': 'assets/collections/previews/abcdef-480.jpg', 'original': 'assets/collections/2026/test/private.jpg',
-             'width': 480, 'height': 672, 'medium': 'analog', 'private': 'secret'}]}]
+             'width': 480, 'height': 672, 'medium': 'analog', 'film': 'Kodak Gold', 'filmBrand': 'kodak', 'iso': 200, 'private': 'secret'}]}]
 
     def write(self, name, content):
         path = self.root / name
@@ -38,7 +41,7 @@ class PublishTests(unittest.TestCase):
             self.write(path, 'secret')
         self.assertEqual(build_public_tree(self.root, self.output, self.data), 1)
         files = {p.relative_to(self.output).as_posix() for p in self.output.rglob('*') if p.is_file()}
-        self.assertEqual(files, {'.htaccess', 'index.html', 'styles.css', 'script.js', 'collections.js', 'assets/logo/logo.css',
+        self.assertEqual(files, {'.htaccess', 'index.html', 'styles.css', 'script.js', 'collections.js', 'globe.js', 'favicon.svg', 'favicon.ico', 'assets/logo/logo.css',
                                 'assets/fonts/test.woff2', 'assets/fonts/test-OFL.txt',
                                 'assets/collections/previews/abcdef-480.jpg', 'assets/collections/manifest.js'})
         manifest = (self.output / 'assets/collections/manifest.js').read_text()
@@ -46,8 +49,23 @@ class PublishTests(unittest.TestCase):
         self.assertNotIn('original', manifest)
         data = json.loads(manifest.split(' = ', 1)[1].rstrip(';\n'))
         self.assertEqual(data[0]['photos'][0]['medium'], 'analog')
+        self.assertEqual(data[0]['photos'][0]['film'], 'Kodak Gold')
+        self.assertEqual(data[0]['photos'][0]['filmBrand'], 'kodak')
+        self.assertEqual(data[0]['photos'][0]['iso'], 200)
         self.assertEqual(data[0]['title'], 'Zdjęcia')
         self.assertEqual(data[0]['year'], '2027')
+        self.assertEqual(data[0]['location'], {'name': 'Toruń', 'lat': 53.01, 'lon': 18.6})
+
+    def test_export_preserves_multiple_locations_without_private_fields(self):
+        self.data[0]['locations'] = [{'name': 'Alpy Francuskie', 'nameEn': 'French Alps', 'lat': 53.01, 'lon': 18.6, 'private': 'secret'},
+                                     {'name': 'Wrocław', 'lat': 51.1, 'lon': 17.03}]
+        build_public_tree(self.root, self.output, self.data)
+        manifest = (self.output / 'assets/collections/manifest.js').read_text()
+        data = json.loads(manifest.split(' = ', 1)[1].rstrip(';\n'))
+        self.assertEqual(len(data[0]['locations']), 2)
+        self.assertEqual(data[0]['locations'][0]['nameEn'], 'French Alps')
+        self.assertEqual(data[0]['locations'][1]['name'], 'Wrocław')
+        self.assertNotIn('secret', manifest)
 
     def test_rejects_symlinked_assets(self):
         font = self.root / 'assets/fonts/test.woff2'

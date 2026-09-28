@@ -1,6 +1,7 @@
 """Local-only authenticated collection editor; no third-party dependencies."""
 from datetime import datetime, timezone
 import ipaddress
+import math
 import shutil
 import hashlib
 import hmac
@@ -155,7 +156,8 @@ class EditorStore:
                                'medium': config.get('photos', {}).get(key),
                                **config.get('filmDetails', {}).get(key, {})})
             items.append({'id': folder.name, 'title': info.get(folder.name, {}).get('title', KNOWN_TITLES.get(folder.name, folder.name.capitalize())),
-                          'customTitle': folder.name in info, 'photos': photos})
+                          'customTitle': 'title' in info.get(folder.name, {}), 'location': (info.get(folder.name, {}).get('locations') or [info.get(folder.name, {}).get('location')])[0],
+                          'locations': info.get(folder.name, {}).get('locations', [info[folder.name]['location']] if info.get(folder.name, {}).get('location') else []), 'photos': photos})
         return items
 
     def create(self, name):
@@ -179,6 +181,53 @@ class EditorStore:
             folder.rmdir()
             raise
         return slug
+
+    def set_location(self, collection, location):
+        self.set_locations(collection, [] if location is None else [location])
+
+    def set_locations(self, collection, locations):
+        self.folder(collection)
+        if not isinstance(locations, list):
+            raise EditorError('Nieprawidłowa lista lokalizacji / Invalid location list.')
+        normalized = []
+        seen = set()
+        for location in locations:
+            if not isinstance(location, dict):
+                raise EditorError('Nieprawidłowa lokalizacja / Invalid location.')
+            name = location.get('name')
+            if not isinstance(name, str) or not name.strip() or len(name.strip()) > 120:
+                raise EditorError('Podaj nazwę miejsca (maks. 120 znaków) / Enter a place name (max. 120 characters).')
+            for key, limit in [('lat', 90), ('lon', 180)]:
+                value = location.get(key)
+                if type(value) not in (int, float) or not math.isfinite(value) or abs(value) > limit:
+                    raise EditorError('Nieprawidłowe współrzędne / Invalid coordinates.')
+            name_en = location.get('nameEn', '')
+            if not isinstance(name_en, str) or len(name_en.strip()) > 120:
+                raise EditorError('Nazwa angielska: maks. 120 znaków / English name: max. 120 characters.')
+            name_en = name_en.strip() or {'Alpy Francuskie': 'French Alps', 'Dolomity · Włochy': 'Dolomites · Italy'}.get(name.strip(), '')
+            location = {'name': name.strip(), 'lat': round(location['lat'], 2), 'lon': round(location['lon'], 2)}
+            if name_en:
+                location['nameEn'] = name_en
+            point = (location['lat'], location['lon'])
+            if point not in seen:
+                normalized.append(location)
+                seen.add(point)
+        before = read_json(self.info_path, {})
+        config = json.loads(json.dumps(before))
+        entry = config.setdefault(collection, {})
+        entry.pop('location', None)
+        if not normalized:
+            entry.pop('locations', None)
+            if not entry:
+                config.pop(collection)
+        else:
+            entry['locations'] = normalized
+        write_json(self.info_path, config)
+        try:
+            self.rebuild()
+        except Exception:
+            write_json(self.info_path, before)
+            raise
 
     def set_medium(self, collection, name, medium):
         medium = valid_medium(medium)
@@ -239,8 +288,9 @@ class EditorStore:
         before = self.types()
         config = json.loads(json.dumps(before))
         config.setdefault('photos', {})[f'{collection}/{name}'] = medium
+        config.setdefault('filmDetails', {}).pop(f'{collection}/{name}', None)
         if details:
-            config.setdefault('filmDetails', {})[f'{collection}/{name}'] = details
+            config['filmDetails'][f'{collection}/{name}'] = details
         try:
             with path.open('xb') as output:
                 output.write(content)
@@ -603,6 +653,12 @@ class LocalAdmin:
                         result = {'ok': True, 'trashId': self.year_store(data.get('year')).delete_photo(data.get('collection'), data.get('name'))}
                     elif url.path == '/admin/api/delete-collection':
                         result = {'ok': True, 'trashId': self.year_store(data.get('year')).delete_collection(data.get('collection'))}
+                    elif url.path == '/admin/api/locations':
+                        self.year_store(data.get('year')).set_locations(data.get('collection'), data.get('locations'))
+                        result = {'ok': True}
+                    elif url.path == '/admin/api/location':
+                        self.year_store(data.get('year')).set_location(data.get('collection'), data.get('location'))
+                        result = {'ok': True}
                     elif url.path == '/admin/api/film':
                         self.year_store(data.get('year')).set_film(data.get('collection'), data.get('name'), data.get('film'), data.get('iso'))
                         result = {'ok': True}

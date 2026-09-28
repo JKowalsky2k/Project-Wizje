@@ -1,0 +1,39 @@
+{
+  "torun": {
+    "location": {
+      "name": "Toruń",
+      "lat": 53.01,
+      "lon": 18.6
+    }
+  },
+  "cars": {
+    "location": {
+      "name": "Wrocław",
+      "lat": 51.1,
+      "lon": 17.03
+    }
+  },
+  "alps": {
+    "location": {
+      "name": "Alpy Francuskie",
+      "lat": 45.83,
+      "lon": 6.85,
+      "nameEn": "French Alps"
+    }
+  },
+  "dolomites": {
+    "location": {
+      "name": "Dolomity · Włochy",
+      "lat": 46.43,
+      "lon": 11.85,
+      "nameEn": "Dolomites · Italy"
+    }
+  },
+  "planes": {
+    "location": {
+      "name": "Toruń",
+      "lat": 53.01,
+      "lon": 18.6
+    }
+  }
+}

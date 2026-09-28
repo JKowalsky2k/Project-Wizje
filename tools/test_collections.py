@@ -16,6 +16,33 @@ class ManifestTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.addCleanup(self.temp.cleanup)
 
+    def test_film_metadata_is_published_only_for_analog_photos(self):
+        folder = self.root / 'film'; folder.mkdir()
+        for name in ['analog.jpg', 'digital.jpg']:
+            (folder / name).touch()
+        (self.root / 'photo-types.json').write_text(json.dumps({
+            'photos': {'film/analog.jpg': 'analog', 'film/digital.jpg': 'digital'},
+            'filmDetails': {key: {'film': 'fujicolor-c200', 'iso': 200} for key in ['film/analog.jpg', 'film/digital.jpg']}
+        }))
+        photos = collections.build_manifest(self.root)[0]['photos']
+        self.assertEqual((photos[0]['film'], photos[0]['filmBrand'], photos[0]['iso']), ('Fujicolor C200', 'fujifilm', 200))
+        self.assertNotIn('film', photos[1])
+        self.assertNotIn('iso', photos[1])
+
+    def test_collection_location_in_manifest(self):
+        folder = self.root / 'trip'; folder.mkdir(); (folder / 'a.jpg').touch()
+        location = {'name': 'Toruń', 'lat': 53.01, 'lon': 18.6}
+        (self.root / 'collection-info.json').write_text(json.dumps({'trip': {'location': location}}))
+        self.assertEqual(collections.build_manifest(self.root)[0]['location'], location)
+        (self.root / 'collection-info.json').write_text('{}')
+        self.assertNotIn('location', collections.build_manifest(self.root)[0])
+
+    def test_multiple_collection_locations_in_manifest(self):
+        folder = self.root / 'trip'; folder.mkdir(); (folder / 'a.jpg').touch()
+        locations = [{'name': 'Toruń', 'lat': 53.01, 'lon': 18.6}, {'name': 'Wrocław', 'lat': 51.1, 'lon': 17.03}]
+        (self.root / 'collection-info.json').write_text(json.dumps({'trip': {'locations': locations}}))
+        self.assertEqual(collections.build_manifest(self.root)[0]['locations'], locations)
+
     def test_empty_folders_use_three_valid_source_rectangles(self):
         for name, _ in collections.COLLECTIONS:
             (self.root / f'{name}.png').touch()

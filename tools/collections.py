@@ -84,7 +84,8 @@ def build_manifest(photo_root=PHOTO_ROOT, year=None):
             photos = [{'src': f'{prefix}.png', 'crop': crop, 'sourceSize': [2000, 2000]}
                       for crop in known[name]]
         if photos:
-            result.append({'id': name, 'year': year, 'title': info.get(name, {}).get('title', name.replace('-', ' ').replace('_', ' ').capitalize()), 'photos': photos})
+            locations = info.get(name, {}).get('locations', [info[name]['location']] if info.get(name, {}).get('location') else [])
+            result.append({'id': name, 'year': year, 'title': info.get(name, {}).get('title', name.replace('-', ' ').replace('_', ' ').capitalize()), 'photos': photos, **({'locations': locations, 'location': locations[0]} if locations else {})})
 
     return result
 
@@ -115,7 +116,7 @@ class Handler(SimpleHTTPRequestHandler):
             return
         path = unquote(urlsplit(self.path).path)
         public = re.fullmatch(
-            r'/(?:index\.html|styles\.css|script\.js|collections\.js|font-preview\.html)?'
+            r'/(?:index\.html|styles\.css|script\.js|collections\.js|globe\.js|favicon\.svg|favicon\.ico|font-preview\.html)?'
             r'|/assets/logo/logo\.css'
             r'|/assets/fonts/[a-zA-Z0-9_-]+\.(?:woff2?|ttf|otf|txt)'
             r'|/assets/collections/(?:manifest\.js|previews/[a-f0-9]+-480\.jpg)', path)

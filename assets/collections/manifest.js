@@ -22,6 +22,9 @@ window.ZWIDY_COLLECTIONS = [
       {
         "src": "assets/collections/previews/e3bfef21b01e574c500951ac-480.jpg",
         "medium": "analog",
+        "iso": 400,
+        "film": "Fujifilm 400",
+        "filmBrand": "fujifilm",
         "original": "assets/collections/2026/alps/F1040037.JPG",
         "width": 480,
         "height": 672
@@ -47,7 +50,21 @@ window.ZWIDY_COLLECTIONS = [
         "width": 480,
         "height": 672
       }
-    ]
+    ],
+    "locations": [
+      {
+        "name": "Alpy Francuskie",
+        "lat": 45.83,
+        "lon": 6.85,
+        "nameEn": "French Alps"
+      }
+    ],
+    "location": {
+      "name": "Alpy Francuskie",
+      "lat": 45.83,
+      "lon": 6.85,
+      "nameEn": "French Alps"
+    }
   },
   {
     "id": "cars",
@@ -75,7 +92,19 @@ window.ZWIDY_COLLECTIONS = [
         "width": 480,
         "height": 672
       }
-    ]
+    ],
+    "locations": [
+      {
+        "name": "Wrocław",
+        "lat": 51.1,
+        "lon": 17.03
+      }
+    ],
+    "location": {
+      "name": "Wrocław",
+      "lat": 51.1,
+      "lon": 17.03
+    }
   },
   {
     "id": "dolomites",
@@ -103,7 +132,21 @@ window.ZWIDY_COLLECTIONS = [
         "width": 480,
         "height": 672
       }
-    ]
+    ],
+    "locations": [
+      {
+        "name": "Dolomity · Włochy",
+        "lat": 46.43,
+        "lon": 11.85,
+        "nameEn": "Dolomites · Italy"
+      }
+    ],
+    "location": {
+      "name": "Dolomity · Włochy",
+      "lat": 46.43,
+      "lon": 11.85,
+      "nameEn": "Dolomites · Italy"
+    }
   },
   {
     "id": "planes",
@@ -128,6 +171,18 @@ window.ZWIDY_COLLECTIONS = [
         "width": 480,
         "height": 672
       }
-    ]
+    ],
+    "locations": [
+      {
+        "name": "Toruń",
+        "lat": 53.01,
+        "lon": 18.6
+      }
+    ],
+    "location": {
+      "name": "Toruń",
+      "lat": 53.01,
+      "lon": 18.6
+    }
   }
 ];

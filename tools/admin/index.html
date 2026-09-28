@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="/assets/logo/logo.css">
   <link rel="stylesheet" href="/admin/editor.css">
   <script src="/admin/editor.js" defer></script>
+  <link rel="icon" href="/favicon.ico?v=ffec70d8f2" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="/favicon.svg?v=ffec70d8f2" type="image/svg+xml" sizes="any">
 </head>
 <body>
   <header class="header">
@@ -45,6 +47,20 @@
       <div id="welcome" hidden><h1 data-i18n="welcomeTitle">Twoje zdjęcia, Twoje kolekcje.</h1><p data-i18n="welcomeCopy">Utwórz pierwszą kolekcję, aby dodać zdjęcia.</p></div>
       <section id="editor" hidden aria-labelledby="collection-title">
         <div class="collection-heading"><div><div class="section-label" data-i18n="editingCollection">EDYCJA KOLEKCJI</div><h1 id="collection-title"></h1><p id="photo-count"></p></div><button id="delete-collection" class="danger" type="button" data-i18n="deleteCollection">Usuń kolekcję</button></div>
+        <form id="location-form" class="location-form">
+          <h2 data-i18n="locationTitle">Lokalizacje kolekcji</h2>
+          <p class="crop-note" data-i18n="locationHint">Dodawaj miejsca do kolekcji. Każde pojawi się jako punkt na globusie.</p>
+          <ul id="collection-locations" class="collection-locations"></ul>
+          <label for="location-preset" data-i18n="locationPlace">Miejsce</label>
+          <select id="location-preset"></select>
+          <div class="location-fields">
+            <label class="location-name"><span data-i18n="locationName">Nazwa PL</span><input id="location-name" maxlength="120" required></label>
+            <label class="location-name"><span data-i18n="locationNameEn">Nazwa EN (opcjonalnie)</span><input id="location-name-en" maxlength="120"></label>
+            <label><span data-i18n="latitude">Szerokość geograficzna</span><input id="location-lat" type="number" min="-90" max="90" step="any" required></label>
+            <label><span data-i18n="longitude">Długość geograficzna</span><input id="location-lon" type="number" min="-180" max="180" step="any" required></label>
+          </div>
+          <div class="location-actions"><button class="primary" type="submit" id="save-location" data-i18n="addLocation">Dodaj lokalizację</button><button id="cancel-location" class="secondary" type="button" data-i18n="cancelLocation" hidden>Anuluj edycję</button></div>
+        </form>
         <form id="upload-form" class="upload-form">
           <label class="dropzone" id="dropzone" for="photos"><span class="upload-symbol" aria-hidden="true">↑</span><strong data-i18n="dropPhotos">Przeciągnij zdjęcia lub wybierz pliki</strong><span data-i18n="fileHint">JPG, PNG, WebP, AVIF · do 50 MB na zdjęcie</span><input id="photos" type="file" accept=".jpg,.jpeg,.png,.webp,.avif" multiple required></label>
           <p class="crop-note" data-i18n="cropHint">Przygotowane kadry 5:7 zachowają kompozycję. Inne proporcje zostaną przycięte centralnie.</p>

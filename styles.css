@@ -406,7 +406,7 @@ main {
   align-items: center;
   justify-content: center;
   gap: clamp(2px, .65vw, 6px);
-  margin: 32px 0 26px;
+  margin: 0 0 26px;
   padding: 12px 0;
   font-size: clamp(24px, calc((100vw - 88px) / var(--letters, 8)), 72px);
   font-weight: 400;
@@ -465,4 +465,7 @@ main {
 
 .year-picker__arrow{display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid var(--rule);border-radius:50%;background:transparent;color:var(--foreground);font:22px var(--sans);cursor:pointer}.year-picker__arrow:hover:not(:disabled){background:#292925;border-color:var(--muted)}.year-picker__arrow:focus-visible{outline:2px solid var(--foreground);outline-offset:4px}.year-picker__arrow:disabled{opacity:.25;cursor:default}
 
-.drum-card__medium{flex-wrap:wrap}.photo-medium.film-brand--kodak{background:#f6c500;color:#791c17;border-color:#f6c500}.photo-medium.film-brand--fujifilm{background:#008c45;color:#fff;border-color:#36b66a}.photo-medium.film-brand--ilford{background:#ededeb;color:#161616;border-color:#ededeb}.photo-medium.film-iso{color:#d4d9df;border-color:#7e8792;background:#14171b}
+.drum-card__medium{flex-wrap:wrap}.photo-medium.film-brand--kodak{background:#1c190d;color:#e8bd45;border-color:#957a2d}.photo-medium.film-brand--fujifilm{background:#0c1b13;color:#5bca8b;border-color:#2d8853}.photo-medium.film-brand--ilford{background:#171818;color:#deded9;border-color:#828780}.photo-medium.film-iso{color:#d4d9df;border-color:#7e8792;background:#14171b}
+
+.photo-globe{margin:0 auto 42px;text-align:center}.photo-globe__viewport{position:relative;overflow:hidden;mask-image:linear-gradient(#000 70%,transparent 100%);-webkit-mask-image:linear-gradient(#000 70%,transparent 100%)}.photo-globe svg{display:block;width:100%;height:auto;overflow:hidden}.photo-globe__sphere{fill:#0d0e0c;stroke:#55564e;stroke-width:1}.photo-globe__grid{fill:none;stroke:#363a33;stroke-width:.65}.photo-globe__borders{fill:none;stroke:#b2b3a4;stroke-width:.8;stroke-linejoin:round;stroke-linecap:round;opacity:.75}.photo-globe__marker{cursor:pointer}.photo-globe__halo{fill:#d7b87318;stroke:#d7b87370;stroke-width:1}.photo-globe__dot{fill:#e8cc8f;stroke:#17150e;stroke-width:1.5}.photo-globe__marker[data-selected=true] .photo-globe__halo{fill:#d7b87340;stroke:#e8cc8f}.photo-globe__label{fill:#ead9b5;font:18px var(--sans);paint-order:stroke;stroke:#090909;stroke-width:5px;stroke-linejoin:round;pointer-events:none}.photo-globe__caption{margin:0 0 16px;color:var(--muted);font:10px var(--sans);text-transform:uppercase;letter-spacing:.18em}.photo-globe__places{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 24px}.photo-globe__places button{padding:6px 0;background:none;border:0;border-bottom:1px solid transparent;color:#b4b4ad;font:12px var(--sans);cursor:pointer}.photo-globe__places button::before{content:'·';margin-right:8px;color:#d7b873}.photo-globe__places button:hover,.photo-globe__places button[aria-pressed=true]{color:#ead9b5;border-bottom-color:#8c794e}.photo-globe__places button:focus-visible{outline:1px solid #d7b873;outline-offset:5px}.photo-globe__note{margin:16px 0 0;color:#73756e;font:10px var(--sans)}@media(max-width:620px){.photo-globe{margin-bottom:26px}.photo-globe__places{gap:6px 16px}.photo-globe__places button{font-size:11px}.photo-globe__label{font-size:24px}.photo-globe__borders{stroke-width:1.2}}
+.photo-globe__marker:focus-visible{outline:none}.photo-globe__marker:focus-visible .photo-globe__halo{stroke:#fff;stroke-width:2;fill:#d7b87340}

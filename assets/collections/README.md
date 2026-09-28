@@ -95,3 +95,25 @@ Zakres usuwania obejmuje pliki zarządzane przez tę lokalną aplikację. Kopie 
 Nad nagłówkiem kolekcji znajduje się pionowa rolka roku. Sterowanie odbywa się przyciskiem ↑ po lewej (nowszy rok) i ↓ po prawej (starszy rok). Przyciski obsługują też klawiaturę przez Tab i Enter/Spację. Lata nie są klikalne; przewijanie strony nie zmienia roku. Lista zawiera lata z niepustymi kolekcjami; domyślnie wybierany jest najnowszy z opublikowanymi zdjęciami.
 
 Generator i eksport odczytują foldery lat `assets/collections/2026/`, `assets/collections/2027/` itd. Każdy rok ma własne foldery kolekcji oraz opcjonalne `photo-types.json` i `collection-info.json`. Przykładowo zdjęcia w `assets/collections/2027/wakacje/` dodadzą rok 2027 po odświeżeniu podglądu lub przygotowaniu nowego ZIP-a. Puste foldery lat nie tworzą opcji na rolce. Panel obsługuje wszystkie lata. Przy tworzeniu kolekcji wpisz rok w polu „Rok”; folder roku i kolekcji powstanie automatycznie. Rok pojawi się na stronie po dodaniu pierwszego zdjęcia. Nazwy kolekcji mogą powtarzać się w różnych latach.
+
+
+## Film i ISO zdjęć analogowych
+
+Po wybraniu ANALOG w panelu pojawiają się przyciski wyboru filmu i ISO filmu. Wybierz pełną nazwę filmu z listy pogrupowanej według marek, np. „Fujifilm 400”. ISO wybiera się z osobnej listy. Wybrany film ma kolorowy tekst i ramkę na ciemnym tle. Symbol ⊘ oznacza brak przypisania. Ustawienia przy przesyłaniu dotyczą wszystkich dodawanych w tej partii zdjęć; później można je zmienić osobno na karcie zdjęcia. Pola są opcjonalne, a opcja ⊘ usuwa przypisanie. ISO oznacza czułość przypisaną do filmu; panel nie odczytuje jej z EXIF skanu i nie ustawia automatycznie po wyborze filmu.
+
+Katalog obejmuje Kodak Gold, ColorPlus, UltraMax, Portra, Ektar, Tri-X i T-Max; Fujicolor C200, Fujifilm 400, Superia X-TRA; Ilford HP5 Plus, FP4 Plus i Delta. Kolory przycisków nawiązują do marek. Opcje ISO: 25, 50, 64, 100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1600 i 3200.
+
+Metadane są zapisywane w `filmDetails` w pliku `photo-types.json` danego roku. Pozostają ze zdjęciem w bibliotece, trafiają do manifestu i paczki publikacji, a na stronie pojawiają się obok ANALOG. Zmiana techniki na DIGITAL usuwa przypisany film i ISO. Katalog oraz dozwolone ISO znajdują się w `tools/film_catalog.py`.
+
+
+## Globus na stronie głównej
+
+Między sloganem a rokiem znajduje się fragment globusa z konturami państw, bez podpisów pod mapą. Punkty pochodzą z lokalizacji zapisanych przy niepustych kolekcjach z roku wybranego na rolce. Zmiana roku od razu przełącza punkty globusa; rok bez lokalizacji pokazuje same kontury, bez punktów z innych lat. Przy otwarciu strony globus i kolekcje wybierają ten sam najnowszy dostępny rok; identyczne współrzędne łączą się w jeden punkt. Kliknięcie punktu lub wybranie go klawiszem Tab i Enter/Spacją ustawia widok i pokazuje nazwę.
+
+W panelu otwórz kolekcję i sekcję **Lokalizacja kolekcji**. Możesz wybrać Toruń, Wrocław, Alpy Francuskie lub Dolomity albo podać nazwę PL, opcjonalną nazwę EN oraz szerokość i długość geograficzną. Kliknij **Dodaj lokalizację**, aby dopisać miejsce do listy. Każda kolekcja może mieć wiele miejsc. Ikona ołówka edytuje wskazane miejsce, a kosz usuwa tylko ten wpis. Identyczne współrzędne są łączone, aby nie tworzyć podwójnych punktów. Po zmianie odśwież stronę; przed publikacją przygotuj nowy ZIP. Współrzędne zaokrąglamy do dwóch miejsc po przecinku. Nie odczytujemy GPS z EXIF.
+
+Lokalizacja jest zapisywana w `collection-info.json` danego roku, przy nazwie kolekcji w tablicy `locations` (każdy wpis: `name`, opcjonalnie `nameEn`, `lat`, `lon`). Eksport zachowuje wszystkie miejsca. Starsze pojedyncze pole `location` jest nadal odczytywane i po zapisie automatycznie zamieniane na listę. Startowe przypisania: Toruń → Toruń, Samochody → Wrocław, Alpy → Alpy Francuskie, Dolomity → włoskie Dolomity.
+
+Kontury: Natural Earth, skala 1:110m, domena publiczna. Źródło: https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_admin_0_countries.geojson . Dane są osadzone w `globe.js`; strona nie wysyła zapytań do usług mapowych. Eksport i konfiguracje dostępu do publicznych plików uwzględniają globus.
+
+Nazwy punktów i lista lokalizacji w panelu zmieniają się wraz z językiem PL/EN. Presety Alp i Dolomitów mają gotowe tłumaczenia. Dla własnych miejsc wpisz nazwę EN; gdy jej nie ma, używana jest nazwa PL.

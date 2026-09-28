@@ -18,7 +18,8 @@
       exportTitle: 'Publikacja strony', exportHint: 'Przygotuj paczkę na hosting. Zawiera wyłącznie publiczną stronę i zdjęcia do wyświetlania.', exportButton: 'Przygotuj ZIP', exportDownload: 'Pobierz ZIP ↓', exporting: 'Przygotowywanie paczki do publikacji…', exported: 'Paczka gotowa: {collections} kolekcji, {photos} zdjęć. Pobierz ZIP z sekcji publikacji.',
       title: 'Wizje — pracownia', workshop: 'pracowania', brandLabel: 'Wizje — pracowania', languageLabel: 'Język panelu', preview: 'Podgląd strony ↗', logout: 'Wyloguj',
       yourCollections: 'TWOJE KOLEKCJE', chooseCollection: 'Wybierz kolekcję', newCollection: 'Nowa kolekcja', name: 'Nazwa', year: 'Rok',
-      film: 'Film', chooseFilm: 'Wybierz film', filmIso: 'ISO filmu', chooseIso: 'Wybierz ISO', noFilm: 'Nieoznaczony', noIso: 'Nieoznaczone', filmSaved: 'Zapisano film i ISO. Odśwież podgląd strony.',
+      addLocation: 'Dodaj lokalizację', editLocation: 'Edytuj lokalizację', cancelLocation: 'Anuluj edycję', locationTitle: 'Lokalizacje kolekcji', locationHint: 'Dodawaj miejsca do kolekcji. Każde pojawi się jako punkt na globusie.', locationPlace: 'Miejsce', locationName: 'Nazwa PL', locationNameEn: 'Nazwa EN (opcjonalnie)', latitude: 'Szerokość geograficzna', longitude: 'Długość geograficzna', saveLocation: 'Zapisz lokalizację', clearLocation: 'Usuń lokalizację', customLocation: 'Własna lokalizacja', locationSaved: 'Zapisano lokalizację. Odśwież stronę główną.', locationCleared: 'Usunięto lokalizację z globusa.', frenchAlps: 'Alpy Francuskie', italianDolomites: 'Dolomity · Włochy',
+      brand: 'Marka', series: 'Seria', chooseBrand: 'Wybierz markę', chooseSeries: 'Wybierz serię', film: 'Film', chooseFilm: 'Wybierz film', filmIso: 'ISO filmu', chooseIso: 'Wybierz ISO', noFilm: 'Nieoznaczony', noIso: 'Nieoznaczone', filmSaved: 'Zapisano film i ISO. Odśwież podgląd strony.',
       yearUp: 'Następny rok', yearDown: 'Poprzedni rok',
       namePlaceholder: 'np. Wieczory nad morzem', createCollection: 'Utwórz kolekcję', welcomeTitle: 'Twoje zdjęcia, Twoje kolekcje.',
       welcomeCopy: 'Utwórz pierwszą kolekcję, aby dodać zdjęcia.', editingCollection: 'EDYCJA KOLEKCJI',
@@ -46,7 +47,8 @@
       exportTitle: 'Publish website', exportHint: 'Prepare a hosting package containing only the public website and display photos.', exportButton: 'Prepare ZIP', exportDownload: 'Download ZIP ↓', exporting: 'Preparing the website package…', exported: 'Package ready: {collections} collections, {photos} photos. Download the ZIP from the publishing section.',
       title: 'Wizje — studio', workshop: 'workshop', brandLabel: 'Wizje — workshop', languageLabel: 'Admin language', preview: 'View website ↗', logout: 'Sign out',
       yourCollections: 'YOUR COLLECTIONS', chooseCollection: 'Choose a collection', newCollection: 'New collection', name: 'Name', year: 'Year',
-      film: 'Film', chooseFilm: 'Choose film', filmIso: 'Film ISO', chooseIso: 'Choose ISO', noFilm: 'Unassigned', noIso: 'Unassigned', filmSaved: 'Film and ISO saved. Refresh the website preview.',
+      addLocation: 'Add location', editLocation: 'Edit location', cancelLocation: 'Cancel editing', locationTitle: 'Collection locations', locationHint: 'Add places to this collection. Each will appear as a point on the globe.', locationPlace: 'Place', locationName: 'Polish name', locationNameEn: 'English name (optional)', latitude: 'Latitude', longitude: 'Longitude', saveLocation: 'Save location', clearLocation: 'Remove location', customLocation: 'Custom location', locationSaved: 'Location saved. Refresh the homepage.', locationCleared: 'Location removed from the globe.', frenchAlps: 'French Alps', italianDolomites: 'Dolomites · Italy',
+      brand: 'Brand', series: 'Series', chooseBrand: 'Choose a brand', chooseSeries: 'Choose a series', film: 'Film', chooseFilm: 'Choose film', filmIso: 'Film ISO', chooseIso: 'Choose ISO', noFilm: 'Unassigned', noIso: 'Unassigned', filmSaved: 'Film and ISO saved. Refresh the website preview.',
       yearUp: 'Next year', yearDown: 'Previous year',
       namePlaceholder: 'e.g. Evenings by the sea', createCollection: 'Create collection', welcomeTitle: 'Your photos, your collections.',
       welcomeCopy: 'Create your first collection to add photos.', editingCollection: 'EDIT COLLECTION',
@@ -166,32 +168,42 @@
   }
   function filmControls(value, onChange) {
     const row = document.createElement('div'); row.className = 'film-controls';
+    const films = state.films || [];
+    const selectedFilm = films.find(item => item.id === value.film);
+    const brandNames = { kodak: 'Kodak', fujifilm: 'Fujifilm', ilford: 'Ilford' };
     for (const key of ['film', 'iso']) {
-      const group = document.createElement('div'); group.className = 'film-control';
-      const label = document.createElement('span'); label.className = 'film-control-label'; label.textContent = t(key === 'film' ? 'film' : 'filmIso');
-      const menu = document.createElement('details'); menu.className = 'film-menu';
-      const summary = document.createElement('summary'); summary.className = 'film-choice';
-      const film = (state.films || []).find(item => item.id === value.film);
-      summary.textContent = key === 'film' ? (film?.name || t('chooseFilm')) : (value.iso ? `ISO ${value.iso}` : t('chooseIso'));
-      if (key === 'film' && film) summary.classList.add(`film-brand--${film.brand}`);
-      const choices = document.createElement('div'); choices.className = 'film-choices';
-      choices.setAttribute('role', 'group'); choices.setAttribute('aria-label', label.textContent);
-      const entries = key === 'film' ? (state.films || []).map(item => ({ value: item.id, label: item.name, brand: item.brand }))
-        : (state.isoValues || []).map(iso => ({ value: iso, label: `ISO ${iso}` }));
-      entries.unshift({ value: null, label: t(key === 'film' ? 'noFilm' : 'noIso') });
-      for (const entry of entries) {
-        const button = document.createElement('button'); button.type = 'button';
-        button.className = 'film-choice' + (entry.brand ? ` film-brand--${entry.brand}` : '');
-        button.textContent = entry.label; button.disabled = busy;
-        button.setAttribute('aria-pressed', String((value[key] || null) === entry.value));
-        button.addEventListener('click', () => {
-          if (busy) return;
-          menu.open = false;
-          onChange({ film: value.film || null, iso: value.iso || null, [key]: entry.value });
-        });
-        choices.append(button);
+      const group = document.createElement('label'); group.className = 'film-control';
+      const label = document.createElement('span'); label.className = 'film-control-label';
+      label.textContent = t(key === 'film' ? 'film' : 'filmIso');
+      const select = document.createElement('select'); select.className = 'film-select'; select.disabled = busy;
+      select.setAttribute('aria-label', label.textContent);
+      if (key === 'film' && selectedFilm) select.classList.add(`film-brand--${selectedFilm.brand}`);
+      const empty = document.createElement('option'); empty.value = ''; empty.textContent = '⊘';
+      empty.setAttribute('aria-label', t(key === 'film' ? 'noFilm' : 'noIso'));
+      empty.title = t(key === 'film' ? 'noFilm' : 'noIso'); select.append(empty);
+      if (key === 'film') {
+        for (const brand of [...new Set(films.map(item => item.brand))]) {
+          const options = document.createElement('optgroup'); options.label = brandNames[brand] || brand;
+          for (const film of films.filter(item => item.brand === brand)) {
+            const option = document.createElement('option'); option.value = film.id; option.textContent = film.name;
+            options.append(option);
+          }
+          select.append(options);
+        }
+      } else {
+        for (const iso of state.isoValues || []) {
+          const option = document.createElement('option'); option.value = String(iso); option.textContent = `ISO ${iso}`;
+          select.append(option);
+        }
       }
-      menu.append(summary, choices); group.append(label, menu); row.append(group);
+      select.value = value[key] == null ? '' : String(value[key]);
+      select.title = key === 'film' ? (selectedFilm?.name || t('noFilm')) : (value.iso ? `ISO ${value.iso}` : t('noIso'));
+      select.addEventListener('change', () => {
+        if (busy) return;
+        onChange({ film: value.film || null, iso: value.iso || null,
+          [key]: select.value ? (key === 'iso' ? Number(select.value) : select.value) : null });
+      });
+      group.append(label, select); row.append(group);
     }
     return row;
   }
@@ -258,6 +270,78 @@
       card.append(image, name, badgeRow, actions); grid.append(card);
     }
   }
+  let editingLocationIndex = null;
+  const collectionLocations = collection => collection.locations || (collection.location ? [collection.location] : []);
+  const locationPresets = [
+    { id: 'torun', name: 'Toruń', lat: 53.01, lon: 18.60 },
+    { id: 'wroclaw', name: 'Wrocław', lat: 51.10, lon: 17.03 },
+    { id: 'alps', name: 'Alpy Francuskie', nameEn: 'French Alps', label: 'frenchAlps', lat: 45.83, lon: 6.85 },
+    { id: 'dolomites', name: 'Dolomity · Włochy', nameEn: 'Dolomites · Italy', label: 'italianDolomites', lat: 46.43, lon: 11.85 },
+  ];
+  function fillLocation(location) {
+    $('#location-name').value = location?.name || '';
+    $('#location-name-en').value = location?.nameEn || '';
+    $('#location-lat').value = location?.lat ?? '';
+    $('#location-lon').value = location?.lon ?? '';
+  }
+  function renderLocation(collection) {
+    const select = $('#location-preset'); select.replaceChildren();
+    for (const place of [{ id: '', name: t('customLocation') }, ...locationPresets]) {
+      const option = document.createElement('option'); option.value = place.id;
+      option.textContent = place.label ? t(place.label) : place.name; select.append(option);
+    }
+    resetLocationForm();
+    const list = $('#collection-locations'); list.replaceChildren();
+    const locations = collectionLocations(collection);
+    locations.forEach((location, index) => {
+      const item = document.createElement('li');
+      const displayName = language === 'en' ? (location.nameEn || location.name) : location.name;
+      const name = document.createElement('span'); name.textContent = displayName;
+      const coordinates = document.createElement('small'); coordinates.textContent = `${location.lat.toFixed(2)}, ${location.lon.toFixed(2)}`;
+      const description = document.createElement('div'); description.append(name, coordinates);
+      const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'secondary'; edit.textContent = '✎';
+      edit.title = t('editLocation'); edit.setAttribute('aria-label', `${t('editLocation')}: ${displayName}`);
+      edit.addEventListener('click', () => {
+        if (busy) return;
+        editingLocationIndex = index; fillLocation(location);
+        select.value = locationPresets.find(place => place.lat === location.lat && place.lon === location.lon)?.id || '';
+        $('#save-location').textContent = t('saveLocation'); $('#cancel-location').hidden = false;
+        $('#location-name').focus();
+      });
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'secondary'; remove.append(actionIcon('trash'));
+      remove.title = t('clearLocation'); remove.setAttribute('aria-label', `${t('clearLocation')}: ${displayName}`);
+      remove.addEventListener('click', () => {
+        if (busy) return;
+        mutate(async () => {
+          await request('locations', { ...targetCollection(collection), locations: locations.filter((_, i) => i !== index) });
+          invalidateExport(); await reload(); status('locationCleared');
+        });
+      });
+      item.append(description, edit, remove); list.append(item);
+    });
+  }
+  function resetLocationForm() {
+    editingLocationIndex = null; fillLocation(null); $('#location-preset').value = '';
+    $('#save-location').textContent = t('addLocation'); $('#cancel-location').hidden = true;
+  }
+  $('#cancel-location').addEventListener('click', resetLocationForm);
+  $('#location-preset').addEventListener('change', () => {
+    const place = locationPresets.find(place => place.id === $('#location-preset').value);
+    if (place) fillLocation(place);
+  });
+  $('#location-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const collection = selected();
+    if (!collection || busy || !$('#location-form').reportValidity()) return;
+    const location = { name: $('#location-name').value.trim(), nameEn: $('#location-name-en').value.trim(), lat: Number($('#location-lat').value), lon: Number($('#location-lon').value) };
+    const locations = [...collectionLocations(collection)];
+    if (editingLocationIndex === null) locations.push(location);
+    else locations[editingLocationIndex] = location;
+    mutate(async () => {
+      await request('locations', { ...targetCollection(collection), locations });
+      invalidateExport(); await reload(); status('locationSaved');
+    });
+  });
   function render() {
     renderLibrary();
     renderUploadFilm();
@@ -288,6 +372,7 @@
     const collection = selected();
     $('#welcome').hidden = Boolean(collection); $('#editor').hidden = !collection;
     if (!collection) return;
+    renderLocation(collection);
     $('#collection-title').textContent = collectionTitle(collection);
     $('#photo-count').textContent = t('photoCount', { count: collection.photos.length });
     $('#empty').hidden = collection.photos.length > 0;

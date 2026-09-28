@@ -3,7 +3,7 @@
 Options -Indexes -ExecCGI
 DirectoryIndex index.html
 RewriteEngine On
-RewriteRule ^(?:index\.html|styles\.css|script\.js|collections\.js)?$ - [END]
+RewriteRule ^(?:index\.html|styles\.css|script\.js|collections\.js|globe\.js|favicon\.svg|favicon\.ico)?$ - [END]
 RewriteRule ^assets/logo/logo\.css$ - [END]
 RewriteRule ^assets/fonts/[a-zA-Z0-9_-]+\.(?:woff2?|ttf|otf|txt)$ - [END]
 RewriteRule ^assets/collections/(?:manifest\.js|previews/[a-f0-9]+-480\.jpg)$ - [END]
