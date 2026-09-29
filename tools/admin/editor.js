@@ -420,7 +420,7 @@
         optionLabel.append(input, icon); orientationOptions.append(optionLabel);
       }
       orientationGroup.append(orientationLegend, orientationOptions); card.append(orientationGroup);
-      const colorLabel = document.createElement('label'); colorLabel.textContent = t('colorMode');
+      const colorLabel = document.createElement('label'); colorLabel.className = 'color-mode-field'; colorLabel.textContent = t('colorMode');
       const colorSelect = document.createElement('select'); colorSelect.setAttribute('aria-label', t('colorMode') + ': ' + photo.name);
       if (!photo.colorMode) {
         const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = t('unassigned'); placeholder.disabled = true; colorSelect.append(placeholder);

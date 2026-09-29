@@ -6,6 +6,13 @@
   const letterStyles = ['z', 'w', 'i', 'd', 'y'];
   const copy = () => translations[document.documentElement.lang] || translations.en;
 
+  // A UI deterrent only: public images remain accessible to the browser.
+  function discouragePhotoSaving(surface) {
+    for (const type of ['contextmenu', 'dragstart']) {
+      surface.addEventListener(type, event => event.preventDefault());
+    }
+  }
+
   function loadPhoto(photo) {
     if (!imageLoads.has(photo.src)) {
       const pending = new Promise((resolve, reject) => {
@@ -82,12 +89,25 @@
   let detailOpener = null;
   let detailOpen = false;
 
-  function collectionHeading(heading, title) {
+  function collectionHeading(heading, title, identity = title) {
     heading.replaceChildren();
     const accessible = document.createElement('span'); accessible.className = 'sr-only'; accessible.textContent = title;
     heading.append(accessible); heading.style.setProperty('--letters', Array.from(title).length);
-    Array.from(title).forEach((character, index) => {
-      const slot = index % letterStyles.length;
+    // Stable per collection; shuffled batches keep all five fonts in the mix.
+    let seed = 2166136261;
+    for (const character of identity) seed = Math.imul(seed ^ character.codePointAt(0), 16777619) >>> 0;
+    const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+    let batch = [], previous = -1;
+    Array.from(title).forEach(character => {
+      if (!batch.length) {
+        batch = letterStyles.map((_, index) => index);
+        for (let i = batch.length - 1; i > 0; i--) {
+          const j = Math.floor(random() * (i + 1));
+          [batch[i], batch[j]] = [batch[j], batch[i]];
+        }
+        if (batch[batch.length - 1] === previous) [batch[0], batch[batch.length - 1]] = [batch[batch.length - 1], batch[0]];
+      }
+      const slot = batch.pop(); previous = slot;
       const letter = document.createElement('span'); letter.className = `collection__letter collection__letter--${letterStyles[slot]}`;
       letter.setAttribute('aria-hidden', 'true');
       letter.textContent = slot === 1 || slot === 4 ? character.toLocaleLowerCase() : character.toLocaleUpperCase();
@@ -108,7 +128,7 @@
       find('.photo-detail__example').hidden = !instagramProfile.example;
     }
     const title = copy()[`${detailCollection.id}Title`] || detailCollection.title;
-    collectionHeading(find('#photo-detail-title'), title);
+    collectionHeading(find('#photo-detail-title'), title, detailCollection.id);
     find('.photo-detail__year').textContent = detailCollection.year;
     find('.photo-detail__image').alt = `${title} — ${copy().photoLabel} ${detailCollection.photos.indexOf(detailPhoto) + 1}`;
     const dimensions = detailPhoto.sourceWidth && detailPhoto.sourceHeight
@@ -138,7 +158,7 @@
         <div class="photo-detail__art">
           <div class="drum-card detail-preview" data-center="true">
             <div class="drum-card__frame"><div class="drum-card__mat">
-              <img class="photo-detail__image" decoding="async" alt="">
+              <img class="photo-detail__image" decoding="async" draggable="false" alt="">
             </div>${['tl', 'tr', 'bl', 'br'].map(corner => `<span class="museum-corner museum-corner--${corner}" aria-hidden="true">${frameCorner}</span>`).join('')}</div>
           </div>
           <p class="photo-detail__load-error" role="status" hidden data-detail-copy="photoError"></p>
@@ -177,6 +197,7 @@
           </section>
         </aside>
       </div>`;
+    discouragePhotoSaving(detailDialog.querySelector('.detail-preview'));
     document.body.append(detailDialog);
     const find = selector => detailDialog.querySelector(selector);
     find('.photo-detail__close').addEventListener('click', () => detailDialog.close());
@@ -243,6 +264,7 @@
           ${['tl', 'tr', 'bl', 'br'].map(corner => `<span class="museum-corner museum-corner--${corner}" aria-hidden="true">${frameCorner}</span>`).join('')}
         </div>
         <div class="drum-card__medium" aria-hidden="true" hidden></div>`;
+      discouragePhotoSaving(this.element.querySelector('.drum-card__frame'));
       parent.append(this.element);
       this.surface = this.element.querySelector('.drum-card__image');
       this.image = this.surface.querySelector('img');
@@ -406,7 +428,7 @@
     updateCopy() {
       const title = copy()[`${this.id}Title`] || this.title;
       const heading = this.element.querySelector('.collection__title');
-      collectionHeading(heading, title);
+      collectionHeading(heading, title, this.id);
       this.previousButton.setAttribute('aria-label', `${title} — ${copy().previousPhotos}`);
       this.nextButton.setAttribute('aria-label', `${title} — ${copy().nextPhotos}`);
       this.cards.forEach((card) => card.updateLabel());
@@ -486,6 +508,7 @@
       option.textContent = copy()[`${data.id}Title`] || data.title || data.id; collectionFilter.append(option);
     });
     collectionFilter.value = selectedCollection;
+    document.querySelector("#filter-reset").disabled = selectedCollection === "all" && selectedOrientation === "all" && selectedColorMode === "all";
     document.querySelector('#filter-status').textContent = `${copy().filterResults} ${galleries.length}`;
   }
 
@@ -522,6 +545,13 @@
     applyFilters();
     document.querySelector('#year-status').textContent = `${copy().yearSelected} ${year}`;
   }
+  document.querySelector('#filter-reset').addEventListener('click', () => {
+    selectedCollection = selectedOrientation = selectedColorMode = 'all';
+    document.querySelector('#filter-color-mode').value = 'all';
+    document.querySelectorAll('input[name="filter-orientation"]').forEach(input => { input.checked = input.value === 'all'; });
+    applyFilters();
+    collectionFilter.focus({ preventScroll: true });
+  });
   document.querySelector('#filter-color-mode').addEventListener('change', event => { selectedColorMode = event.target.value; applyFilters(); });
   collectionFilter.addEventListener('change', () => { selectedCollection = collectionFilter.value; applyFilters(); });
   document.querySelectorAll('input[name="filter-orientation"]').forEach(input => {
