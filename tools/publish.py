@@ -88,7 +88,11 @@ def build_public_tree(root, destination, collections):
                 raise ValueError('Kolekcja wymaga osobnych zdjęć i wygenerowanych podglądów. '
                                  'Dodaj zdjęcia przez panel; stare plansze Canva nie są publikowane.')
             copy(src)
-            public_photo = {key: photo[key] for key in ('src', 'width', 'height', 'medium', 'film', 'filmBrand', 'iso') if key in photo}
+            public_photo = {key: photo[key] for key in ('src', 'width', 'height', 'medium', 'film', 'filmBrand', 'iso', 'detail', 'sourceWidth', 'sourceHeight', 'detailWidth', 'detailHeight', 'orientation', 'colorMode') if key in photo}
+            if photo.get('detail'):
+                if not re.fullmatch(r'assets/collections/previews/[a-f0-9]+-2000\.jpg', photo['detail']):
+                    raise ValueError('Nieprawidłowy duży podgląd zdjęcia.')
+                copy(photo['detail'])
             photos.append(public_photo)
             photo_count += 1
         locations = collection.get('locations', [collection['location']] if collection.get('location') else [])

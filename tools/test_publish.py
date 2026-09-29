@@ -67,6 +67,21 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(data[0]['locations'][1]['name'], 'Wrocław')
         self.assertNotIn('secret', manifest)
 
+    def test_large_preview_export_and_private_path_rejection(self):
+        photo = self.data[0]['photos'][0]
+        photo.update(detail='assets/collections/previews/abcdef-2000.jpg', sourceWidth=4000, sourceHeight=6000,
+                     detailWidth=1333, detailHeight=2000)
+        self.write(photo['detail'], 'large preview')
+        build_public_tree(self.root, self.output, self.data)
+        manifest = (self.output / 'assets/collections/manifest.js').read_text()
+        data = json.loads(manifest.split(' = ', 1)[1].rstrip(';\n'))
+        self.assertEqual(data[0]['photos'][0]['sourceWidth'], 4000)
+        self.assertTrue((self.output / photo['detail']).is_file())
+        self.assertNotIn('original', data[0]['photos'][0])
+        for invalid in ['assets/collections/2026/test/private.jpg', 'assets/collections/previews/abcdef-info.json']:
+            photo['detail'] = invalid
+            with self.assertRaises(ValueError): build_public_tree(self.root, self.output, self.data)
+
     def test_rejects_symlinked_assets(self):
         font = self.root / 'assets/fonts/test.woff2'
         font.unlink()

@@ -33,6 +33,28 @@ class LibraryTests(unittest.TestCase):
         self.store.set_medium(collection, name, 'analog')
         return path
 
+    def test_color_mode_validation_and_library_restore(self):
+        self.photo()
+        with self.assertRaises(EditorError):
+            self.store.set_color_mode('first', 'photo.jpg', 'invalid')
+        self.store.set_color_mode('first', 'photo.jpg', 'monochrome')
+        self.store.delete_photo('first', 'photo.jpg')
+        self.store.library.attach(self.store.library.state()[0]['id'], 'second')
+        self.assertEqual(self.store.types()['colorModes']['second/photo.jpg'], 'monochrome')
+        self.assertNotIn('first/photo.jpg', self.store.types()['colorModes'])
+
+    def test_orientation_validation_and_library_restore(self):
+        self.photo()
+        self.assertEqual(self.store.types().get('orientations', {}).get('first/photo.jpg', 'portrait'), 'portrait')
+        with self.assertRaises(EditorError):
+            self.store.set_orientation('first', 'photo.jpg', 'invalid')
+        self.store.set_orientation('first', 'photo.jpg', 'landscape')
+        self.assertEqual(self.store.types()['orientations']['first/photo.jpg'], 'landscape')
+        self.store.delete_photo('first', 'photo.jpg')
+        entry = self.store.library.state()[0]
+        self.store.library.attach(entry['id'], 'second')
+        self.assertEqual(self.store.types()['orientations']['second/photo.jpg'], 'landscape')
+
     def test_detach_and_attach_preserve_original_and_medium(self):
         original = self.photo()
         self.store.delete_photo('first', 'photo.jpg')

@@ -165,11 +165,30 @@ main {
 }
 
 .intro h1 {
-  margin: 0;
+  max-width: 680px;
+  margin: 0 auto;
   font-family: var(--serif);
-  font-size: clamp(44px, 7vw, 76px);
+  font-size: clamp(36px, 7.2vw, 76px);
   font-weight: 400;
-  line-height: 0.98;
+  line-height: 1.08;
+  letter-spacing: -.035em;
+}
+
+.intro__line {
+  display: block;
+  text-wrap: balance;
+}
+
+.intro__line--accent {
+  margin-top: .08em;
+  font-size: 1.08em;
+  font-style: italic;
+  letter-spacing: -.025em;
+}
+
+html[lang="pl"] .intro__line--accent {
+  font-size: .88em;
+  margin-top: .18em;
 }
 
 .intro__copy {
@@ -283,7 +302,7 @@ main {
   }
 }
 
-/* Horizontal photographic drums with a clear center and receding sides. */
+/* Rotating photo drums with an ornamental frame on the central card. */
 [hidden] {
   display: none !important;
 }
@@ -448,7 +467,7 @@ main {
 .collection__next { right: 0; }
 .collection__arrow:hover { background: #292925; border-color: var(--muted); }
 .collection__arrow:focus-visible { outline: 2px solid var(--foreground); outline-offset: 4px; }
-.collection__arrow:disabled { opacity: .4; cursor: wait; }
+.collection__arrow:disabled { opacity: .4; cursor: default; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -469,3 +488,62 @@ main {
 
 .photo-globe{margin:0 auto 42px;text-align:center}.photo-globe__viewport{position:relative;overflow:hidden;mask-image:linear-gradient(#000 70%,transparent 100%);-webkit-mask-image:linear-gradient(#000 70%,transparent 100%)}.photo-globe svg{display:block;width:100%;height:auto;overflow:hidden}.photo-globe__sphere{fill:#0d0e0c;stroke:#55564e;stroke-width:1}.photo-globe__grid{fill:none;stroke:#363a33;stroke-width:.65}.photo-globe__borders{fill:none;stroke:#b2b3a4;stroke-width:.8;stroke-linejoin:round;stroke-linecap:round;opacity:.75}.photo-globe__marker{cursor:pointer}.photo-globe__halo{fill:#d7b87318;stroke:#d7b87370;stroke-width:1}.photo-globe__dot{fill:#e8cc8f;stroke:#17150e;stroke-width:1.5}.photo-globe__marker[data-selected=true] .photo-globe__halo{fill:#d7b87340;stroke:#e8cc8f}.photo-globe__label{fill:#ead9b5;font:18px var(--sans);paint-order:stroke;stroke:#090909;stroke-width:5px;stroke-linejoin:round;pointer-events:none}.photo-globe__caption{margin:0 0 16px;color:var(--muted);font:10px var(--sans);text-transform:uppercase;letter-spacing:.18em}.photo-globe__places{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 24px}.photo-globe__places button{padding:6px 0;background:none;border:0;border-bottom:1px solid transparent;color:#b4b4ad;font:12px var(--sans);cursor:pointer}.photo-globe__places button::before{content:'·';margin-right:8px;color:#d7b873}.photo-globe__places button:hover,.photo-globe__places button[aria-pressed=true]{color:#ead9b5;border-bottom-color:#8c794e}.photo-globe__places button:focus-visible{outline:1px solid #d7b873;outline-offset:5px}.photo-globe__note{margin:16px 0 0;color:#73756e;font:10px var(--sans)}@media(max-width:620px){.photo-globe{margin-bottom:26px}.photo-globe__places{gap:6px 16px}.photo-globe__places button{font-size:11px}.photo-globe__label{font-size:24px}.photo-globe__borders{stroke-width:1.2}}
 .photo-globe__marker:focus-visible{outline:none}.photo-globe__marker:focus-visible .photo-globe__halo{stroke:#fff;stroke-width:2;fill:#d7b87340}
+
+/* Gilded museum frame: carved corners, beading and layered wood mouldings. */
+.collection__drum{min-height:300px;max-height:500px;aspect-ratio:1.5/1}
+.drum-card{width:min(44%,280px)}
+.drum-card__mat{padding:0;background:#050505;transition:padding .5s ease}
+.drum-card[data-center="true"] .drum-card__mat{padding:clamp(15px,2.6vw,24px);box-shadow:inset 0 0 0 1px #211d15}
+.drum-card__frame{position:relative;transition:box-shadow .5s ease,border-color .5s ease}
+.drum-card__frame::before{content:"";position:absolute;inset:-17px;pointer-events:none;border:16px solid #967033;border-image:linear-gradient(135deg,#f1d994 0%,#8c5f24 12%,#dbb65e 24%,#69431c 38%,#b1853c 55%,#533618 70%,#d5b16a 86%,#8e602c 100%) 16;opacity:0;box-shadow:0 0 0 1px #e8c675,0 0 0 3px #4b3117,0 0 0 4px #b9954f,0 14px 28px #000c,inset 0 0 0 2px #34220e;transition:opacity .5s ease}
+.drum-card__frame::after{content:"";position:absolute;inset:-9px;pointer-events:none;border:5px double #e4c57e;opacity:0;box-shadow:0 0 0 1px #5f401b,inset 0 0 0 1px #493018,inset 0 0 0 3px #a67b36;transition:opacity .5s ease}
+.drum-card[data-center="true"] .drum-card__frame{border-color:#d2ae63;border-radius:0;background:repeating-linear-gradient(93deg,#71502220 0 1px,transparent 1px 4px),linear-gradient(135deg,#e0c383,#7d592a 18%,#c09a54 35%,#3b2918 52%,#9a7337 75%,#d4b270);box-shadow:inset 0 0 0 2px #392611,inset 0 0 0 3px #edce8c,inset 0 0 0 5px #8a652d,0 14px 30px #000b}
+.drum-card[data-center="true"] .drum-card__frame::before,.drum-card[data-center="true"] .drum-card__frame::after{opacity:1}
+.museum-corner{position:absolute;width:clamp(42px,6vw,60px);height:clamp(42px,6vw,60px);z-index:2;pointer-events:none;opacity:0;filter:drop-shadow(1px 2px 1px #241607cc);transition:opacity .5s ease}
+.museum-corner svg{display:block;width:100%;height:100%}
+.museum-corner--tl{top:-22px;left:-22px}.museum-corner--tr{top:-22px;right:-22px;transform:scaleX(-1)}.museum-corner--bl{bottom:-22px;left:-22px;transform:scaleY(-1)}.museum-corner--br{bottom:-22px;right:-22px;transform:scale(-1)}
+.drum-card[data-center="true"] .museum-corner{opacity:1}
+.drum-card__medium{margin-top:42px}
+@media(prefers-reduced-motion:reduce){.drum-card__frame,.drum-card__frame::before,.drum-card__frame::after,.museum-corner,.drum-card__mat{transition:none}}
+
+/* Larger photograph preview; settings affect this dialog only. */
+.drum-card[role="button"]{cursor:zoom-in;outline:none}.drum-card[role="button"]:focus-visible .drum-card__frame{outline:2px solid #e8cc8f;outline-offset:22px}
+body.has-photo-detail{overflow:hidden}
+.photo-detail{--detail-margin:clamp(16px,3vw,34px);--detail-mat:#050505;position:fixed;inset:0;width:min(1100px,calc(100vw - 40px));max-width:none;max-height:calc(100dvh - 40px);margin:auto;padding:0;overflow:auto;color:var(--foreground);background:#111210;border:1px solid #454037;border-radius:12px;box-shadow:0 30px 100px #000b}
+.photo-detail::backdrop{background:#050505e8;backdrop-filter:blur(7px)}
+.photo-detail__close{position:absolute;right:14px;top:14px;z-index:5;width:38px;height:38px;padding:0;border:1px solid var(--rule);border-radius:50%;background:#171814;color:var(--foreground);font:28px/1 var(--sans);cursor:pointer}
+.photo-detail__layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;min-height:480px}
+.photo-detail__art{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;gap:20px;padding:52px 40px;background:radial-gradient(ellipse at center,#24241d,#0b0c0a 75%)}
+.photo-detail .detail-preview{position:relative;top:auto;left:auto;width:fit-content;max-width:100%;transform:none;backface-visibility:visible;cursor:default}
+.photo-detail .detail-preview .drum-card__mat{padding:var(--detail-margin);background:var(--detail-mat);box-shadow:inset 0 0 0 1px #7773;transition:padding .2s ease,background-color .2s ease}
+.photo-detail__image{display:block;width:min(380px,44vh);max-width:100%;height:auto;aspect-ratio:5/7;object-fit:cover;object-position:center}
+.photo-detail[data-margins="false"]{--detail-margin:0px}.photo-detail[data-mat-color="white"]{--detail-mat:#f5f3ee}
+.photo-detail[data-frame="false"] .drum-card__frame{padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+.photo-detail[data-frame="false"] .drum-card__frame::before,.photo-detail[data-frame="false"] .drum-card__frame::after,.photo-detail[data-frame="false"] .museum-corner{display:none}
+.photo-detail__info{padding:64px 28px 32px;border-left:1px solid var(--rule);min-width:0}
+.photo-detail__eyebrow{margin:0 0 16px;font:10px var(--sans);text-transform:uppercase;letter-spacing:.18em;color:var(--muted)}
+.photo-detail .collection__title{justify-content:flex-start;gap:3px;margin:0 0 12px;padding:8px 0;font-size:clamp(22px,calc(260px / var(--letters,8)),44px)}
+.photo-detail__year{color:var(--muted);font:12px var(--sans);margin:0 0 28px}
+.photo-detail__metadata{margin:0;display:grid;gap:20px}.photo-detail__metadata dt{font-size:11px;color:var(--muted);margin-bottom:8px}.photo-detail__metadata dd{display:flex;flex-wrap:wrap;gap:6px;margin:0;font-size:13px;line-height:1.5}
+.photo-detail__settings{margin:28px 0 0;padding:20px 0 0;border:0;border-top:1px solid var(--rule)}.photo-detail__settings>legend{padding:0 8px 0 0;font:12px var(--sans);color:#d6c4a1}
+.photo-detail__toggle{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 0;font-size:12px;cursor:pointer}.photo-detail__toggle input{width:17px;height:17px;margin:0;accent-color:#c4a66b;cursor:pointer}
+.photo-detail__colors{border:0;padding:0;margin:20px 0 0;display:flex;gap:8px}.photo-detail__colors legend{font-size:11px;color:var(--muted);margin-bottom:10px}.photo-detail__colors label{position:relative;flex:1;cursor:pointer}.photo-detail__colors input{position:absolute;opacity:0;width:1px;height:1px}.mat-choice{display:block;text-align:center;padding:9px;border:1px solid #666;border-radius:5px;font-size:11px}.mat-choice--black{background:#050505;color:#e6e3dc}.mat-choice--white{background:#f5f3ee;color:#222}.photo-detail__colors input:checked+.mat-choice{outline:2px solid #b99a5a;outline-offset:2px}.photo-detail__colors input:focus-visible+.mat-choice{outline:2px solid white;outline-offset:3px}.photo-detail__colors:disabled{opacity:.35}
+.photo-detail__close:focus-visible{outline:2px solid #d7b873;outline-offset:3px}.photo-detail__load-error{color:#d9af9e;font-size:12px;text-align:center}
+@media(max-width:760px){.photo-detail{width:calc(100vw - 20px);max-height:calc(100dvh - 20px)}.photo-detail__layout{grid-template-columns:minmax(0,1fr)}.photo-detail__art{padding:62px 32px 36px}.photo-detail__image{width:min(380px,40vh)}.photo-detail__info{border-left:0;border-top:1px solid var(--rule);padding:28px}.photo-detail__metadata{grid-template-columns:repeat(2,minmax(0,1fr))}.photo-detail__film{grid-column:1/-1}}
+@media(prefers-reduced-motion:reduce){.photo-detail .detail-preview .drum-card__mat{transition:none}}
+
+.photo-detail__notice{margin:2px 0 14px;color:var(--muted);font:11px/1.6 var(--sans)}
+
+.photo-detail__order{margin-top:28px;padding:18px 15px;border:1px solid #635234;border-radius:8px;background:linear-gradient(135deg,#28231970,#161713)}.photo-detail__order h3{margin:0 0 10px;color:#ddc798;font:500 11px var(--sans);text-transform:uppercase;letter-spacing:.13em}.photo-detail__order-note{margin:0 0 18px;color:#bdbbb2;font:12px/1.65 var(--sans)}.photo-detail__order-contact{display:grid;grid-template-columns:minmax(0,1fr) 82px;align-items:center;gap:12px}.photo-detail__order-links{min-width:0}.photo-detail__instagram-handle{display:block;margin-bottom:12px;color:var(--foreground);font:13px/1.5 var(--sans);text-decoration:none;overflow-wrap:anywhere}.photo-detail__instagram-handle:hover{text-decoration:underline;text-underline-offset:3px}.photo-detail__order-button{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;border:1px solid #9c814e;border-radius:5px;color:#e8cc8f;background:#241e12;font:11px/1.3 var(--sans);text-decoration:none}.photo-detail__order-button:hover{background:#342b19;border-color:#d4b578}.photo-detail__qr{display:block;width:82px;height:82px;border:1px solid #9c814e;border-radius:6px;overflow:hidden;background:#161713;box-shadow:0 0 0 3px #161713,0 0 0 4px #63523455;transition:border-color .2s,box-shadow .2s}.photo-detail__qr:hover{border-color:#e8cc8f;box-shadow:0 0 0 3px #161713,0 0 0 4px #9c814e80}.photo-detail__qr svg rect{fill:#161713}.photo-detail__qr svg path{fill:#e8cc8f}.photo-detail__qr svg{display:block;width:100%;height:100%}.photo-detail__order a:focus-visible{outline:2px solid #e8cc8f;outline-offset:4px}@media(max-width:760px){.photo-detail__order-contact{grid-template-columns:minmax(0,1fr) 108px}.photo-detail__qr{width:108px;height:108px}}
+
+.photo-detail__example{display:block;margin-bottom:5px;color:#aaa393;font:10px/1.4 var(--sans)}
+.photo-detail__example[hidden]{display:none}
+
+.photo-detail__price{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding-bottom:14px;border-bottom:1px solid #63523466}.photo-detail__price>span{color:#bdbbb2;font:12px/1.5 var(--sans)}.photo-detail__price strong{color:#e8cc8f;font:500 25px/1.2 var(--sans);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* Landscape originals retain their complete frame in mixed collections. */
+.drum-card[data-landscape="true"]{width:min(58%,380px)}
+.drum-card[data-landscape="true"] .drum-card__image{aspect-ratio:var(--photo-ratio)}
+.photo-detail[data-landscape="true"] .photo-detail__image{width:560px;aspect-ratio:var(--photo-ratio);object-fit:cover}
+
+.collection-filters{border-bottom:1px solid var(--rule);padding-bottom:24px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin:22px 0 36px;flex-wrap:wrap}.collection-filter{display:grid;gap:9px;min-width:180px;max-width:100%;color:var(--muted);font:11px var(--sans)}.collection-filter select{min-width:0;max-width:100%;min-height:44px;padding:9px 36px 9px 12px;border:1px solid #635234;border-radius:6px;background:#161713;color:var(--foreground);font:13px var(--sans)}.orientation-filter{padding:0;margin:0;border:0;min-width:0}.orientation-filter legend{padding:0;margin-bottom:9px;color:var(--muted);font:11px var(--sans)}.orientation-filter>div{display:flex;gap:8px}.orientation-filter label{position:relative;cursor:pointer}.orientation-filter input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer}.orientation-filter span{display:grid;place-items:center;min-width:48px;height:44px;padding:0 12px;border:1px solid #635234;border-radius:6px;background:#161713;color:#aaa393;font:11px var(--sans)}.filter-frame::before{content:"";width:15px;height:24px;border:2px solid currentColor;border-radius:2px}.filter-frame--landscape::before{width:26px;height:16px}.orientation-filter input:checked+span{color:#e8cc8f;border-color:#c6a45f;background:#302819}.orientation-filter input:focus-visible+span,.collection-filter select:focus-visible{outline:2px solid #e8cc8f;outline-offset:3px}.orientation-filter label:hover span{border-color:#c6a45f}@media(max-width:500px){.collection-filters{gap:18px}.collection-filter{width:100%}}

@@ -56,9 +56,9 @@ Pełna instrukcja: [PUBLIKACJA.md](../../PUBLIKACJA.md).
 
 ## Zachowanie galerii
 
-Każda kolekcja ma poziomy bęben: jedno zdjęcie na środku oraz dwa boczne, obrócone o 34° i przygaszone. Co około 6–7 sekund cały zestaw przesuwa się w lewo i zwalnia przed zatrzymaniem (przejście 1,1 s). Zdjęcie z prawej trafia na środek. Dwie niewidoczne karty poza bokami zapewniają płynną pętlę w obu kierunkach. Dla dwóch zdjęć widoczne są tylko dwa różne kadry. Strzałki po lewej i prawej stronie bębna pozwalają przejść do poprzedniego lub następnego zdjęcia. Automatyka zatrzymuje się poza ekranem, w ukrytej karcie, przy najechaniu myszą i podczas obsługi przycisków klawiaturą.
+Każda kolekcja ma obracający się bęben: zdjęcie na środku i dwa przygaszone, ustawione pod kątem po bokach. Tylko centralne zdjęcie ma ozdobną ramę w odcieniach ciemnego drewna i złota. Strzałki obracają cały zestaw przez 0,5 s; kolejne zdjęcia są ładowane wcześniej, a szybkie kliknięcie podczas animacji zapamiętuje następny krok. Automatyczna zmiana następuje co około 6–7 sekund i zatrzymuje się poza ekranem, w ukrytej karcie, po najechaniu myszą lub przy obsłudze klawiaturą.
 
-Preferencja systemowa ograniczenia ruchu domyślnie wyłącza automatyczne zmiany i animację 3D. Ręczne przełączanie nadal działa. Dla jednego zdjęcia pokaz pozostaje statyczny.
+Preferencja systemowa ograniczenia ruchu domyślnie wyłącza automatyczne zmiany i obracanie zdjęć. Ręczne przełączanie nadal działa. Dla jednego zdjęcia pokaz pozostaje statyczny.
 
 Jeżeli obok pustego folderu nadal istnieje wcześniejsza plansza PNG o tej samej nazwie, kolekcja może skorzystać z jej trzech kadrów. Są to wyłącznie prostokąty kadrowania w CSS, bez przerabiania oryginałów. Pierwsze własne zdjęcie w folderze zastępuje ten zestaw startowy. Po dodaniu osobnych zdjęć plansze PNG nie są potrzebne.
 
@@ -117,3 +117,22 @@ Lokalizacja jest zapisywana w `collection-info.json` danego roku, przy nazwie ko
 Kontury: Natural Earth, skala 1:110m, domena publiczna. Źródło: https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_admin_0_countries.geojson . Dane są osadzone w `globe.js`; strona nie wysyła zapytań do usług mapowych. Eksport i konfiguracje dostępu do publicznych plików uwzględniają globus.
 
 Nazwy punktów i lista lokalizacji w panelu zmieniają się wraz z językiem PL/EN. Presety Alp i Dolomitów mają gotowe tłumaczenia. Dla własnych miejsc wpisz nazwę EN; gdy jej nie ma, używana jest nazwa PL.
+
+
+## Większy podgląd zdjęcia
+
+Kliknięcie widocznego zdjęcia lub Enter/Spacja po wybraniu go klawiszem Tab otwiera okno szczegółów. Pokazuje pionowy kadr 5:7 (centralne przycięcie jak na stronie głównej), a po prawej nazwę kolekcji w jej typografii, rok, rozdzielczość oryginału w pikselach oraz technikę i — dla analogu — zapisany film i ISO. Nieznane dane są oznaczone jako niepodane. Nie wyliczamy rozmiaru wydruku w centymetrach.
+
+Można włączać i wyłączać ramę, dodawać i usuwać passe-partout oraz wybierać jego czarny lub biały kolor. Ustawienia dotyczą wyłącznie podglądu. ESC, krzyżyk lub kliknięcie poza oknem zamyka podgląd. Automatyczna zmiana zdjęć jest w tym czasie wstrzymana.
+
+Generator przygotowuje oprócz miniatur 480×672 podglądy `*-2000.jpg` o dłuższym boku maks. 2000 px, z zachowaniem proporcji, bez powiększania małych plików. `*-info.json` jest lokalną pamięcią wymiarów i nie trafia do eksportu. Publiczny manifest zawiera ścieżkę `detail` oraz `sourceWidth`, `sourceHeight`, `detailWidth`, `detailHeight`. Paczka publikacji zawiera większe podglądy, ale nie oryginały ani ich metadane GPS.
+
+Sekcja zamówień w podglądzie zawiera przykładowy profil `@twoj_profil`, wyraźnie oznaczony jako przykładowy. Przycisk i lokalnie osadzony kod QR prowadzą obecnie do `https://www.instagram.com/`, a nie do konta innej osoby. Po utworzeniu profilu należy zmienić `username`, `url` i `qr` razem w obiekcie `instagramProfile` w `collections.js`, ustawić `example: false` i przygotować nową paczkę publikacji. Kod QR musi być wygenerowany dla tego samego adresu co link. Sekcja ma tłumaczenia PL/EN.
+
+Orientację wybiera się w panelu przy dodawaniu oraz osobno pod każdym zdjęciem. Domyślnie wszystkie zdjęcia mają pionowy kadr 5:7, również dotychczasowe fotografie. Dopiero wybranie „Pozioma” zachowuje pełny kadr oryginału i dopasowuje ramę. Wybór zapisuje się w mapie `orientations` w `photo-types.json` oraz zachowuje po odłączeniu i ponownym dodaniu zdjęcia.
+
+## Filtry kolekcji
+
+Pod nagłówkiem kolekcji dostępne są filtry kolekcji, orientacji i kolorystyki. Łączą się ze sobą w wybranym roku. Zmiana roku resetuje wybór kolekcji; orientacja i kolorystyka pozostają wybrane. Filtry nie zmieniają zdjęć ani lokalizacji globusa (globus nadal pokazuje cały wybrany rok).
+
+Kolorystykę („Kolorowe” / „Czarno-białe”) ustawia się przy przesyłaniu i osobno pod zdjęciem w panelu. Nowe zdjęcia domyślnie mają wybrane „Kolorowe”. Dotychczasowe bez oznaczenia są widoczne tylko przy filtrze „Wszystkie”, dopóki nie ustawisz kolorystyki. Nie stosujemy automatycznego odbarwiania. Metadane `colorModes` w `photo-types.json` zachowują się po przeniesieniu do biblioteki i przywróceniu; publiczny manifest eksportuje `colorMode`.

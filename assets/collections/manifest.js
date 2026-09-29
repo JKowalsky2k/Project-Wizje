@@ -6,49 +6,85 @@ window.ZWIDY_COLLECTIONS = [
     "title": "Alps",
     "photos": [
       {
-        "src": "assets/collections/previews/be2ce2fdd4f88664098c4e47-480.jpg",
+        "src": "assets/collections/previews/42e274da66441dbebebfc87c-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "original": "assets/collections/2026/alps/000318880035.jpg",
+        "detail": "assets/collections/previews/42e274da66441dbebebfc87c-2000.jpg",
+        "sourceHeight": 3024,
+        "sourceWidth": 4560,
+        "detailWidth": 2000,
+        "detailHeight": 1326,
         "width": 480,
         "height": 672
       },
       {
-        "src": "assets/collections/previews/94c0bcf8d39baf584a614f0b-480.jpg",
+        "src": "assets/collections/previews/757876846b9641065f94141d-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "original": "assets/collections/2026/alps/F1040025.JPG",
+        "detail": "assets/collections/previews/757876846b9641065f94141d-2000.jpg",
+        "sourceHeight": 2240,
+        "sourceWidth": 3360,
+        "detailWidth": 2000,
+        "detailHeight": 1333,
         "width": 480,
         "height": 672
       },
       {
-        "src": "assets/collections/previews/e3bfef21b01e574c500951ac-480.jpg",
+        "src": "assets/collections/previews/8206505d7de28724fdc87a89-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "iso": 400,
         "film": "Fujifilm 400",
         "filmBrand": "fujifilm",
         "original": "assets/collections/2026/alps/F1040037.JPG",
-        "width": 480,
-        "height": 672
+        "detail": "assets/collections/previews/8206505d7de28724fdc87a89-2000.jpg",
+        "detailHeight": 2000,
+        "height": 672,
+        "sourceWidth": 2240,
+        "detailWidth": 1333,
+        "sourceHeight": 3360,
+        "width": 480
       },
       {
-        "src": "assets/collections/previews/7403304d026f203f1b27fdf5-480.jpg",
+        "src": "assets/collections/previews/bc249fb654d473197ebdd588-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "original": "assets/collections/2026/alps/F1050011.JPG",
-        "width": 480,
-        "height": 672
+        "detail": "assets/collections/previews/bc249fb654d473197ebdd588-2000.jpg",
+        "sourceHeight": 2240,
+        "sourceWidth": 3360,
+        "detailWidth": 2000,
+        "height": 672,
+        "detailHeight": 1333,
+        "width": 480
       },
       {
-        "src": "assets/collections/previews/2e19495e3e9f64e8e941d933-480.jpg",
+        "src": "assets/collections/previews/8edd450f68565e11baee7412-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "original": "assets/collections/2026/alps/F1050019.JPG",
+        "detail": "assets/collections/previews/8edd450f68565e11baee7412-2000.jpg",
+        "sourceHeight": 2240,
         "width": 480,
-        "height": 672
+        "height": 672,
+        "sourceWidth": 3360,
+        "detailWidth": 2000,
+        "detailHeight": 1333
       },
       {
-        "src": "assets/collections/previews/eb12ae38dca0e07b1d584891-480.jpg",
+        "src": "assets/collections/previews/7f763fb748e681774e09aea4-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "original": "assets/collections/2026/alps/F1050025.JPG",
+        "detail": "assets/collections/previews/7f763fb748e681774e09aea4-2000.jpg",
+        "detailWidth": 2000,
+        "detailHeight": 1333,
+        "sourceHeight": 2240,
         "width": 480,
-        "height": 672
+        "height": 672,
+        "sourceWidth": 3360
       }
     ],
     "locations": [
@@ -72,25 +108,43 @@ window.ZWIDY_COLLECTIONS = [
     "title": "Cars",
     "photos": [
       {
-        "src": "assets/collections/previews/e1c605e386fc1d1abe573bbb-480.jpg",
+        "src": "assets/collections/previews/23281a5d33a5c3389179a797-480.jpg",
+        "orientation": "portrait",
         "medium": "digital",
         "original": "assets/collections/2026/cars/A7400427.jpg",
+        "detail": "assets/collections/previews/23281a5d33a5c3389179a797-2000.jpg",
+        "detailWidth": 2000,
+        "detailHeight": 1333,
+        "sourceHeight": 4119,
         "width": 480,
-        "height": 672
+        "height": 672,
+        "sourceWidth": 6178
       },
       {
-        "src": "assets/collections/previews/dd9829c01e1f07c4d4dd5cad-480.jpg",
+        "src": "assets/collections/previews/c0369666fd941126cd63ca2a-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "original": "assets/collections/2026/cars/F1150012.JPG",
+        "detail": "assets/collections/previews/c0369666fd941126cd63ca2a-2000.jpg",
+        "sourceWidth": 3360,
+        "detailHeight": 1333,
+        "detailWidth": 2000,
+        "sourceHeight": 2240,
         "width": 480,
         "height": 672
       },
       {
-        "src": "assets/collections/previews/872261632f30901a457a8c96-480.jpg",
+        "src": "assets/collections/previews/3f804cfee7adad5a093e4b56-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "original": "assets/collections/2026/cars/F1530032.JPG",
+        "detail": "assets/collections/previews/3f804cfee7adad5a093e4b56-2000.jpg",
+        "detailWidth": 2000,
+        "height": 672,
+        "detailHeight": 1255,
         "width": 480,
-        "height": 672
+        "sourceWidth": 3123,
+        "sourceHeight": 1960
       }
     ],
     "locations": [
@@ -112,25 +166,43 @@ window.ZWIDY_COLLECTIONS = [
     "title": "Dolomites",
     "photos": [
       {
-        "src": "assets/collections/previews/f6484a86111ec3a72954bdd0-480.jpg",
+        "src": "assets/collections/previews/0fd4213f2a74d8afd2522a1f-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "original": "assets/collections/2026/dolomites/F1030009.JPG",
+        "detail": "assets/collections/previews/0fd4213f2a74d8afd2522a1f-2000.jpg",
+        "sourceHeight": 2240,
         "width": 480,
-        "height": 672
+        "height": 672,
+        "sourceWidth": 3360,
+        "detailWidth": 2000,
+        "detailHeight": 1333
       },
       {
-        "src": "assets/collections/previews/57b695ea664727a41b454257-480.jpg",
+        "src": "assets/collections/previews/7a46a706564d85fa32fc0e0d-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "original": "assets/collections/2026/dolomites/F1030010.JPG",
+        "detail": "assets/collections/previews/7a46a706564d85fa32fc0e0d-2000.jpg",
+        "sourceHeight": 2240,
+        "sourceWidth": 3360,
+        "detailWidth": 2000,
+        "detailHeight": 1333,
         "width": 480,
         "height": 672
       },
       {
-        "src": "assets/collections/previews/6e53f9707962bde7261e4f76-480.jpg",
+        "src": "assets/collections/previews/c4d1482d6503516bd77d93f8-480.jpg",
+        "orientation": "portrait",
         "medium": "analog",
         "original": "assets/collections/2026/dolomites/F1030033.JPG",
+        "detail": "assets/collections/previews/c4d1482d6503516bd77d93f8-2000.jpg",
+        "detailWidth": 1333,
+        "detailHeight": 2000,
+        "sourceHeight": 3360,
         "width": 480,
-        "height": 672
+        "height": 672,
+        "sourceWidth": 2240
       }
     ],
     "locations": [
@@ -154,22 +226,40 @@ window.ZWIDY_COLLECTIONS = [
     "title": "Planes",
     "photos": [
       {
-        "src": "assets/collections/previews/0497dd20528124e08d467920-480.jpg",
+        "src": "assets/collections/previews/80b32b281edc3399847834a0-480.jpg",
+        "orientation": "portrait",
         "original": "assets/collections/2026/planes/F1150027.JPG",
+        "detail": "assets/collections/previews/80b32b281edc3399847834a0-2000.jpg",
+        "sourceWidth": 3360,
+        "detailHeight": 1333,
+        "detailWidth": 2000,
+        "sourceHeight": 2240,
         "width": 480,
         "height": 672
       },
       {
-        "src": "assets/collections/previews/230857183222bf922cef7a01-480.jpg",
+        "src": "assets/collections/previews/383c36ba5ec0d546be9ddd8a-480.jpg",
+        "orientation": "portrait",
         "original": "assets/collections/2026/planes/F1150029.JPG",
+        "detail": "assets/collections/previews/383c36ba5ec0d546be9ddd8a-2000.jpg",
+        "detailWidth": 2000,
+        "height": 672,
+        "detailHeight": 1333,
         "width": 480,
-        "height": 672
+        "sourceWidth": 3360,
+        "sourceHeight": 2240
       },
       {
-        "src": "assets/collections/previews/fc782b05ef089d8d15f44005-480.jpg",
+        "src": "assets/collections/previews/7b1d4d10012d166f495a63c5-480.jpg",
+        "orientation": "portrait",
         "original": "assets/collections/2026/planes/F1150032.JPG",
+        "detail": "assets/collections/previews/7b1d4d10012d166f495a63c5-2000.jpg",
+        "sourceHeight": 2240,
         "width": 480,
-        "height": 672
+        "height": 672,
+        "sourceWidth": 3360,
+        "detailWidth": 2000,
+        "detailHeight": 1333
       }
     ],
     "locations": [

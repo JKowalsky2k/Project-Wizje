@@ -63,8 +63,16 @@
         </form>
         <form id="upload-form" class="upload-form">
           <label class="dropzone" id="dropzone" for="photos"><span class="upload-symbol" aria-hidden="true">↑</span><strong data-i18n="dropPhotos">Przeciągnij zdjęcia lub wybierz pliki</strong><span data-i18n="fileHint">JPG, PNG, WebP, AVIF · do 50 MB na zdjęcie</span><input id="photos" type="file" accept=".jpg,.jpeg,.png,.webp,.avif" multiple required></label>
-          <p class="crop-note" data-i18n="cropHint">Przygotowane kadry 5:7 zachowają kompozycję. Inne proporcje zostaną przycięte centralnie.</p>
+          <p class="crop-note" data-i18n="cropHint">Domyślny kadr jest pionowy (5:7). Wybierz orientację przy dodawaniu lub zmień ją osobno pod zdjęciem.</p>
           <div class="upload-actions">
+            <label><span data-i18n="colorMode">Kolorystyka</span><select id="upload-color-mode"><option value="color" data-i18n="color">Kolorowe</option><option value="monochrome" data-i18n="monochrome">Czarno-białe</option></select></label>
+            <fieldset class="orientation-picker">
+              <legend data-i18n="orientation">Orientacja</legend>
+              <div class="orientation-options">
+                <label><input type="radio" name="upload-orientation" value="portrait" data-i18n-aria="portrait" aria-label="Pionowa" checked><span class="orientation-icon orientation-icon--portrait" aria-hidden="true"></span></label>
+                <label><input type="radio" name="upload-orientation" value="landscape" data-i18n-aria="landscape" aria-label="Pozioma"><span class="orientation-icon orientation-icon--landscape" aria-hidden="true"></span></label>
+              </div>
+            </fieldset>
             <fieldset class="upload-technique">
               <legend data-i18n="uploadMedium">Technika dodawanych zdjęć</legend>
               <div class="technique-options">

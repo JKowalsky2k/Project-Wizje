@@ -154,6 +154,8 @@ class EditorStore:
                 src = '/'.join(quote(part) for part in src.split('/'))
                 photos.append({'name': file.name, 'preview': '/' + previews.get(src, src),
                                'medium': config.get('photos', {}).get(key),
+                               'orientation': config.get('orientations', {}).get(key, 'portrait'),
+                               'colorMode': config.get('colorModes', {}).get(key),
                                **config.get('filmDetails', {}).get(key, {})})
             items.append({'id': folder.name, 'title': info.get(folder.name, {}).get('title', KNOWN_TITLES.get(folder.name, folder.name.capitalize())),
                           'customTitle': 'title' in info.get(folder.name, {}), 'location': (info.get(folder.name, {}).get('locations') or [info.get(folder.name, {}).get('location')])[0],
@@ -246,6 +248,36 @@ class EditorStore:
             write_json(self.types_path, before)
             raise
 
+    def set_orientation(self, collection, name, orientation):
+        if orientation not in ('portrait', 'landscape'):
+            raise EditorError('Nieprawidłowa orientacja / Invalid orientation.')
+        if not self.photo(collection, name).is_file():
+            raise EditorError('Nie znaleziono zdjęcia.', 404)
+        before = self.types()
+        config = json.loads(json.dumps(before))
+        config.setdefault('orientations', {})[f'{collection}/{name}'] = orientation
+        write_json(self.types_path, config)
+        try:
+            self.rebuild()
+        except Exception:
+            write_json(self.types_path, before)
+            raise
+
+    def set_color_mode(self, collection, name, color_mode):
+        if color_mode not in ('color', 'monochrome'):
+            raise EditorError('Nieprawidłowa kolorystyka / Invalid color mode.')
+        if not self.photo(collection, name).is_file():
+            raise EditorError('Nie znaleziono zdjęcia.', 404)
+        before = self.types()
+        config = json.loads(json.dumps(before))
+        config.setdefault('colorModes', {})[f'{collection}/{name}'] = color_mode
+        write_json(self.types_path, config)
+        try:
+            self.rebuild()
+        except Exception:
+            write_json(self.types_path, before)
+            raise
+
     def set_film(self, collection, name, film=None, iso=None):
         details = validate_film(film, iso)
         path = self.photo(collection, name)
@@ -266,7 +298,11 @@ class EditorStore:
             write_json(self.types_path, before)
             raise
 
-    def upload(self, collection, name, medium, content, film=None, iso=None):
+    def upload(self, collection, name, medium, content, film=None, iso=None, orientation='portrait', color_mode='color'):
+        if color_mode not in ('color', 'monochrome'):
+            raise EditorError('Nieprawidłowa kolorystyka / Invalid color mode.')
+        if orientation not in ('portrait', 'landscape'):
+            raise EditorError('Nieprawidłowa orientacja / Invalid orientation.')
         medium = valid_medium(medium)
         details = validate_film(film, iso)
         if details and medium != 'analog':
@@ -288,6 +324,8 @@ class EditorStore:
         before = self.types()
         config = json.loads(json.dumps(before))
         config.setdefault('photos', {})[f'{collection}/{name}'] = medium
+        config.setdefault('colorModes', {})[f'{collection}/{name}'] = color_mode
+        config.setdefault('orientations', {})[f'{collection}/{name}'] = orientation
         config.setdefault('filmDetails', {}).pop(f'{collection}/{name}', None)
         if details:
             config['filmDetails'][f'{collection}/{name}'] = details
@@ -345,12 +383,16 @@ class EditorStore:
         selected_film = {k: v for k, v in config.get('filmDetails', {}).items()
                          if (k.startswith(collection + '/') if whole else k == key)}
         config['filmDetails'] = {k: v for k, v in config.get('filmDetails', {}).items() if k not in selected_film}
+        selected_colors = {k: v for k, v in config.get('colorModes', {}).items() if (k.startswith(collection + '/') if whole else k == key)}
+        config['colorModes'] = {k: v for k, v in config.get('colorModes', {}).items() if k not in selected_colors}
+        selected_orientations = {k: v for k, v in config.get('orientations', {}).items() if (k.startswith(collection + '/') if whole else k == key)}
+        config['orientations'] = {k: v for k, v in config.get('orientations', {}).items() if k not in selected_orientations}
         snapshot_paths = [self.types_path, self.info_path, self.root / 'assets/collections/manifest.js']
         snapshots = {path: path.read_bytes() if path.exists() else None for path in snapshot_paths}
         restore = {'year': self.photo_root.name, 'kind': 'collection' if whole else 'photo', 'collection': collection,
                    'files': [{'stored': str(index), 'original': item.relative_to(self.photo_root).as_posix()}
                              for index, item in enumerate(sources)],
-                   'photos': selected_types, 'filmDetails': selected_film, 'collectionInfo': before_info.get(collection), 'status': 'pending'}
+                   'photos': selected_types, 'filmDetails': selected_film, 'orientations': selected_orientations, 'colorModes': selected_colors, 'collectionInfo': before_info.get(collection), 'status': 'pending'}
         write_json(trash / 'restore.json', restore)
         moved = []
         try:
@@ -626,7 +668,7 @@ class LocalAdmin:
                 self.store.library.finish_pending()
                 if url.path == '/admin/api/upload':
                     args = parse_qs(url.query)
-                    self.year_store(args.get('year', [None])[0]).upload(args.get('collection', [''])[0], args.get('name', [''])[0], args.get('medium', [''])[0], content, args.get('film', [None])[0], args.get('iso', [None])[0])
+                    self.year_store(args.get('year', [None])[0]).upload(args.get('collection', [''])[0], args.get('name', [''])[0], args.get('medium', [''])[0], content, args.get('film', [None])[0], args.get('iso', [None])[0], args.get('orientation', ['portrait'])[0], args.get('colorMode', ['color'])[0])
                     result = {'ok': True}
                 elif url.path == '/admin/api/logout':
                     self.sessions.pop(self.session(handler), None)
@@ -661,6 +703,12 @@ class LocalAdmin:
                         result = {'ok': True}
                     elif url.path == '/admin/api/film':
                         self.year_store(data.get('year')).set_film(data.get('collection'), data.get('name'), data.get('film'), data.get('iso'))
+                        result = {'ok': True}
+                    elif url.path == '/admin/api/color-mode':
+                        self.year_store(data.get('year')).set_color_mode(data.get('collection'), data.get('name'), data.get('colorMode'))
+                        result = {'ok': True}
+                    elif url.path == '/admin/api/orientation':
+                        self.year_store(data.get('year')).set_orientation(data.get('collection'), data.get('name'), data.get('orientation'))
                         result = {'ok': True}
                     elif url.path == '/admin/api/medium':
                         self.year_store(data.get('year')).set_medium(data.get('collection'), data.get('name'), data.get('medium'))

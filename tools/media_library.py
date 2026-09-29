@@ -54,6 +54,8 @@ class MediaLibrary:
                     identifier = hashlib.sha256((directory.name + '/' + file.relative_to(directory).as_posix()).encode()).hexdigest()[:32]
                     items.append({'id': identifier, 'name': name.name, 'path': file,
                                   'original': name.as_posix(), 'medium': data.get('photos', {}).get(name.as_posix()),
+                                  'colorMode': data.get('colorModes', {}).get(name.as_posix()),
+                                  'orientation': data.get('orientations', {}).get(name.as_posix(), 'portrait'),
                                   'filmDetails': data.get('filmDetails', {}).get(name.as_posix(), {}),
                                   'preview': '/admin/library-image/' + identifier})
         return items
@@ -79,6 +81,8 @@ class MediaLibrary:
         config = json.loads(json.dumps(before))
         config.setdefault('photos', {})[collection + '/' + item['name']] = item['medium']
         key = collection + '/' + item['name']
+        config.setdefault('colorModes', {})[key] = item['colorMode']
+        config.setdefault('orientations', {})[key] = item['orientation']
         config.setdefault('filmDetails', {}).pop(key, None)
         if item['medium'] == 'analog' and item['filmDetails']:
             config['filmDetails'][key] = item['filmDetails']
@@ -183,6 +187,8 @@ class MediaLibrary:
                                     if (root / key).is_file()}
                 config['filmDetails'] = {key: value for key, value in config.get('filmDetails', {}).items()
                                          if (root / key).is_file()}
+                config['colorModes'] = {key: value for key, value in config.get('colorModes', {}).items() if (root / key).is_file()}
+                config['orientations'] = {key: value for key, value in config.get('orientations', {}).items() if (root / key).is_file()}
                 write_json(types, config)
             self.store.rebuild()
             self.journal.unlink()

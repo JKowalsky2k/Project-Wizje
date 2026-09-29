@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#090909">
     <meta name="description" content="Original photography, posters and fine art prints." data-i18n-content="metaDescription">
     <title data-i18n="pageTitle">Wizje — Photography &amp; Prints</title>
-    <link rel="stylesheet" href="styles.css?v=1e73284cd8">
+    <link rel="stylesheet" href="styles.css?v=67caf8e4ab">
     <script src="assets/collections/manifest.js" defer></script>
-    <script src="script.js?v=363f22e4e5" defer></script>
+    <script src="script.js?v=af6585c485" defer></script>
     <script src="globe.js?v=4a02153e08" defer></script>
-    <script src="collections.js?v=ceaa669639" defer></script>
+    <script src="collections.js?v=d7aa46965e" defer></script>
     <link rel="icon" href="favicon.ico?v=ffec70d8f2" sizes="16x16 32x32 48x48">
   <link rel="icon" href="favicon.svg?v=ffec70d8f2" type="image/svg+xml" sizes="any">
 </head>
@@ -28,7 +28,10 @@
 
     <main id="start">
       <section class="intro" aria-labelledby="page-title">
-        <h1 id="page-title"><span data-i18n="headlineFirst">Images worth</span><br><span data-i18n="headlineSecond">keeping.</span></h1>
+        <h1 id="page-title">
+          <span class="intro__line" data-i18n="headlineFirst">Images worth</span>
+          <span class="intro__line intro__line--accent" data-i18n="headlineSecond">keeping</span>
+        </h1>
       </section>
 
       <section id="photo-globe" class="photo-globe" aria-label="Photo locations" data-i18n-aria-label="globeLabel">
@@ -50,7 +53,17 @@
           <span data-collection-count>01 — 04</span>
         </div>
 
-        <p id="year-empty" class="year-empty" data-i18n="yearUpcoming" hidden>Collections for this year are coming soon.</p>
+        <div class="collection-filters">
+          <label class="collection-filter"><span data-i18n="filterCollection">Collection</span><select id="filter-collection" aria-controls="collection-list"></select></label>
+          <label class="collection-filter"><span data-i18n="filterColorMode">Color</span><select id="filter-color-mode" aria-controls="collection-list"><option value="all" data-i18n="filterAll">All</option><option value="color" data-i18n="filterColor">Color</option><option value="monochrome" data-i18n="filterMonochrome">Black &amp; white</option></select></label>
+          <fieldset class="orientation-filter"><legend data-i18n="filterOrientation">Orientation</legend><div>
+            <label><input type="radio" name="filter-orientation" value="all" checked><span data-i18n="filterAll">All</span></label>
+            <label><input type="radio" name="filter-orientation" value="portrait" data-i18n-aria-label="filterPortrait" aria-label="Portrait"><span class="filter-frame filter-frame--portrait" aria-hidden="true"></span></label>
+            <label><input type="radio" name="filter-orientation" value="landscape" data-i18n-aria-label="filterLandscape" aria-label="Landscape"><span class="filter-frame filter-frame--landscape" aria-hidden="true"></span></label>
+          </div></fieldset>
+        </div>
+        <p id="filter-status" class="sr-only" role="status" aria-live="polite"></p>
+        <p id="year-empty" class="year-empty" data-i18n="filterEmpty" hidden>No photos match these filters.</p>
         <div id="collection-list"></div>
         <noscript><p>Włącz JavaScript, aby zobaczyć kolekcje. Enable JavaScript to view the collections.</p></noscript>
       </section>

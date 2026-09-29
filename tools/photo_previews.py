@@ -1,4 +1,4 @@
-"""Prepare cached 2× photo previews using the macOS image renderer."""
+"""Prepare gallery previews (full landscape frames) and large photo previews."""
 import hashlib
 import json
 from pathlib import Path
@@ -21,13 +21,15 @@ def prepare_previews(collections, root):
                 continue
             source = root / unquote(photo['src'])
             stat = source.stat()
-            identity = f'{photo["src"]}:{stat.st_size}:{stat.st_mtime_ns}:{recipe}'
+            identity = f'{photo["src"]}:{stat.st_size}:{stat.st_mtime_ns}:{recipe}:{photo.get("orientation", "portrait")}'
             fingerprint = hashlib.sha256(identity.encode()).hexdigest()[:24]
             filename = f'{fingerprint}-480.jpg'
             output = output_dir / filename
-            if not output.is_file() or output.stat().st_size == 0:
-                jobs.append({'source': str(source), 'output': str(output)})
-            updates.append((photo, f'assets/collections/previews/{quote(filename)}'))
+            detail = output_dir / f'{fingerprint}-2000.jpg'
+            metadata = output_dir / f'{fingerprint}-info.json'
+            if any(not path.is_file() or path.stat().st_size == 0 for path in (output, detail, metadata)):
+                jobs.append({'source': str(source), 'output': str(output), 'detail': str(detail), 'metadata': str(metadata), 'orientation': photo.get('orientation', 'portrait')})
+            updates.append((photo, f'assets/collections/previews/{quote(filename)}', f'assets/collections/previews/{detail.name}', metadata))
     if jobs:
         swift = shutil.which('swift')
         if not swift:
@@ -35,9 +37,9 @@ def prepare_previews(collections, root):
         cache = Path(tempfile.gettempdir()) / 'wizje-swift-cache'
         subprocess.run([swift, '-module-cache-path', str(cache), str(renderer)],
                        input=json.dumps(jobs), text=True, check=True)
-    for photo, preview in updates:
+    for photo, preview, detail, metadata in updates:
         photo['original'] = photo['src']
         photo['src'] = preview
-        photo['width'] = 480
-        photo['height'] = 672
+        photo['detail'] = detail
+        photo.update(json.loads(metadata.read_text()))
     return collections

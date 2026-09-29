@@ -56,6 +56,8 @@ def build_manifest(photo_root=PHOTO_ROOT, year=None):
     overrides = read_photo_types(photo_root)
     types_path = photo_root / 'photo-types.json'
     details = json.loads(types_path.read_text()).get('filmDetails', {}) if types_path.exists() else {}
+    color_modes = json.loads(types_path.read_text()).get('colorModes', {}) if types_path.exists() else {}
+    orientations = json.loads(types_path.read_text()).get('orientations', {}) if types_path.exists() else {}
     info_path = photo_root / "collection-info.json"
     info = json.loads(info_path.read_text(encoding="utf-8")) if info_path.exists() else {}
     known = dict(COLLECTIONS)
@@ -73,7 +75,9 @@ def build_manifest(photo_root=PHOTO_ROOT, year=None):
         prefix = f'assets/collections/{year}/{quote(name)}'
         photos = []
         for p in files:
-            photo = {'src': f'{prefix}/{quote(p.name)}'}
+            photo = {'src': f'{prefix}/{quote(p.name)}', 'orientation': orientations.get(f'{name}/{p.name}', 'portrait')}
+            if color_modes.get(f'{name}/{p.name}') in ('color', 'monochrome'):
+                photo['colorMode'] = color_modes[f'{name}/{p.name}']
             medium = overrides.get(f'{name}/{p.name}')
             if medium is not None:
                 photo['medium'] = medium
@@ -119,7 +123,7 @@ class Handler(SimpleHTTPRequestHandler):
             r'/(?:index\.html|styles\.css|script\.js|collections\.js|globe\.js|favicon\.svg|favicon\.ico|font-preview\.html)?'
             r'|/assets/logo/logo\.css'
             r'|/assets/fonts/[a-zA-Z0-9_-]+\.(?:woff2?|ttf|otf|txt)'
-            r'|/assets/collections/(?:manifest\.js|previews/[a-f0-9]+-480\.jpg)', path)
+            r'|/assets/collections/(?:manifest\.js|previews/[a-f0-9]+-(?:480|2000)\.jpg)', path)
         if not public:
             self.send_error(404)
             return

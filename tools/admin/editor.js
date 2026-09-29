@@ -24,7 +24,9 @@
       namePlaceholder: 'np. Wieczory nad morzem', createCollection: 'Utwórz kolekcję', welcomeTitle: 'Twoje zdjęcia, Twoje kolekcje.',
       welcomeCopy: 'Utwórz pierwszą kolekcję, aby dodać zdjęcia.', editingCollection: 'EDYCJA KOLEKCJI',
       dropPhotos: 'Przeciągnij zdjęcia lub wybierz pliki', fileHint: 'JPG, PNG, WebP, AVIF · do 50 MB na zdjęcie',
-      cropHint: 'Przygotowane kadry 5:7 zachowają kompozycję. Inne proporcje zostaną przycięte centralnie.',
+      colorMode: 'Kolorystyka', color: 'Kolorowe', monochrome: 'Czarno-białe',
+      orientation: 'Orientacja', portrait: 'Pionowa', landscape: 'Pozioma',
+      cropHint: 'Domyślny kadr jest pionowy (5:7). Wybierz orientację przy dodawaniu lub zmień ją osobno pod zdjęciem.',
       uploadMedium: 'Technika dodawanych zdjęć', chooseMedium: 'Wybierz technikę', uploadPhotos: 'Dodaj zdjęcia', photos: 'Zdjęcia',
       autoSave: 'Zmiany techniki zapisują się automatycznie.', emptyCollection: 'Ta kolekcja czeka na pierwsze zdjęcie. Po dodaniu pojawi się na stronie.',
       unassigned: 'Nieoznaczone', needsMedium: 'Technika do ustawienia', medium: 'Technika', photoMedium: 'Technika zdjęcia {name}',
@@ -53,7 +55,9 @@
       namePlaceholder: 'e.g. Evenings by the sea', createCollection: 'Create collection', welcomeTitle: 'Your photos, your collections.',
       welcomeCopy: 'Create your first collection to add photos.', editingCollection: 'EDIT COLLECTION',
       dropPhotos: 'Drop photos here or choose files', fileHint: 'JPG, PNG, WebP, AVIF · up to 50 MB per photo',
-      cropHint: 'Photos cropped to 5:7 keep their composition. Other aspect ratios are cropped centrally.',
+      colorMode: 'Color', color: 'Color', monochrome: 'Black & white',
+      orientation: 'Orientation', portrait: 'Portrait', landscape: 'Landscape',
+      cropHint: 'The default crop is portrait (5:7). Choose orientation when uploading or change it below each photo.',
       uploadMedium: 'Technique for these photos', chooseMedium: 'Choose a technique', uploadPhotos: 'Add photos', photos: 'Photos',
       autoSave: 'Technique changes are saved automatically.', emptyCollection: 'This collection is waiting for its first photo. It will then appear on the website.',
       unassigned: 'Unassigned', needsMedium: 'Choose a technique', medium: 'Technique', photoMedium: 'Technique for {name}',
@@ -401,6 +405,37 @@
       const actions = document.createElement('div'); actions.className = 'photo-actions';
       actions.append(remove, permanentButton(photo, { ...targetCollection(collection), name: photo.name }));
       card.append(image, name, badgeRow, label, select);
+      const orientationGroup = document.createElement('fieldset'); orientationGroup.className = 'orientation-picker';
+      const orientationLegend = document.createElement('legend'); orientationLegend.textContent = t('orientation');
+      const orientationOptions = document.createElement('div'); orientationOptions.className = 'orientation-options';
+      for (const value of ['portrait', 'landscape']) {
+        const optionLabel = document.createElement('label'); optionLabel.title = t(value);
+        const input = document.createElement('input'); input.type = 'radio'; input.name = `photo-orientation-${index}`; input.value = value;
+        input.checked = value === (photo.orientation || 'portrait'); input.setAttribute('aria-label', t(value));
+        const icon = document.createElement('span'); icon.className = `orientation-icon orientation-icon--${value}`; icon.setAttribute('aria-hidden', 'true');
+        input.addEventListener('change', () => mutate(async () => {
+          await request('orientation', { ...targetCollection(collection), name: photo.name, orientation: value });
+          invalidateExport(); await reload(); status('saved', { name: photo.name });
+        }));
+        optionLabel.append(input, icon); orientationOptions.append(optionLabel);
+      }
+      orientationGroup.append(orientationLegend, orientationOptions); card.append(orientationGroup);
+      const colorLabel = document.createElement('label'); colorLabel.textContent = t('colorMode');
+      const colorSelect = document.createElement('select'); colorSelect.setAttribute('aria-label', t('colorMode') + ': ' + photo.name);
+      if (!photo.colorMode) {
+        const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = t('unassigned'); placeholder.disabled = true; colorSelect.append(placeholder);
+      }
+      for (const value of ['color', 'monochrome']) {
+        const option = document.createElement('option'); option.value = value; option.textContent = t(value); colorSelect.append(option);
+      }
+      colorSelect.value = photo.colorMode || '';
+      colorSelect.addEventListener('change', () => mutate(async () => {
+        await request('color-mode', { ...targetCollection(collection), name: photo.name, colorMode: colorSelect.value });
+        invalidateExport(); await reload(); status('saved', { name: photo.name });
+      }));
+      colorLabel.append(colorSelect); card.append(colorLabel);
+
+
       if (photo.medium === 'analog') card.append(filmControls(photo, next => mutate(async () => {
         await request('film', { ...targetCollection(collection), name: photo.name, ...next });
         invalidateExport(); await reload(); status('filmSaved');
@@ -453,7 +488,7 @@
         status('uploading', { index: index + 1, total: files.length, name: file.name });
         try {
           if (file.size > 50 * 1024 * 1024) throw new Error(t('tooLarge'));
-          const params = new URLSearchParams({ ...targetCollection(selected()), name: file.name, medium });
+          const params = new URLSearchParams({ ...targetCollection(selected()), name: file.name, medium, orientation: $('input[name="upload-orientation"]:checked').value, colorMode: $('#upload-color-mode').value });
           if (medium === 'analog') {
             if (uploadDetails.film) params.set('film', uploadDetails.film);
             if (uploadDetails.iso) params.set('iso', uploadDetails.iso);
