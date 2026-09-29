@@ -32,20 +32,20 @@ window.ZWIDY_COLLECTIONS = [
         "height": 672
       },
       {
-        "src": "assets/collections/previews/8206505d7de28724fdc87a89-480.jpg",
-        "orientation": "portrait",
+        "src": "assets/collections/previews/18cac86734e700d380e9c998-480.jpg",
+        "orientation": "landscape",
         "medium": "analog",
         "iso": 400,
         "film": "Fujifilm 400",
         "filmBrand": "fujifilm",
         "original": "assets/collections/2026/alps/F1040037.JPG",
-        "detail": "assets/collections/previews/8206505d7de28724fdc87a89-2000.jpg",
-        "detailHeight": 2000,
-        "height": 672,
-        "sourceWidth": 2240,
-        "detailWidth": 1333,
+        "detail": "assets/collections/previews/18cac86734e700d380e9c998-2000.jpg",
         "sourceHeight": 3360,
-        "width": 480
+        "detailWidth": 1333,
+        "detailHeight": 2000,
+        "sourceWidth": 2240,
+        "width": 480,
+        "height": 343
       },
       {
         "src": "assets/collections/previews/bc249fb654d473197ebdd588-480.jpg",

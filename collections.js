@@ -202,7 +202,7 @@
     find('.photo-detail__image').addEventListener('load', () => { find('.photo-detail__load-error').hidden = true; });
   }
   function openDetail(card) {
-    if (card.collection.busy || card.element.getAttribute('aria-hidden') === 'true') return;
+    if (card.slot !== 0 || card.collection.busy || card.element.getAttribute('aria-hidden') === 'true') return;
     ensureDetailDialog();
     detailPhoto = card.photo; detailCollection = card.collection; detailOpener = card.element;
     detailDialog.dataset.landscape = String(detailPhoto.orientation === 'landscape');
@@ -226,7 +226,9 @@
       this.element.className = 'drum-card';
       this.element.setAttribute('role', 'button');
       this.element.setAttribute('aria-haspopup', 'dialog');
-      this.element.addEventListener('click', () => openDetail(this));
+      this.element.addEventListener('click', event => {
+        if (this.element.querySelector('.drum-card__frame').contains(event.target)) openDetail(this);
+      });
       this.element.addEventListener('keydown', event => {
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openDetail(this); }
       });
@@ -314,7 +316,8 @@
       const state = pose(slot, this.collection.photos.length);
       Object.assign(this.element.style, state);
       this.element.setAttribute('aria-hidden', String(state.opacity === 0));
-      this.element.tabIndex = state.opacity === 0 ? -1 : 0;
+      this.element.tabIndex = slot === 0 ? 0 : -1;
+      this.element.setAttribute('role', slot === 0 ? 'button' : 'group');
       this.element.dataset.center = String(slot === 0);
     }
 

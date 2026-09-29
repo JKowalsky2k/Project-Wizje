@@ -18,5 +18,8 @@
       "film": "fujifilm-400",
       "iso": 400
     }
+  },
+  "orientations": {
+    "alps/F1040037.JPG": "landscape"
   }
 }
