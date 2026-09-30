@@ -1,10 +1,12 @@
 const translations = {
   en: {
-    posterPriceLabel: "Poster price", posterPrice: "PLN 59.99", orderTitle: "Orders", instagramOrders: "For now, we accept orders through Instagram.", orderOnInstagram: "Open Instagram", instagramQr: "QR code linking to Instagram", exampleProfile: "Example profile",
+    posterPriceLabel: "Poster price", posterPrice: "PLN 59.99", posterSize: "Poster size", sizeA3: "(29.7 × 42 cm)", sizeA4: "(21 × 29.7 cm)", sizeA5: "(14.8 × 21 cm)", orderTitle: "Orders", orderSummary: "Ready-to-send order", copyOrder: "Copy order", orderCopied: "Copied", orderMessageTitle: "Hello,\nI would like to order a poster:", orderCollection: "Collection", orderPhoto: "Photograph", orderReference: "Photo reference", orderFormat: "Size", orderMargins: "Margins", orderNoMargins: "None", orderTechnique: "Technique", orderFilm: "Film", orderPrice: "Price", orderSendInstruction: "Please confirm availability, shipping cost and payment details.", instagramOrders: "Copy the prepared order and send it to us on Instagram.", orderOnInstagram: "Open Instagram",
     pageTitle: "Wizje — Photography & Prints",
     metaDescription: "Original photography, posters and fine art prints.",
     homeLabel: "Wizje — Home",
     languageLabel: "Choose language",
+    useLightTheme: "Use light theme",
+    useDarkTheme: "Use dark theme",
     headerNote: "Photography · posters · prints",
     eyebrow: "Original images for everyday life",
     headlineFirst: "Images worth",
@@ -43,12 +45,14 @@ const translations = {
 
   },
   pl: {
-    posterPriceLabel: "Cena plakatu", posterPrice: "59,99 zł", orderTitle: "Zamówienia", instagramOrders: "Na razie zamówienia przyjmujemy przez Instagram.", orderOnInstagram: "Otwórz Instagram", instagramQr: "Kod QR prowadzący do Instagrama", exampleProfile: "Profil przykładowy",
+    posterPriceLabel: "Cena plakatu", posterPrice: "59,99 zł", posterSize: "Rozmiar plakatu", sizeA3: "(29,7 × 42 cm)", sizeA4: "(21 × 29,7 cm)", sizeA5: "(14,8 × 21 cm)", orderTitle: "Zamówienia", orderSummary: "Gotowe zamówienie", copyOrder: "Kopiuj zamówienie", orderCopied: "Skopiowano", orderMessageTitle: "Dzień dobry, chcę zamówić plakat:", orderCollection: "Kolekcja", orderPhoto: "Zdjęcie", orderReference: "Kod zdjęcia", orderFormat: "Format", orderMargins: "Marginesy", orderNoMargins: "Brak", orderTechnique: "Technika", orderFilm: "Film", orderPrice: "Cena", orderSendInstruction: "Proszę o potwierdzenie dostępności, kosztu wysyłki i danych do płatności.", instagramOrders: "Skopiuj przygotowane zamówienie i wyślij je do nas na Instagramie.", orderOnInstagram: "Otwórz Instagram",
     closePreview: "Zamknij podgląd", detailCollection: "Kolekcja", pixelDimensions: "Wymiary zdjęcia", photoTechnique: "Technika", filmAndIso: "Film / ISO", previewAppearance: "Wygląd podglądu", ornateFrame: "Ozdobna rama", frameNotice: "Rama służy wyłącznie do wizualizacji i nie jest przedmiotem sprzedaży.", photoMargins: "Marginesy", marginColor: "Kolor marginesów", blackMat: "Czarne", whiteMat: "Białe", notSpecified: "Nie podano",
     pageTitle: "Wizje — fotografia i odbitki",
     metaDescription: "Autorska fotografia, plakaty i odbitki.",
     homeLabel: "Wizje — Strona główna",
     languageLabel: "Wybierz język",
+    useLightTheme: "Włącz jasny motyw",
+    useDarkTheme: "Włącz ciemny motyw",
     headerNote: "Fotografia · plakaty · odbitki",
     eyebrow: "Autorskie obrazy na co dzień",
     headlineFirst: "Kadry, które",
@@ -88,6 +92,26 @@ const translations = {
 };
 
 const languageButtons = document.querySelectorAll("[data-language]");
+const themeToggle = document.querySelector("#theme-toggle");
+
+function updateThemeCopy() {
+  if (!themeToggle) return;
+  const light = document.documentElement.dataset.theme === "light";
+  const copy = translations[document.documentElement.lang] || translations.en;
+  const label = copy[light ? "useDarkTheme" : "useLightTheme"];
+  themeToggle.setAttribute("aria-label", label);
+  themeToggle.title = label;
+  themeToggle.setAttribute("aria-pressed", String(light));
+}
+
+function setTheme(theme, persist = true) {
+  document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  if (themeColor) themeColor.content = theme === "light" ? "#e9e4db" : "#090909";
+  if (persist) try { localStorage.setItem("wizje-theme", document.documentElement.dataset.theme); } catch {}
+  updateThemeCopy();
+  document.dispatchEvent(new CustomEvent("themechange", { detail: document.documentElement.dataset.theme }));
+}
 
 function setLanguage(language) {
   const copy = translations[language];
@@ -119,9 +143,15 @@ function setLanguage(language) {
   languageButtons.forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.language === language));
   });
+  updateThemeCopy();
   document.dispatchEvent(new CustomEvent("languagechange", { detail: language }));
 }
 
 languageButtons.forEach((button) => {
   button.addEventListener("click", () => setLanguage(button.dataset.language));
 });
+
+themeToggle?.addEventListener("click", () => {
+  setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+});
+setTheme(document.documentElement.dataset.theme, false);

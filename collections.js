@@ -81,13 +81,57 @@
     <circle cx="8" cy="8" r="4" fill="#edcf87" stroke="#876027" stroke-width="1.5"/>
   </svg>`;
 
-  // Set together with its locally generated QR code.
-  const instagramProfile = {"username": "twoj_profil", "url": "https://www.instagram.com/", "example": true, "qr": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 35 35\" aria-hidden=\"true\" shape-rendering=\"crispEdges\"><rect width=\"35\" height=\"35\" fill=\"#fff\"/><path d=\"M5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM21 5h1v1h-1zM23 5h1v1h-1zM24 5h1v1h-1zM25 5h1v1h-1zM26 5h1v1h-1zM27 5h1v1h-1zM28 5h1v1h-1zM29 5h1v1h-1zM5 6h1v1h-1zM11 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM17 6h1v1h-1zM18 6h1v1h-1zM19 6h1v1h-1zM20 6h1v1h-1zM21 6h1v1h-1zM23 6h1v1h-1zM29 6h1v1h-1zM5 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM11 7h1v1h-1zM13 7h1v1h-1zM16 7h1v1h-1zM19 7h1v1h-1zM20 7h1v1h-1zM23 7h1v1h-1zM25 7h1v1h-1zM26 7h1v1h-1zM27 7h1v1h-1zM29 7h1v1h-1zM5 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM11 8h1v1h-1zM13 8h1v1h-1zM15 8h1v1h-1zM16 8h1v1h-1zM18 8h1v1h-1zM19 8h1v1h-1zM20 8h1v1h-1zM23 8h1v1h-1zM25 8h1v1h-1zM26 8h1v1h-1zM27 8h1v1h-1zM29 8h1v1h-1zM5 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM11 9h1v1h-1zM13 9h1v1h-1zM15 9h1v1h-1zM16 9h1v1h-1zM19 9h1v1h-1zM21 9h1v1h-1zM23 9h1v1h-1zM25 9h1v1h-1zM26 9h1v1h-1zM27 9h1v1h-1zM29 9h1v1h-1zM5 10h1v1h-1zM11 10h1v1h-1zM13 10h1v1h-1zM15 10h1v1h-1zM16 10h1v1h-1zM17 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM23 10h1v1h-1zM29 10h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM11 11h1v1h-1zM13 11h1v1h-1zM15 11h1v1h-1zM17 11h1v1h-1zM19 11h1v1h-1zM21 11h1v1h-1zM23 11h1v1h-1zM24 11h1v1h-1zM25 11h1v1h-1zM26 11h1v1h-1zM27 11h1v1h-1zM28 11h1v1h-1zM29 11h1v1h-1zM13 12h1v1h-1zM15 12h1v1h-1zM16 12h1v1h-1zM17 12h1v1h-1zM20 12h1v1h-1zM21 12h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM8 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM14 13h1v1h-1zM16 13h1v1h-1zM17 13h1v1h-1zM18 13h1v1h-1zM19 13h1v1h-1zM20 13h1v1h-1zM21 13h1v1h-1zM23 13h1v1h-1zM24 13h1v1h-1zM25 13h1v1h-1zM26 13h1v1h-1zM27 13h1v1h-1zM9 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM16 14h1v1h-1zM17 14h1v1h-1zM21 14h1v1h-1zM22 14h1v1h-1zM24 14h1v1h-1zM28 14h1v1h-1zM5 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM17 15h1v1h-1zM20 15h1v1h-1zM21 15h1v1h-1zM22 15h1v1h-1zM23 15h1v1h-1zM24 15h1v1h-1zM25 15h1v1h-1zM26 15h1v1h-1zM28 15h1v1h-1zM29 15h1v1h-1zM7 16h1v1h-1zM8 16h1v1h-1zM9 16h1v1h-1zM10 16h1v1h-1zM14 16h1v1h-1zM17 16h1v1h-1zM19 16h1v1h-1zM22 16h1v1h-1zM24 16h1v1h-1zM29 16h1v1h-1zM7 17h1v1h-1zM8 17h1v1h-1zM9 17h1v1h-1zM11 17h1v1h-1zM12 17h1v1h-1zM13 17h1v1h-1zM14 17h1v1h-1zM17 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM20 17h1v1h-1zM21 17h1v1h-1zM22 17h1v1h-1zM23 17h1v1h-1zM24 17h1v1h-1zM25 17h1v1h-1zM27 17h1v1h-1zM28 17h1v1h-1zM29 17h1v1h-1zM5 18h1v1h-1zM7 18h1v1h-1zM8 18h1v1h-1zM9 18h1v1h-1zM10 18h1v1h-1zM12 18h1v1h-1zM13 18h1v1h-1zM14 18h1v1h-1zM17 18h1v1h-1zM18 18h1v1h-1zM21 18h1v1h-1zM22 18h1v1h-1zM24 18h1v1h-1zM26 18h1v1h-1zM28 18h1v1h-1zM5 19h1v1h-1zM7 19h1v1h-1zM8 19h1v1h-1zM11 19h1v1h-1zM12 19h1v1h-1zM15 19h1v1h-1zM19 19h1v1h-1zM20 19h1v1h-1zM22 19h1v1h-1zM23 19h1v1h-1zM24 19h1v1h-1zM25 19h1v1h-1zM26 19h1v1h-1zM28 19h1v1h-1zM29 19h1v1h-1zM5 20h1v1h-1zM7 20h1v1h-1zM8 20h1v1h-1zM9 20h1v1h-1zM10 20h1v1h-1zM12 20h1v1h-1zM13 20h1v1h-1zM14 20h1v1h-1zM15 20h1v1h-1zM16 20h1v1h-1zM19 20h1v1h-1zM21 20h1v1h-1zM22 20h1v1h-1zM24 20h1v1h-1zM25 20h1v1h-1zM29 20h1v1h-1zM5 21h1v1h-1zM9 21h1v1h-1zM10 21h1v1h-1zM11 21h1v1h-1zM16 21h1v1h-1zM17 21h1v1h-1zM18 21h1v1h-1zM21 21h1v1h-1zM22 21h1v1h-1zM23 21h1v1h-1zM24 21h1v1h-1zM25 21h1v1h-1zM27 21h1v1h-1zM13 22h1v1h-1zM14 22h1v1h-1zM16 22h1v1h-1zM17 22h1v1h-1zM18 22h1v1h-1zM20 22h1v1h-1zM21 22h1v1h-1zM25 22h1v1h-1zM26 22h1v1h-1zM5 23h1v1h-1zM6 23h1v1h-1zM7 23h1v1h-1zM8 23h1v1h-1zM9 23h1v1h-1zM10 23h1v1h-1zM11 23h1v1h-1zM15 23h1v1h-1zM18 23h1v1h-1zM19 23h1v1h-1zM21 23h1v1h-1zM23 23h1v1h-1zM25 23h1v1h-1zM27 23h1v1h-1zM28 23h1v1h-1zM29 23h1v1h-1zM5 24h1v1h-1zM11 24h1v1h-1zM13 24h1v1h-1zM15 24h1v1h-1zM21 24h1v1h-1zM25 24h1v1h-1zM26 24h1v1h-1zM5 25h1v1h-1zM7 25h1v1h-1zM8 25h1v1h-1zM9 25h1v1h-1zM11 25h1v1h-1zM13 25h1v1h-1zM16 25h1v1h-1zM17 25h1v1h-1zM18 25h1v1h-1zM19 25h1v1h-1zM20 25h1v1h-1zM21 25h1v1h-1zM22 25h1v1h-1zM23 25h1v1h-1zM24 25h1v1h-1zM25 25h1v1h-1zM27 25h1v1h-1zM5 26h1v1h-1zM7 26h1v1h-1zM8 26h1v1h-1zM9 26h1v1h-1zM11 26h1v1h-1zM13 26h1v1h-1zM14 26h1v1h-1zM16 26h1v1h-1zM23 26h1v1h-1zM25 26h1v1h-1zM26 26h1v1h-1zM27 26h1v1h-1zM28 26h1v1h-1zM29 26h1v1h-1zM5 27h1v1h-1zM7 27h1v1h-1zM8 27h1v1h-1zM9 27h1v1h-1zM11 27h1v1h-1zM13 27h1v1h-1zM15 27h1v1h-1zM18 27h1v1h-1zM20 27h1v1h-1zM21 27h1v1h-1zM26 27h1v1h-1zM27 27h1v1h-1zM29 27h1v1h-1zM5 28h1v1h-1zM11 28h1v1h-1zM14 28h1v1h-1zM16 28h1v1h-1zM19 28h1v1h-1zM20 28h1v1h-1zM21 28h1v1h-1zM22 28h1v1h-1zM24 28h1v1h-1zM25 28h1v1h-1zM26 28h1v1h-1zM29 28h1v1h-1zM5 29h1v1h-1zM6 29h1v1h-1zM7 29h1v1h-1zM8 29h1v1h-1zM9 29h1v1h-1zM10 29h1v1h-1zM11 29h1v1h-1zM13 29h1v1h-1zM14 29h1v1h-1zM15 29h1v1h-1zM16 29h1v1h-1zM17 29h1v1h-1zM18 29h1v1h-1zM19 29h1v1h-1zM24 29h1v1h-1zM25 29h1v1h-1zM26 29h1v1h-1zM27 29h1v1h-1zM28 29h1v1h-1zM29 29h1v1h-1z\" fill=\"#000\"/></svg>"};
+  // Public order contact used by the detail view.
+  const instagramProfile = {"username":"wizje.poland","url":"https://www.instagram.com/wizje.poland/"};
   let detailDialog = null;
   let detailPhoto = null;
   let detailCollection = null;
   let detailOpener = null;
   let detailOpen = false;
+  let orderCopyTimer = null;
+
+  function photoReference(photo, index) {
+    const fingerprint = String(photo.src || '').match(/\/([a-f0-9]{10,})-(?:480|2000)\.jpg/i)?.[1];
+    return fingerprint ? fingerprint.slice(0, 10).toUpperCase() : `${detailCollection.id}-${index + 1}`.toUpperCase();
+  }
+
+  function orderSummaryText() {
+    if (!detailDialog || !detailPhoto || !detailCollection) return '';
+    const c = copy();
+    const index = detailCollection.photos.indexOf(detailPhoto);
+    const title = c[`${detailCollection.id}Title`] || detailCollection.title;
+    const size = detailDialog.querySelector('input[name="poster-size"]:checked')?.value || 'A4';
+    const margins = detailDialog.querySelector('#detail-margins').checked;
+    const matColor = detailDialog.dataset.matColor === 'white' ? c.whiteMat : c.blackMat;
+    const lines = [
+      c.orderMessageTitle,
+      `${c.orderCollection}: ${title} (${detailCollection.year})`,
+      `${c.orderPhoto}: ${String(index + 1).padStart(2, '0')} / ${String(detailCollection.photos.length).padStart(2, '0')}`,
+      `${c.orderReference}: ${photoReference(detailPhoto, index)}`,
+      `${c.orderFormat}: ${size} ${c[`size${size}`]}`,
+      `${c.orderMargins}: ${margins ? matColor : c.orderNoMargins}`,
+    ];
+    lines.push('', c.orderSendInstruction);
+    return lines.join('\n');
+  }
+
+  function updateOrderSummary() {
+    if (!detailDialog || !detailPhoto) return;
+    const field = detailDialog.querySelector('.photo-detail__order-summary');
+    field.value = orderSummaryText();
+    field.style.height = 'auto';
+    if (field.scrollHeight) field.style.height = `${field.scrollHeight}px`;
+    detailDialog.querySelector('.photo-detail__copy-order').textContent = copy().copyOrder;
+  }
+
+  function syncDetailMatToTheme() {
+    if (!detailDialog) return;
+    const color = document.documentElement.dataset.theme === 'light' ? 'white' : 'black';
+    detailDialog.dataset.matColor = color;
+    const input = detailDialog.querySelector(`input[name="detail-color"][value="${color}"]`);
+    if (input) input.checked = true;
+    updateOrderSummary();
+  }
 
   function collectionHeading(heading, title, identity = title) {
     heading.replaceChildren();
@@ -124,8 +168,6 @@
     if (instagramProfile) {
       order.querySelectorAll('a').forEach(link => { link.href = instagramProfile.url; });
       find('.photo-detail__instagram-handle').textContent = '@' + instagramProfile.username;
-      find('.photo-detail__qr').setAttribute('aria-label', copy().instagramQr);
-      find('.photo-detail__example').hidden = !instagramProfile.example;
     }
     const title = copy()[`${detailCollection.id}Title`] || detailCollection.title;
     collectionHeading(find('#photo-detail-title'), title, detailCollection.id);
@@ -146,6 +188,7 @@
     film.className = 'photo-medium';
     if (['kodak', 'fujifilm', 'ilford'].includes(detailPhoto.filmBrand)) film.classList.add(`film-brand--${detailPhoto.filmBrand}`);
     find('[data-detail-iso]').textContent = detailPhoto.iso ? `ISO ${detailPhoto.iso}` : copy().notSpecified;
+    updateOrderSummary();
   }
   function ensureDetailDialog() {
     if (detailDialog) return;
@@ -184,15 +227,23 @@
           </fieldset>
           <section class="photo-detail__order" aria-labelledby="photo-order-title" hidden>
             <h3 id="photo-order-title" data-detail-copy="orderTitle"></h3>
+            <fieldset class="photo-detail__sizes">
+              <legend data-detail-copy="posterSize"></legend>
+              <label><input type="radio" name="poster-size" value="A3"><span><strong>A3</strong><small data-detail-copy="sizeA3"></small></span></label>
+              <label><input type="radio" name="poster-size" value="A4" checked><span><strong>A4</strong><small data-detail-copy="sizeA4"></small></span></label>
+              <label><input type="radio" name="poster-size" value="A5"><span><strong>A5</strong><small data-detail-copy="sizeA5"></small></span></label>
+            </fieldset>
             <p class="photo-detail__price"><span data-detail-copy="posterPriceLabel"></span><strong data-detail-copy="posterPrice"></strong></p>
+            <label class="photo-detail__summary-label"><span data-detail-copy="orderSummary"></span>
+              <textarea class="photo-detail__order-summary" rows="1" wrap="soft" readonly></textarea>
+            </label>
+            <button class="photo-detail__copy-order" type="button" data-detail-copy="copyOrder"></button>
             <p class="photo-detail__order-note" data-detail-copy="instagramOrders"></p>
             <div class="photo-detail__order-contact">
               <div class="photo-detail__order-links">
-                <span class="photo-detail__example" data-detail-copy="exampleProfile"></span>
                 <a class="photo-detail__instagram-handle" target="_blank" rel="noopener noreferrer"></a>
                 <a class="photo-detail__order-button" target="_blank" rel="noopener noreferrer"><span data-detail-copy="orderOnInstagram"></span><span aria-hidden="true">↗</span></a>
               </div>
-              <a class="photo-detail__qr" target="_blank" rel="noopener noreferrer">${instagramProfile?.qr || ''}</a>
             </div>
           </section>
         </aside>
@@ -215,13 +266,29 @@
     find('#detail-margins').addEventListener('change', event => {
       detailDialog.dataset.margins = String(event.target.checked);
       find('.photo-detail__colors').disabled = !event.target.checked;
+      updateOrderSummary();
     });
     detailDialog.querySelectorAll('input[name="detail-color"]').forEach(input => input.addEventListener('change', () => {
-      if (input.checked) detailDialog.dataset.matColor = input.value;
+      if (input.checked) { detailDialog.dataset.matColor = input.value; updateOrderSummary(); }
     }));
+    detailDialog.querySelectorAll('input[name="poster-size"]').forEach(input => input.addEventListener('change', updateOrderSummary));
+    find('.photo-detail__copy-order').addEventListener('click', async event => {
+      const field = find('.photo-detail__order-summary');
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+        await navigator.clipboard.writeText(field.value);
+      } catch {
+        field.focus(); field.select(); document.execCommand('copy');
+      }
+      clearTimeout(orderCopyTimer);
+      event.currentTarget.textContent = copy().orderCopied;
+      orderCopyTimer = setTimeout(() => { if (detailDialog?.open) event.currentTarget.textContent = copy().copyOrder; }, 1800);
+    });
+    syncDetailMatToTheme();
     find('.photo-detail__image').addEventListener('error', () => { find('.photo-detail__load-error').hidden = false; });
     find('.photo-detail__image').addEventListener('load', () => { find('.photo-detail__load-error').hidden = true; });
   }
+  document.addEventListener('themechange', syncDetailMatToTheme);
   function openDetail(card) {
     if (card.slot !== 0 || card.collection.busy || card.element.getAttribute('aria-hidden') === 'true') return;
     ensureDetailDialog();
@@ -235,8 +302,10 @@
     galleries.forEach(gallery => gallery.schedule());
     document.body.classList.add('has-photo-detail');
     detailDialog.showModal();
+    updateOrderSummary();
   }
   document.addEventListener('languagechange', detailCopy);
+  window.addEventListener('resize', () => { if (detailDialog?.open) updateOrderSummary(); });
 
   class DrumCard {
     constructor(parent, photo, collection, number, slot) {

@@ -28,6 +28,7 @@
       orientation: 'Orientacja', portrait: 'Pionowa', landscape: 'Pozioma',
       cropHint: 'Domyślny kadr jest pionowy (5:7). Wybierz orientację przy dodawaniu lub zmień ją osobno pod zdjęciem.',
       uploadMedium: 'Technika dodawanych zdjęć', chooseMedium: 'Wybierz technikę', uploadPhotos: 'Dodaj zdjęcia', photos: 'Zdjęcia',
+      photoReference: 'Kod zdjęcia',
       autoSave: 'Zmiany techniki zapisują się automatycznie.', emptyCollection: 'Ta kolekcja czeka na pierwsze zdjęcie. Po dodaniu pojawi się na stronie.',
       unassigned: 'Nieoznaczone', needsMedium: 'Technika do ustawienia', medium: 'Technika', photoMedium: 'Technika zdjęcia {name}',
       photoCount: 'Zdjęcia w kolekcji: {count}', saving: 'Zapisywanie…', loading: 'Wczytywanie kolekcji…',
@@ -59,6 +60,7 @@
       orientation: 'Orientation', portrait: 'Portrait', landscape: 'Landscape',
       cropHint: 'The default crop is portrait (5:7). Choose orientation when uploading or change it below each photo.',
       uploadMedium: 'Technique for these photos', chooseMedium: 'Choose a technique', uploadPhotos: 'Add photos', photos: 'Photos',
+      photoReference: 'Photo reference',
       autoSave: 'Technique changes are saved automatically.', emptyCollection: 'This collection is waiting for its first photo. It will then appear on the website.',
       unassigned: 'Unassigned', needsMedium: 'Choose a technique', medium: 'Technique', photoMedium: 'Technique for {name}',
       photoCount: 'Photos in collection: {count}', saving: 'Saving…', loading: 'Loading collections…',
@@ -123,6 +125,13 @@
   }
   const collectionName = collection => collection.customTitle ? collection.title : (text[language][collection.id] || collection.title);
   const collectionTitle = collection => `${collectionName(collection)} · ${collection.year || '2026'}`;
+  const photoReference = photo => String(photo.preview || '').match(/\/([a-f0-9]{10,})-(?:480|2000)\.jpg/i)?.[1].slice(0, 10).toUpperCase() || '';
+  function referenceRow(photo) {
+    const reference = document.createElement('p'); reference.className = 'photo-reference';
+    const label = document.createElement('span'); label.textContent = `${t('photoReference')}:`;
+    const code = document.createElement('code'); code.textContent = photoReference(photo);
+    reference.append(label, code); return reference;
+  }
   function lock(value) {
     busy = value;
     document.querySelectorAll('button, input, select').forEach(control => { control.disabled = value || (control.dataset.requiresCollection === 'true' && !selected()); });
@@ -385,6 +394,7 @@
       const card = document.createElement('article'); card.className = 'photo';
       const image = document.createElement('img'); image.src = photo.preview; image.alt = photo.name; image.loading = 'lazy';
       const name = document.createElement('p'); name.className = 'photo-name'; name.textContent = photo.name;
+      const reference = referenceRow(photo);
       const badgeRow = document.createElement('div'); badgeRow.className = 'badges'; badges(badgeRow, photo.medium); filmBadges(badgeRow, photo);
       const label = document.createElement('label'); label.htmlFor = `photo-medium-${index}`; label.textContent = t('medium');
       const select = document.createElement('select'); select.id = label.htmlFor; options(select, photo.medium);
@@ -404,7 +414,7 @@
       });
       const actions = document.createElement('div'); actions.className = 'photo-actions';
       actions.append(remove, permanentButton(photo, { ...targetCollection(collection), name: photo.name }));
-      card.append(image, name, badgeRow, label, select);
+      card.append(image, name, reference, badgeRow, label, select);
       const orientationGroup = document.createElement('fieldset'); orientationGroup.className = 'orientation-picker';
       const orientationLegend = document.createElement('legend'); orientationLegend.textContent = t('orientation');
       const orientationOptions = document.createElement('div'); orientationOptions.className = 'orientation-options';
