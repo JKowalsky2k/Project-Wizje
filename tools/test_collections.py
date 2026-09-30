@@ -29,6 +29,21 @@ class ManifestTests(unittest.TestCase):
         self.assertNotIn('film', photos[1])
         self.assertNotIn('iso', photos[1])
 
+    def test_harman_and_kono_films_are_published(self):
+        folder = self.root / 'film'; folder.mkdir()
+        for name in ['phoenix.jpg', 'kono.jpg']:
+            (folder / name).touch()
+        (self.root / 'photo-types.json').write_text(json.dumps({
+            'photos': {'film/phoenix.jpg': 'analog', 'film/kono.jpg': 'analog'},
+            'filmDetails': {
+                'film/phoenix.jpg': {'film': 'harman-phoenix-ii', 'iso': 200},
+                'film/kono.jpg': {'film': 'kono-donau-ii', 'iso': 8},
+            },
+        }))
+        photos = collections.build_manifest(self.root)[0]['photos']
+        self.assertEqual((photos[0]['film'], photos[0]['filmBrand'], photos[0]['iso']), ('KONO! DONAU II', 'kono', 8))
+        self.assertEqual((photos[1]['film'], photos[1]['filmBrand'], photos[1]['iso']), ('HARMAN Phoenix II', 'harman', 200))
+
     def test_collection_location_in_manifest(self):
         folder = self.root / 'trip'; folder.mkdir(); (folder / 'a.jpg').touch()
         location = {'name': 'Toruń', 'lat': 53.01, 'lon': 18.6}

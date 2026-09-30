@@ -183,7 +183,7 @@
     const row = document.createElement('div'); row.className = 'film-controls';
     const films = state.films || [];
     const selectedFilm = films.find(item => item.id === value.film);
-    const brandNames = { kodak: 'Kodak', fujifilm: 'Fujifilm', ilford: 'Ilford' };
+    const brandNames = { kodak: 'Kodak', fujifilm: 'Fujifilm', ilford: 'Ilford', harman: 'HARMAN', kono: 'KONO!' };
     for (const key of ['film', 'iso']) {
       const group = document.createElement('label'); group.className = 'film-control';
       const label = document.createElement('span'); label.className = 'film-control-label';

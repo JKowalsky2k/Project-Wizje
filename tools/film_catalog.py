@@ -15,10 +15,34 @@ FILMS = [
         ('ilford', 'ilford-hp5', 'Ilford HP5 Plus'),
         ('ilford', 'ilford-fp4', 'Ilford FP4 Plus'),
         ('ilford', 'ilford-delta', 'Ilford Delta'),
+        ('harman', 'harman-phoenix-200', 'HARMAN Phoenix 200'),
+        ('harman', 'harman-phoenix-ii', 'HARMAN Phoenix II'),
+        ('kono', 'kono-delight-art-100', 'KONO! Delight ART 100'),
+        ('kono', 'kono-delight-art-400', 'KONO! Delight ART 400'),
+        ('kono', 'kono-delight-art-ii-100', 'KONO! Delight ART II 100'),
+        ('kono', 'kono-delight-art-ii-400', 'KONO! Delight ART II 400'),
+        ('kono', 'kono-original-moonstruck', 'KONO! Original Moonstruck'),
+        ('kono', 'kono-original-sunstroke', 'KONO! Original Sunstroke'),
+        ('kono', 'kono-original-mirage', 'KONO! Original Mirage'),
+        ('kono', 'kono-original-monsoon', 'KONO! Original Monsoon'),
+        ('kono', 'kono-original-galaxy', 'KONO! Original Galaxy'),
+        ('kono', 'kono-original-candy', 'KONO! Original Candy'),
+        ('kono', 'kono-kolorit-125t', 'KONO! KOLORIT 125T'),
+        ('kono', 'kono-kolorit-400t', 'KONO! KOLORIT 400T'),
+        ('kono', 'kono-rotwild-400', 'KONO! ROTWILD 400'),
+        ('kono', 'kono-donau-ii', 'KONO! DONAU II'),
+        ('kono', 'kono-rekorder', 'KONO! REKORDER'),
+        ('kono', 'kono-cinis-400', 'KONO! CINIS 400'),
+        ('kono', 'kono-alien-200', 'KONO! ALIEN 200'),
+        ('kono', 'kono-luft-200', 'KONO! LUFT 200'),
+        ('kono', 'kono-ufo-200', 'KONO! UFO 200'),
+        ('kono', 'kono-bebop-200', 'KONO! BEBOP 200'),
+        ('kono', 'kono-offbeat-200', 'KONO! OFFBEAT 200'),
+        ('kono', 'kono-mojo-200', 'KONO! MOJO 200'),
     ]
 ]
 FILM_BY_ID = {film['id']: film for film in FILMS}
-ISO_VALUES = [25, 50, 64, 100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1600, 3200]
+ISO_VALUES = [8, 25, 50, 64, 100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1600, 3200]
 
 
 def validate_film(film=None, iso=None):

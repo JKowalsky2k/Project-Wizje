@@ -186,7 +186,7 @@
     find('.photo-detail__film').hidden = !analog;
     const film = find('[data-detail-film]'); film.textContent = detailPhoto.film || copy().notSpecified;
     film.className = 'photo-medium';
-    if (['kodak', 'fujifilm', 'ilford'].includes(detailPhoto.filmBrand)) film.classList.add(`film-brand--${detailPhoto.filmBrand}`);
+    if (['kodak', 'fujifilm', 'ilford', 'harman', 'kono'].includes(detailPhoto.filmBrand)) film.classList.add(`film-brand--${detailPhoto.filmBrand}`);
     find('[data-detail-iso]').textContent = detailPhoto.iso ? `ISO ${detailPhoto.iso}` : copy().notSpecified;
     updateOrderSummary();
   }
@@ -359,26 +359,7 @@
         this.image.hidden = false;
       }
       this.medium.replaceChildren();
-      const types = ['analog', 'digital'].includes(photo.medium) ? [photo.medium] : [];
-      for (const type of types) {
-        const badge = document.createElement('span');
-        badge.className = `photo-medium photo-medium--${type}`;
-        badge.textContent = type.toUpperCase();
-        this.medium.append(badge);
-      }
-      if (photo.medium === 'analog') {
-        if (photo.film) {
-          const badge = document.createElement('span');
-          const brand = ['kodak', 'fujifilm', 'ilford'].includes(photo.filmBrand) ? photo.filmBrand : 'unknown';
-          badge.className = `photo-medium film-brand--${brand}`; badge.textContent = photo.film;
-          this.medium.append(badge);
-        }
-        if (photo.iso) {
-          const badge = document.createElement('span'); badge.className = 'photo-medium film-iso';
-          badge.textContent = `ISO ${photo.iso}`; this.medium.append(badge);
-        }
-      }
-      this.medium.hidden = types.length === 0;
+      this.medium.hidden = true;
       this.updateLabel();
     }
 
@@ -386,7 +367,7 @@
       const title = copy()[`${this.collection.id}Title`] || this.collection.title;
       this.element.setAttribute('aria-label', this.failed
         ? `${title} — ${copy().photoError}`
-        : `${title} — ${copy().photoLabel} ${this.number + 1}${this.medium.hidden ? '' : ` — ${Array.from(this.medium.children, (badge) => badge.textContent).join(' + ')}`}`);
+        : `${title} — ${copy().photoLabel} ${this.number + 1}`);
       this.error.textContent = copy().photoError;
     }
 
