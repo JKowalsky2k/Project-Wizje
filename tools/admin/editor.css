@@ -58,3 +58,30 @@
 .color-mode-field select{display:block;margin-top:7px}
 
 .primary:hover:not(:disabled){border-color:var(--accent);color:var(--text);background:transparent}.primary:active:not(:disabled){border-color:var(--text)}
+
+/* Compact reorder toolbar; explicit alignment overrides sidebar button styles. */
+.collection-order-row { min-width: 0; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.order-controls { display: flex; align-items: center; gap: 3px; height: 28px; margin: 0 0 8px; }
+.order-controls > span { flex: 1; min-width: 36px; white-space: nowrap; color: var(--muted); font-size: 10px; line-height: 1; font-variant-numeric: tabular-nums; }
+.order-controls button, #collections .order-controls button {
+  display: flex; align-items: center; justify-content: center; flex: 0 0 26px;
+  width: 26px; height: 26px; min-width: 26px; min-height: 26px; padding: 0; margin: 0;
+  gap: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); line-height: 1;
+}
+.order-controls svg, #collections .order-controls svg { display: block; width: 16px; height: 16px; flex: none; pointer-events: none; }
+.order-controls button:hover:not(:disabled) { background: #ffffff0a; color: var(--accent); }
+.order-controls button:disabled { cursor: default; opacity: .22; }
+#collections .order-controls { margin: 0 4px; }
+
+/* Lift and rearrange tiles, with a visible space for the dragged item. */
+[data-sort-handle] { cursor: grab; -webkit-user-drag: none; }
+.order-controls .sort-grip, #collections .order-controls .sort-grip { touch-action: none; cursor: grab; }
+.sort-hint { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0 0 18px; }
+.sorting-active, .sorting-active * { cursor: grabbing !important; user-select: none !important; }
+.sort-placeholder { opacity: .22; outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 8px; }
+.sort-ghost { position: fixed; z-index: 10000; pointer-events: none; margin: 0; overflow: hidden; background: var(--panel); border: 1px solid var(--accent); border-radius: 9px; box-shadow: 0 20px 50px #0009; transform: scale(1.01); opacity: .96; }
+.sort-ghost button { pointer-events: none; }
+.sort-ghost.collection-order-row > button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 8px; background: transparent; border: 0; text-align: left; }
+.sort-ghost.collection-order-row svg { width: 18px; height: 18px; }
+.sort-ghost .collection-tree-name { flex: 1; }
+@media (prefers-reduced-motion: reduce) { .sort-ghost { transform: none; } }

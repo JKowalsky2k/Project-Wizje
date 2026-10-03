@@ -71,3 +71,27 @@ Jeśli cały projekt trafił już do internetu, usuń prywatne pliki z hostingu 
 Odłączenie zdjęcia od kolekcji zachowuje je w prywatnej bibliotece. Nowa paczka zawiera tylko zdjęcia aktualnie przypisane do kolekcji.
 
 Opcja **Usuń trwale** wymaga osobnego potwierdzenia i usuwa także wszystkie wygenerowane lokalne paczki `wizje-*` oraz cache podglądów. Podglądy zachowanych zdjęć są odbudowywane; po zakończeniu przygotuj nowy ZIP. Kopie ZIP pobrane poza `dist`, wcześniejsze pliki na hostingu i backupy nie są automatycznie usuwane. Szczegóły opisuje [instrukcja biblioteki](assets/collections/README.md#biblioteka-zdjęć-i-trwałe-usuwanie).
+
+
+## SEO dla wizje.eu
+
+Docelowy adres tej wersji to **https://wizje.eu/**. Strona ma adres kanoniczny, opis, metadane podglądu linków i dane strukturalne WebSite/Organization. Domyślna treść pozostaje angielska; przycisk PL zmienia język w przeglądarce. Nie są to osobne adresy językowe, dlatego nie dodajemy fikcyjnych znaczników hreflang.
+
+Każde przygotowanie paczki generuje z aktualnych publicznych kolekcji:
+
+- `gallery.html` — zwykłą galerię HTML z podpisami, zdjęciami i linkami; działa bez JavaScript;
+- `sitemap.xml` — mapę strony głównej, galerii i publicznych zdjęć;
+- `robots.txt` — zezwolenie na indeksowanie oraz wskazanie mapy strony.
+
+Podgląd linków używa `assets/logo/social.jpg`. Reguły Apache, przykład Nginx i lokalny serwer dopuszczają nowe publiczne pliki. Prywatne pliki nadal są blokowane przez listę dozwolonych ścieżek; robots.txt nie służy do ich zabezpieczania.
+
+Lokalne pliki galerii i mapy można odświeżyć po zmianie manifestu poleceniem `python3 tools/seo.py`. Paczka z panelu robi to automatycznie. Ta konfiguracja SEO zakłada publikację w katalogu głównym wizje.eu; przy zmianie domeny lub podkatalogu trzeba zaktualizować adresy w `index.html` i `SITE_URL` w `tools/seo.py` oraz ponownie wygenerować paczkę.
+
+Po uruchomieniu pełnej strony:
+
+1. Włącz HTTPS oraz przekierowanie wersji HTTP i www na `https://wizje.eu/` w hostingu.
+2. Wgraj nową paczkę zamiast placeholdera. Nie blokuj pełnej strony dyrektywą noindex ani hasłem.
+3. Sprawdź odpowiedzi 200 dla `/`, `/gallery.html`, `/robots.txt`, `/sitemap.xml` i `/assets/logo/social.jpg`.
+4. Zweryfikuj domenę w Google Search Console (rekord DNS z własnego konta), zgłoś `https://wizje.eu/sitemap.xml` i sprawdź stronę narzędziem kontroli adresu URL.
+
+Mapa i metadane ułatwiają wykrycie treści, ale nie gwarantują indeksacji ani pozycji. Przy rozwoju galerii warto dodać indywidualne opisy zdjęć i osobne podstrony kolekcji. Obecne podpisy identyfikują kolekcję, technikę i numer fotografii; nie zgadują zawartości kadru.

@@ -11,13 +11,29 @@
         document.querySelector('meta[name="theme-color"]').content = document.documentElement.dataset.theme === 'light' ? '#e9e4db' : '#090909';
       } catch { document.documentElement.dataset.theme = 'dark'; }
     </script>
-    <meta name="description" content="Original photography, posters and fine art prints." data-i18n-content="metaDescription">
-    <title data-i18n="pageTitle">Wizje — Photography &amp; Prints</title>
-    <link rel="stylesheet" href="styles.css?v=d34e94ebc7">
+    <meta name="description" content="Discover original film and digital photography by Wizje. Explore photographic collections and choose posters and prints for your space." data-i18n-content="metaDescription">
+    <title data-i18n="pageTitle">Wizje — Original Photography, Posters &amp; Prints</title>
+    <link rel="canonical" href="https://wizje.eu/">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Wizje">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:title" content="Wizje — Original Photography, Posters &amp; Prints" data-i18n-content="pageTitle">
+    <meta property="og:description" content="Discover original film and digital photography by Wizje. Explore photographic collections and choose posters and prints for your space." data-i18n-content="metaDescription">
+    <meta property="og:url" content="https://wizje.eu/">
+    <meta property="og:image" content="https://wizje.eu/assets/logo/social.jpg">
+    <meta property="og:image:alt" content="Wizje — photography, posters and prints">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Wizje — Original Photography, Posters &amp; Prints" data-i18n-content="pageTitle">
+    <meta name="twitter:description" content="Discover original film and digital photography by Wizje. Explore photographic collections and choose posters and prints for your space." data-i18n-content="metaDescription">
+    <meta name="twitter:image" content="https://wizje.eu/assets/logo/social.jpg">
+    <meta name="twitter:image:alt" content="Wizje — photography, posters and prints">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebSite", "@id": "https://wizje.eu/#website", "url": "https://wizje.eu/", "name": "Wizje", "description": "Discover original film and digital photography by Wizje. Explore photographic collections and choose posters and prints for your space.", "inLanguage": ["en", "pl"], "publisher": {"@id": "https://wizje.eu/#organization"}}, {"@type": "Organization", "@id": "https://wizje.eu/#organization", "name": "Wizje", "url": "https://wizje.eu/", "logo": "https://wizje.eu/assets/logo/social.jpg", "sameAs": ["https://www.instagram.com/wizje.poland/"]}]}</script>
+    <link rel="stylesheet" href="styles.css?v=63f1daa33d">
     <script src="assets/collections/manifest.js" defer></script>
-    <script src="script.js?v=4db04ef1b3" defer></script>
+    <script src="script.js?v=7abfa68887" defer></script>
     <script src="globe.js?v=4a02153e08" defer></script>
-    <script src="collections.js?v=6bcd1273fd" defer></script>
+    <script src="collections.js?v=78e3847511" defer></script>
     <link rel="icon" href="favicon.ico?v=ffec70d8f2" sizes="16x16 32x32 48x48">
   <link rel="icon" href="favicon.svg?v=ffec70d8f2" type="image/svg+xml" sizes="any">
 </head>
@@ -45,6 +61,7 @@
           <span class="intro__line" data-i18n="headlineFirst">Images worth</span>
           <span class="intro__line intro__line--accent" data-i18n="headlineSecond">keeping</span>
         </h1>
+        <p class="intro__copy" data-i18n="introCopy">Original film and digital photography, available as posters and prints for your space.</p>
       </section>
 
       <section id="photo-globe" class="photo-globe" aria-label="Photo locations" data-i18n-aria-label="globeLabel">
@@ -66,6 +83,8 @@
           <span data-collection-count>01 — 04</span>
         </div>
 
+        <p class="gallery-link"><a href="gallery.html" data-i18n="allPhotos">Browse all photography collections</a></p>
+
         <div class="collection-filters">
           <label class="collection-filter"><span data-i18n="filterCollection">Collection</span><select id="filter-collection" aria-controls="collection-list"></select></label>
           <label class="collection-filter"><span data-i18n="filterColorMode">Color</span><select id="filter-color-mode" aria-controls="collection-list"><option value="all" data-i18n="filterAll">All</option><option value="color" data-i18n="filterColor">Color</option><option value="monochrome" data-i18n="filterMonochrome">Black &amp; white</option></select></label>
@@ -79,7 +98,7 @@
         <p id="filter-status" class="sr-only" role="status" aria-live="polite"></p>
         <p id="year-empty" class="year-empty" data-i18n="filterEmpty" hidden>No photos match these filters.</p>
         <div id="collection-list"></div>
-        <noscript><p>Włącz JavaScript, aby zobaczyć kolekcje. Enable JavaScript to view the collections.</p></noscript>
+        <noscript><p>View the <a href="gallery.html">complete photography gallery</a> without JavaScript.</p></noscript>
       </section>
     </main>
 

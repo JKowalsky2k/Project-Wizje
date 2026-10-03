@@ -138,3 +138,12 @@ Orientację wybiera się w panelu przy dodawaniu oraz osobno pod każdym zdjęci
 Pod nagłówkiem kolekcji dostępne są filtry kolekcji, orientacji i kolorystyki. Łączą się ze sobą w wybranym roku. Zmiana roku resetuje wybór kolekcji; orientacja i kolorystyka pozostają wybrane. Filtry nie zmieniają zdjęć ani lokalizacji globusa (globus nadal pokazuje cały wybrany rok).
 
 Kolorystykę („Kolorowe” / „Czarno-białe”) ustawia się przy przesyłaniu i osobno pod zdjęciem w panelu. Nowe zdjęcia domyślnie mają wybrane „Kolorowe”. Dotychczasowe bez oznaczenia są widoczne tylko przy filtrze „Wszystkie”, dopóki nie ustawisz kolorystyki. Nie stosujemy automatycznego odbarwiania. Metadane `colorModes` w `photo-types.json` zachowują się po przeniesieniu do biblioteki i przywróceniu; publiczny manifest eksportuje `colorMode`.
+
+
+## Kolejność kolekcji i zdjęć
+
+W panelu administratora przeciągnij nazwę kolekcji lub uchwyt **⋮⋮**, aby zmienić jej miejsce w danym roku. Zdjęcia przestawisz, przeciągając miniaturę lub jej uchwyt. Kafelki przesuwają się na bieżąco, a puszczenie myszki zapisuje nową kolejność. Przy krawędzi ekranu strona przewija się automatycznie. **Esc**, puszczenie poza listą lub utrata aktywności okna anuluje ruch. Na ekranie dotykowym używaj uchwytu **⋮⋮**. Strzałki **↑ / ↓** pozostają dostępne także do obsługi klawiaturą. Nie można przenosić kolekcji między latami ani zdjęć między kolekcjami przez zmianę kolejności.
+
+Odśwież podgląd, aby zobaczyć efekt. Kolejność obowiązuje w bębnach zdjęć, galerii HTML i nowej paczce publikacyjnej. Po zmianie przygotuj nowy ZIP — wcześniej wygenerowana paczka zachowuje poprzedni układ.
+
+Ustawienia są zapisywane osobno dla każdego roku w `display-order.json`. Nie zmieniają nazw ani zawartości oryginalnych plików. Nowe elementy, których nie ma w zapisanej kolejności, pojawiają się za ustawionymi elementami. Usunięte elementy są pomijane. Jeśli inna karta zmieni listę lub jej kolejność, panel odświeży dane zamiast nadpisać je nieaktualną wersją.

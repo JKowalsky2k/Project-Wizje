@@ -1,3 +1,164 @@
+/* Pointer-based sorting: the original tile reserves its place in the layout. */
+window.WizjeSortable = (() => {
+  let active = null;
+  const bindings = new WeakMap();
+
+  function attach(container, options) {
+    const attached = bindings.has(container);
+    bindings.set(container, options);
+    if (attached) return;
+    container.addEventListener('dragstart', event => {
+      if (event.target.closest('[data-sort-handle]')) event.preventDefault();
+    });
+    container.addEventListener('pointerdown', event => {
+      const { canStart, onDrop, onStart = () => {}, onCancel = () => {} } = bindings.get(container);
+      const handle = event.target.closest('[data-sort-handle]');
+      const tile = handle?.closest('[data-sort-key]');
+      if (!tile || tile.parentElement !== container || event.button !== 0 || event.isPrimary === false || active || !canStart()) return;
+      const original = [...container.children];
+      if (original.length < 2) return;
+      const expected = original.map(item => item.dataset.sortKey);
+      const initial = tile.getBoundingClientRect();
+      const offset = { x: event.clientX - initial.left, y: event.clientY - initial.top };
+      const start = { x: event.clientX, y: event.clientY };
+      let x = start.x, y = start.y, ghost = null, frame = null, dragging = false;
+      let lastTime = null;
+      const animations = new Map();
+      let layout = new Map();
+      function measure() {
+        layout = new Map([...container.children].map(child => {
+          const rect = child.getBoundingClientRect();
+          return [child, { left: rect.left + (window.scrollX || 0), top: rect.top + (window.scrollY || 0), width: rect.width, height: rect.height }];
+        }));
+      }
+
+      function place() {
+        ghost.style.left = `${x - offset.x}px`;
+        ghost.style.top = `${y - offset.y}px`;
+        // Hit-test final layout slots, never the temporarily animated tile positions.
+        const px = x + (window.scrollX || 0), py = y + (window.scrollY || 0);
+        const target = [...layout].find(([child, rect]) => {
+          const insetX = Math.min(18, rect.width * .12), insetY = Math.min(18, rect.height * .12);
+          return px >= rect.left + insetX && px <= rect.left + rect.width - insetX
+            && py >= rect.top + insetY && py <= rect.top + rect.height - insetY;
+        })?.[0];
+        if (!target || target === tile || target.parentElement !== container) return;
+        const children = [...container.children];
+        const positions = new Map();
+        for (const child of children) {
+          animations.get(child)?.cancel();
+          positions.set(child, child.getBoundingClientRect());
+        }
+        container.insertBefore(tile, children.indexOf(target) > children.indexOf(tile) ? target.nextSibling : target);
+        measure();
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        for (const child of children) {
+          if (child === tile || !child.animate) continue;
+          const before = positions.get(child), after = child.getBoundingClientRect();
+          if (before.left === after.left && before.top === after.top) continue;
+          animations.set(child, child.animate([
+            { transform: `translate(${before.left - after.left}px, ${before.top - after.top}px)` },
+            { transform: 'translate(0, 0)' },
+          ], { duration: 180, easing: 'ease-out' }));
+        }
+      }
+
+      function tick(time) {
+        if (!dragging) return;
+        // Scroll the page while dragging near the viewport edge.
+        const elapsed = Math.min(lastTime === null ? 16 : time - lastTime, 32);
+        lastTime = time;
+        const edge = 64;
+        const speed = y < edge ? -Math.min(1, (edge - y) / edge)
+          : y > innerHeight - edge ? Math.min(1, (y - innerHeight + edge) / edge) : 0;
+        if (speed) window.scrollBy(0, speed * elapsed * .7);
+        place();
+        frame = requestAnimationFrame(tick);
+      }
+
+      function move(next) {
+        if (next.pointerId !== event.pointerId) return;
+        x = next.clientX; y = next.clientY;
+        if (!dragging && Math.hypot(x - start.x, y - start.y) < 7) return;
+        if (!dragging) {
+          if (!canStart() || !tile.isConnected) { finish(false); return; }
+          dragging = true;
+          ghost = tile.cloneNode(true);
+          ghost.removeAttribute('id');
+          ghost.removeAttribute('data-sort-key');
+          ghost.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+          ghost.querySelectorAll('[name]').forEach(node => node.removeAttribute('name'));
+          ghost.classList.add('sort-ghost');
+          ghost.setAttribute('aria-hidden', 'true');
+          ghost.inert = true;
+          ghost.style.width = `${initial.width}px`;
+          ghost.style.height = `${initial.height}px`;
+          document.body.append(ghost);
+          tile.classList.add('sort-placeholder');
+          container.classList.add('is-sorting');
+          document.body.classList.add('sorting-active');
+          onStart();
+          measure();
+          frame = requestAnimationFrame(tick);
+        }
+        next.preventDefault();
+        place();
+      }
+
+      function finish(commit) {
+        document.removeEventListener('pointermove', move);
+        document.removeEventListener('pointerup', up);
+        document.removeEventListener('pointercancel', cancelPointer);
+        document.removeEventListener('keydown', key);
+        window.removeEventListener('blur', cancel);
+        window.removeEventListener('resize', cancel);
+        cancelAnimationFrame(frame);
+        animations.forEach(animation => animation.cancel());
+        active = null;
+        if (!dragging) return;
+        // A drag must not also activate the collection button under the pointer.
+        const suppressClick = click => { click.preventDefault(); click.stopImmediatePropagation(); };
+        document.addEventListener('click', suppressClick, true);
+        setTimeout(() => document.removeEventListener('click', suppressClick, true), 0);
+        ghost.remove();
+        tile.classList.remove('sort-placeholder');
+        container.classList.remove('is-sorting');
+        document.body.classList.remove('sorting-active');
+        const bounds = container.getBoundingClientRect();
+        const inside = x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom;
+        const order = [...container.children].map(item => item.dataset.sortKey);
+        const restore = () => {
+          // A refresh may already have replaced these nodes with confirmed server state.
+          if (original.every(item => item.parentElement === container)) original.forEach(item => container.append(item));
+        };
+        if (commit && inside && order.some((name, index) => name !== expected[index])) {
+          // Keep the dropped position visible while saving instead of jumping back.
+          Promise.resolve(onDrop(order, expected)).then(saved => {
+            if (saved === false) restore();
+          }).catch(restore);
+        } else { restore(); onCancel(); }
+      }
+      function up(next) {
+        if (next.pointerId !== event.pointerId) return;
+        x = next.clientX; y = next.clientY;
+        finish(true);
+      }
+      function cancelPointer(next) { if (next.pointerId === event.pointerId) finish(false); }
+      function cancel() { finish(false); }
+      function key(next) { if (next.key === 'Escape') { next.preventDefault(); finish(false); } }
+      active = cancel;
+      document.addEventListener('pointermove', move, { passive: false });
+      document.addEventListener('pointerup', up);
+      document.addEventListener('pointercancel', cancelPointer);
+      document.addEventListener('keydown', key);
+      window.addEventListener('blur', cancel);
+      window.addEventListener('resize', cancel);
+    });
+  }
+  return { attach, cancel: () => active?.(), isDragging: () => active !== null };
+})();
+
+/* Workshop editor. */
 (() => {
   if (location.protocol !== 'http:' || !['127.0.0.1', 'localhost'].includes(location.hostname)) {
     document.body.textContent = 'Panel działa tylko lokalnie. / This admin panel only works locally.';
@@ -7,6 +168,8 @@
   const $ = selector => document.querySelector(selector);
   const text = {
     pl: {
+      dragOrder: 'Przeciągnij, aby zmienić kolejność: {name}', draggingOrder: 'Przesuń w nowe miejsce i puść. Esc anuluje.', orderHint: 'Przeciągnij zdjęcie lub uchwyt ⋮⋮. Kolejność zapisze się po puszczeniu.',
+      orderPosition: 'Pozycja {index} z {total}', moveEarlier: 'Przesuń wcześniej: {name}', moveLater: 'Przesuń później: {name}', orderSaved: 'Kolejność zapisana. Odśwież podgląd strony. Przed publikacją przygotuj nowy ZIP.',
       libraryTitle: 'Biblioteka zdjęć', libraryHint: 'Zdjęcia odłączone od kolekcji. Możesz dodać je ponownie bez przesyłania pliku.', libraryEmpty: 'Nie ma zdjęć odłączonych od kolekcji.', libraryTarget: 'Dodawanie do kolekcji: {collection}', libraryChoose: 'Wybierz lub utwórz kolekcję, aby dodać do niej zdjęcia z biblioteki.', libraryAdd: 'Dodaj do kolekcji', libraryAdded: 'Dodano „{name}” z biblioteki. Odśwież podgląd strony.',
       purgePhoto: 'Usuń trwale', purgePhotoLabel: 'Usuń trwale zdjęcie {name}', purging: 'Trwałe usuwanie pliku i kopii aplikacji…', purged: 'Zdjęcie usunięte trwale z plików aplikacji. Podglądy pozostałych zdjęć zostały odbudowane. Przygotuj nową paczkę do publikacji.', wrongConfirmation: 'Nazwa pliku nie jest zgodna. Niczego nie usunięto.',
       confirmPurge: 'TRWAŁE USUNIĘCIE: {name}\n\nUsunie oryginał i identyczne kopie ze wszystkich kolekcji oraz biblioteki/kosza. Wyczyści też WSZYSTKIE lokalne podglądy i paczki publikacji (foldery i ZIP-y); podglądy pozostałych zdjęć zostaną odbudowane.\n\nNie usuwa plików wysłanych wcześniej na hosting, pobranych kopii ani backupów systemowych. Operacji nie można cofnąć w panelu.\n\nAby potwierdzić, wpisz dokładną nazwę pliku:',
@@ -39,6 +202,8 @@
       alps: 'Alpy', cars: 'Samochody', dolomites: 'Dolomity', planes: 'Samoloty', torun: 'Toruń',
     },
     en: {
+      dragOrder: 'Drag to reorder: {name}', draggingOrder: 'Move to a new position and release. Esc cancels.', orderHint: 'Drag a photo or the ⋮⋮ handle. Release to save its position.',
+      orderPosition: 'Position {index} of {total}', moveEarlier: 'Move earlier: {name}', moveLater: 'Move later: {name}', orderSaved: 'Order saved. Refresh the website preview. Prepare a new ZIP before publishing.',
       libraryTitle: 'Photo library', libraryHint: 'Photos removed from collections. Add them again without uploading the file.', libraryEmpty: 'There are no detached photos.', libraryTarget: 'Adding to collection: {collection}', libraryChoose: 'Choose or create a collection to add photos from the library.', libraryAdd: 'Add to collection', libraryAdded: 'Added “{name}” from the library. Refresh the website preview.',
       purgePhoto: 'Delete permanently', purgePhotoLabel: 'Permanently delete photo {name}', purging: 'Permanently deleting the file and application copies…', purged: 'Photo permanently removed from application files. Previews for remaining photos have been rebuilt. Prepare a new publishing package.', wrongConfirmation: 'The filename does not match. Nothing was deleted.',
       confirmPurge: 'PERMANENT DELETION: {name}\n\nDeletes the original and identical copies from all collections and the library/trash. Also clears ALL local previews and publishing packages (folders and ZIPs); previews for remaining photos will be rebuilt.\n\nDoes not remove previously published hosting files, downloaded copies or system backups. This cannot be undone in the panel.\n\nTo confirm, enter the exact filename:',
@@ -134,7 +299,7 @@
   }
   function lock(value) {
     busy = value;
-    document.querySelectorAll('button, input, select').forEach(control => { control.disabled = value || (control.dataset.requiresCollection === 'true' && !selected()); });
+    document.querySelectorAll('button, input, select').forEach(control => { control.disabled = value || control.dataset.orderBoundary === 'true' || (control.dataset.requiresCollection === 'true' && !selected()); });
     updateYearControls();
   }
   async function request(path, data, binary = false) {
@@ -355,7 +520,81 @@
       invalidateExport(); await reload(); status('locationSaved');
     });
   });
+  function orderIcon(kind) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 20 20');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    if (kind === 'grip') {
+      for (const x of [7, 13]) for (const y of [5, 10, 15]) {
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', '1.2');
+        dot.setAttribute('fill', 'currentColor'); svg.append(dot);
+      }
+    } else {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', kind === 'up' ? 'M6 11l4-4 4 4' : 'M6 9l4 4 4-4');
+      path.setAttribute('fill', 'none'); path.setAttribute('stroke', 'currentColor');
+      path.setAttribute('stroke-width', '1.5'); path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round'); svg.append(path);
+    }
+    return svg;
+  }
+  function orderControls(items, index, collection, photo = null) {
+    const row = document.createElement('div'); row.className = 'order-controls';
+    const position = document.createElement('span');
+    position.textContent = `${index + 1} / ${items.length}`;
+    position.setAttribute('aria-label', t('orderPosition', { index: index + 1, total: items.length }));
+    const grip = document.createElement('button'); grip.type = 'button'; grip.className = 'sort-grip';
+    grip.append(orderIcon('grip')); grip.dataset.sortHandle = 'true';
+    grip.title = t('dragOrder', { name: photo?.name || collectionName(collection) });
+    grip.setAttribute('aria-label', grip.title);
+    row.append(grip, position);
+    const identity = JSON.stringify([collectionKey(collection), photo?.name || null]);
+    for (const step of [-1, 1]) {
+      const button = document.createElement('button'); button.type = 'button';
+      button.append(orderIcon(step < 0 ? 'up' : 'down'));
+      button.dataset.orderIdentity = identity;
+      button.dataset.orderStep = String(step);
+      button.dataset.orderBoundary = String(index + step < 0 || index + step >= items.length);
+      button.disabled = busy || button.dataset.orderBoundary === 'true';
+      button.title = t(step < 0 ? 'moveEarlier' : 'moveLater', { name: photo?.name || collectionName(collection) });
+      button.setAttribute('aria-label', button.title);
+      button.addEventListener('click', async () => {
+        if (busy || button.dataset.orderBoundary === 'true') return;
+        const expected = items.map(item => photo ? item.name : item.id);
+        const order = [...expected];
+        [order[index], order[index + step]] = [order[index + step], order[index]];
+        await mutate(async () => {
+          await request(photo ? 'reorder-photos' : 'reorder-collections', {
+            ...targetCollection(collection), order, expected,
+          });
+          invalidateExport(); await reload(); status('orderSaved');
+        });
+        const controls = [...document.querySelectorAll('[data-order-identity]')]
+          .filter(control => control.dataset.orderIdentity === identity && !control.disabled);
+        const next = controls.find(control => control.dataset.orderStep === String(step)) || controls[0];
+        next?.focus({ preventScroll: true });
+      });
+      row.append(button);
+    }
+    return row;
+  }
+  function enableSorting(container, collection, photos = false) {
+    window.WizjeSortable.attach(container, {
+      canStart: () => !busy,
+      onStart: () => status('draggingOrder'),
+      onCancel: () => status('blank'),
+      onDrop: (order, expected) => mutate(async () => {
+        await request(photos ? 'reorder-photos' : 'reorder-collections', {
+          ...targetCollection(collection), order, expected,
+        });
+        invalidateExport(); await reload(); status('orderSaved');
+      }),
+    });
+  }
   function render() {
+    window.WizjeSortable.cancel();
     renderLibrary();
     renderUploadFilm();
     const navigation = $('#collections');
@@ -380,7 +619,15 @@
       button.append(actionIcon('folder'), title, count); button.addEventListener('click', () => {
         if (busy) return;
         selectedId = collectionKey(collection); $('#upload-form').reset(); render(); status('blank');
-      }); branches.get(collection.year || '2026').append(button);
+      });
+      const siblings = state.collections.filter(item => item.year === collection.year);
+      const row = document.createElement('div'); row.className = 'collection-order-row';
+      row.dataset.sortKey = collection.id; button.dataset.sortHandle = 'true';
+      row.append(button, orderControls(siblings, siblings.indexOf(collection), collection));
+      branches.get(collection.year || '2026').append(row);
+    }
+    for (const [year, branch] of branches) {
+      enableSorting(branch, state.collections.find(item => (item.year || '2026') === year));
     }
     const collection = selected();
     $('#welcome').hidden = Boolean(collection); $('#editor').hidden = !collection;
@@ -390,9 +637,19 @@
     $('#photo-count').textContent = t('photoCount', { count: collection.photos.length });
     $('#empty').hidden = collection.photos.length > 0;
     const grid = $('#photo-grid'); grid.replaceChildren();
+    enableSorting(grid, collection, true);
+    if (!$('#sort-hint')) {
+      const hint = document.createElement('p'); hint.id = 'sort-hint'; hint.className = 'sort-hint';
+      grid.before(hint);
+    }
+    $('#sort-hint').textContent = t('orderHint');
+    $('#sort-hint').hidden = collection.photos.length < 2;
     collection.photos.forEach((photo, index) => {
       const card = document.createElement('article'); card.className = 'photo';
+      card.dataset.sortKey = photo.name;
       const image = document.createElement('img'); image.src = photo.preview; image.alt = photo.name; image.loading = 'lazy';
+      image.draggable = false; image.dataset.sortHandle = 'true';
+      image.title = t('dragOrder', { name: photo.name });
       const name = document.createElement('p'); name.className = 'photo-name'; name.textContent = photo.name;
       const reference = referenceRow(photo);
       const badgeRow = document.createElement('div'); badgeRow.className = 'badges'; badges(badgeRow, photo.medium); filmBadges(badgeRow, photo);
@@ -414,7 +671,7 @@
       });
       const actions = document.createElement('div'); actions.className = 'photo-actions';
       actions.append(remove, permanentButton(photo, { ...targetCollection(collection), name: photo.name }));
-      card.append(image, name, reference, badgeRow, label, select);
+      card.append(orderControls(collection.photos, index, collection, photo), image, name, reference, badgeRow, label, select);
       const orientationGroup = document.createElement('fieldset'); orientationGroup.className = 'orientation-picker';
       const orientationLegend = document.createElement('legend'); orientationLegend.textContent = t('orientation');
       const orientationOptions = document.createElement('div'); orientationOptions.className = 'orientation-options';
@@ -461,8 +718,8 @@
   async function mutate(action) {
     if (busy) return;
     lock(true); status('saving');
-    try { await action(); }
-    catch (error) { status('error', { message: error.message }, true); await reload().catch(() => {}); }
+    try { await action(); return true; }
+    catch (error) { status('error', { message: error.message }, true); await reload().catch(() => {}); return false; }
     finally { lock(false); }
   }
   function invalidateExport() {
@@ -529,6 +786,14 @@
   dropzone.addEventListener('drop', event => { if (!busy && event.dataTransfer.files.length) $('#photos').files = event.dataTransfer.files; });
   $('#logout').addEventListener('click', () => mutate(async () => { await request('logout', {}); window.location.assign('/admin'); }));
   document.querySelectorAll('[data-language]').forEach(button => button.addEventListener('click', () => setLanguage(button.dataset.language)));
-  setLanguage(language);
-  reload().then(() => status('ready')).catch(error => status('error', { message: error.message }, true));
+  async function start() {
+    try {
+      setLanguage(language);
+      await reload();
+      status('ready');
+    } catch (error) {
+      status('error', { message: error.message }, true);
+    }
+  }
+  start();
 })();

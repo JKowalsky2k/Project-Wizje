@@ -1,8 +1,8 @@
 const translations = {
   en: {
     posterPriceLabel: "Poster price", posterPrice: "PLN 59.99", posterSize: "Poster size", sizeA3: "(29.7 × 42 cm)", sizeA4: "(21 × 29.7 cm)", sizeA5: "(14.8 × 21 cm)", orderTitle: "Orders", orderSummary: "Ready-to-send order", copyOrder: "Copy order", orderCopied: "Copied", orderMessageTitle: "Hello,\nI would like to order a poster:", orderCollection: "Collection", orderPhoto: "Photograph", orderReference: "Photo reference", orderFormat: "Size", orderMargins: "Margins", orderNoMargins: "None", orderTechnique: "Technique", orderFilm: "Film", orderPrice: "Price", orderSendInstruction: "Please confirm availability, shipping cost and payment details.", instagramOrders: "Copy the prepared order and send it to us on Instagram.", orderOnInstagram: "Open Instagram",
-    pageTitle: "Wizje — Photography & Prints",
-    metaDescription: "Original photography, posters and fine art prints.",
+    pageTitle: "Wizje — Original Photography, Posters & Prints",
+    metaDescription: "Discover original film and digital photography by Wizje. Explore photographic collections and choose posters and prints for your space.",
     homeLabel: "Wizje — Home",
     languageLabel: "Choose language",
     useLightTheme: "Use light theme",
@@ -11,8 +11,9 @@ const translations = {
     eyebrow: "Original images for everyday life",
     headlineFirst: "Images worth",
     headlineSecond: "keeping",
-    introCopy: "Photographs and posters for your space.",
+    introCopy: "Original film and digital photography, available as posters and prints for your space.",
     globeLabel: "Photo locations", globeMapLabel: "Globe with country outlines and approximate photo locations", globeCaption: "Places behind the photographs", globeChoose: "Choose a location", globeNote: "Approximate locations",
+    allPhotos: "Browse all photography collections",
     collectionsTitle: "Collections",
     yearLabel: "Collection year",
     yearUp: "Newer year",
@@ -47,8 +48,8 @@ const translations = {
   pl: {
     posterPriceLabel: "Cena plakatu", posterPrice: "59,99 zł", posterSize: "Rozmiar plakatu", sizeA3: "(29,7 × 42 cm)", sizeA4: "(21 × 29,7 cm)", sizeA5: "(14,8 × 21 cm)", orderTitle: "Zamówienia", orderSummary: "Gotowe zamówienie", copyOrder: "Kopiuj zamówienie", orderCopied: "Skopiowano", orderMessageTitle: "Dzień dobry, chcę zamówić plakat:", orderCollection: "Kolekcja", orderPhoto: "Zdjęcie", orderReference: "Kod zdjęcia", orderFormat: "Format", orderMargins: "Marginesy", orderNoMargins: "Brak", orderTechnique: "Technika", orderFilm: "Film", orderPrice: "Cena", orderSendInstruction: "Proszę o potwierdzenie dostępności, kosztu wysyłki i danych do płatności.", instagramOrders: "Skopiuj przygotowane zamówienie i wyślij je do nas na Instagramie.", orderOnInstagram: "Otwórz Instagram",
     closePreview: "Zamknij podgląd", detailCollection: "Kolekcja", pixelDimensions: "Wymiary zdjęcia", photoTechnique: "Technika", filmAndIso: "Film / ISO", previewAppearance: "Wygląd podglądu", ornateFrame: "Ozdobna rama", frameNotice: "Rama służy wyłącznie do wizualizacji i nie jest przedmiotem sprzedaży.", photoMargins: "Marginesy", marginColor: "Kolor marginesów", blackMat: "Czarne", whiteMat: "Białe", notSpecified: "Nie podano",
-    pageTitle: "Wizje — fotografia i odbitki",
-    metaDescription: "Autorska fotografia, plakaty i odbitki.",
+    pageTitle: "Wizje — autorska fotografia, plakaty i odbitki",
+    metaDescription: "Odkryj autorską fotografię analogową i cyfrową Wizje. Przeglądaj kolekcje zdjęć i wybierz plakaty oraz odbitki do swojej przestrzeni.",
     homeLabel: "Wizje — Strona główna",
     languageLabel: "Wybierz język",
     useLightTheme: "Włącz jasny motyw",
@@ -57,8 +58,9 @@ const translations = {
     eyebrow: "Autorskie obrazy na co dzień",
     headlineFirst: "Kadry, które",
     headlineSecond: "chcesz zatrzymać",
-    introCopy: "Fotografie i plakaty do Twojej przestrzeni.",
+    introCopy: "Autorska fotografia analogowa i cyfrowa. Plakaty i odbitki do Twojej przestrzeni.",
     globeLabel: "Miejsca wykonania zdjęć", globeMapLabel: "Globus z konturami państw i przybliżonymi lokalizacjami zdjęć", globeCaption: "Miejsca zapisane w kadrach", globeChoose: "Wybierz miejsce", globeNote: "Przybliżone lokalizacje",
+    allPhotos: "Zobacz wszystkie kolekcje zdjęć",
     collectionsTitle: "Kolekcje",
     yearLabel: "Rok kolekcji",
     yearUp: "Nowszy rok",
@@ -119,6 +121,8 @@ function setLanguage(language) {
 
   document.documentElement.lang = language;
   document.title = copy.pageTitle;
+  const locale = document.querySelector('meta[property="og:locale"]');
+  if (locale) locale.content = language === "pl" ? "pl_PL" : "en_US";
 
   document.querySelectorAll("[data-i18n]").forEach((element) => {
     const key = element.dataset.i18n;

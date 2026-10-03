@@ -20,6 +20,7 @@ class PublishTests(unittest.TestCase):
         self.write('globe.js', '// public globe')
         self.write('favicon.svg', '<svg/>')
         self.write('favicon.ico', 'icon')
+        self.write('assets/logo/social.jpg', 'social logo')
         self.write('styles.css', '@import url("assets/logo/logo.css");')
         self.write('assets/logo/logo.css', '@font-face{src:url("../fonts/test.woff2")}')
         self.write('assets/fonts/test.woff2', 'font')
@@ -41,7 +42,7 @@ class PublishTests(unittest.TestCase):
             self.write(path, 'secret')
         self.assertEqual(build_public_tree(self.root, self.output, self.data), 1)
         files = {p.relative_to(self.output).as_posix() for p in self.output.rglob('*') if p.is_file()}
-        self.assertEqual(files, {'.htaccess', 'index.html', 'styles.css', 'script.js', 'collections.js', 'globe.js', 'favicon.svg', 'favicon.ico', 'assets/logo/logo.css',
+        self.assertEqual(files, {'.htaccess', 'index.html', 'styles.css', 'script.js', 'collections.js', 'globe.js', 'favicon.svg', 'favicon.ico', 'assets/logo/logo.css', 'assets/logo/social.jpg', 'gallery.html', 'robots.txt', 'sitemap.xml',
                                 'assets/fonts/test.woff2', 'assets/fonts/test-OFL.txt',
                                 'assets/collections/previews/abcdef-480.jpg', 'assets/collections/manifest.js'})
         manifest = (self.output / 'assets/collections/manifest.js').read_text()
@@ -81,6 +82,23 @@ class PublishTests(unittest.TestCase):
         for invalid in ['assets/collections/2026/test/private.jpg', 'assets/collections/previews/abcdef-info.json']:
             photo['detail'] = invalid
             with self.assertRaises(ValueError): build_public_tree(self.root, self.output, self.data)
+
+    def test_seo_export_escapes_titles_and_only_exposes_public_images(self):
+        from xml.etree import ElementTree as ET
+        self.data[0]['title'] = '<script>alert(1)</script> & Photos'
+        build_public_tree(self.root, self.output, self.data)
+        gallery = (self.output / 'gallery.html').read_text()
+        self.assertIn('&lt;script&gt;alert(1)&lt;/script&gt; &amp; Photos', gallery)
+        self.assertNotIn('<script>alert(1)</script>', gallery)
+        self.assertNotIn('private.jpg', gallery)
+        self.assertIn('href="assets/collections/previews/abcdef-480.jpg"', gallery)
+        self.assertIn('https://wizje.eu/gallery.html', gallery)
+        sitemap = ET.parse(self.output / 'sitemap.xml')
+        urls = [node.text for node in sitemap.findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}loc')]
+        self.assertEqual(urls, ['https://wizje.eu/', 'https://wizje.eu/gallery.html'])
+        images = [node.text for node in sitemap.findall('.//{http://www.google.com/schemas/sitemap-image/1.1}loc')]
+        self.assertEqual(images, ['https://wizje.eu/assets/collections/previews/abcdef-480.jpg'])
+        self.assertIn('Sitemap: https://wizje.eu/sitemap.xml', (self.output / 'robots.txt').read_text())
 
     def test_rejects_symlinked_assets(self):
         font = self.root / 'assets/fonts/test.woff2'

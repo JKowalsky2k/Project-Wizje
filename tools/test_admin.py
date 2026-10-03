@@ -37,6 +37,68 @@ class AdminTests(unittest.TestCase):
         self.store = EditorStore(self.root, self.photos, rebuild, trash_root=self.password_path.parent / 'trash')
         self.admin = LocalAdmin(self.root, self.photos, rebuild, Lock(), password_path=self.password_path)
 
+    def test_display_order_persists_and_rejects_stale_or_invalid_lists(self):
+        for collection in ['alps', 'cars']:
+            folder = self.photos / collection; folder.mkdir()
+            for name in ['2.jpg', '10.jpg']:
+                (folder / name).write_bytes(b'photo')
+        self.store.reorder(['cars', 'alps'], expected=['alps', 'cars'])
+        self.store.reorder(['10.jpg', '2.jpg'], collection='cars', expected=['2.jpg', '10.jpg'])
+        fresh = EditorStore(self.root, self.photos, self.store.rebuild)
+        self.assertEqual([c['id'] for c in fresh.state()], ['cars', 'alps'])
+        self.assertEqual([p['name'] for p in fresh.state()[0]['photos']], ['10.jpg', '2.jpg'])
+        before = self.store.order_path.read_bytes()
+        for order, expected in [(['cars', 'cars'], ['cars', 'alps']), (['cars'], ['cars', 'alps']),
+                                (['../private', 'alps'], ['cars', 'alps']), (['alps', 'cars'], ['alps', 'cars']),
+                                ([{}], ['cars', 'alps'])]:
+            with self.assertRaises(EditorError): self.store.reorder(order, expected=expected)
+            self.assertEqual(self.store.order_path.read_bytes(), before)
+        (self.photos / 'cars/1.jpg').write_bytes(b'new')
+        self.assertEqual([p['name'] for p in fresh.state()[0]['photos']], ['10.jpg', '2.jpg', '1.jpg'])
+        with self.assertRaises(EditorError):
+            self.store.reorder(['2.jpg', '10.jpg'], collection='cars', expected=['10.jpg', '2.jpg'])
+        self.assertEqual(self.store.order_path.read_bytes(), before)
+
+    def test_reorder_rollback_restores_metadata_and_generated_pages(self):
+        for name in ['alps', 'cars']: (self.photos / name).mkdir()
+        manifest = self.root / 'assets/collections/manifest.js'
+        manifest.write_text('window.ZWIDY_COLLECTIONS = [];\n')
+        gallery = self.root / 'gallery.html'; gallery.write_text('previous gallery')
+        def fail():
+            manifest.write_text('partial write')
+            gallery.write_text('partial gallery')
+            raise RuntimeError('failed rebuild')
+        self.store.rebuild = fail
+        with self.assertRaises(RuntimeError): self.store.reorder(['cars', 'alps'], expected=['alps', 'cars'])
+        self.assertFalse(self.store.order_path.exists())
+        self.assertEqual(manifest.read_text(), 'window.ZWIDY_COLLECTIONS = [];\n')
+        self.assertEqual(gallery.read_text(), 'previous gallery')
+        self.store.order_path.write_text('{"collections": ["alps", "cars"]}')
+        before = self.store.order_path.read_bytes()
+        with self.assertRaises(RuntimeError): self.store.reorder(['cars', 'alps'], expected=['alps', 'cars'])
+        self.assertEqual(self.store.order_path.read_bytes(), before)
+
+    def test_reorder_endpoints_require_auth_and_preserve_year_boundaries(self):
+        for year in ['2026', '2027']:
+            for name in ['alps', 'cars']:
+                folder = self.root / 'assets/collections' / year / name
+                folder.mkdir(parents=True)
+                for photo in ['1.jpg', '2.jpg']: (folder / photo).write_bytes(b'photo')
+        cookie = self.login()
+        for action, payload in [('reorder-collections', {'order': ['cars', 'alps'], 'expected': ['alps', 'cars']}),
+                                ('reorder-photos', {'collection': 'cars', 'order': ['2.jpg', '1.jpg'], 'expected': ['1.jpg', '2.jpg']})]:
+            body = json.dumps({'year': '2027', **payload}).encode()
+            for headers, expected_status in [({}, 401), ({'Cookie': cookie}, 403),
+                                            ({'Cookie': cookie, 'X-Wizje-CSRF': self.admin.csrf}, 200)]:
+                request = FakeHandler('/admin/api/' + action, headers, body)
+                self.admin.post(request)
+                self.assertEqual(request.status, expected_status, request.wfile.getvalue())
+        state = self.admin.collections_state()
+        self.assertEqual([c['id'] for c in state if c['year'] == '2027'], ['cars', 'alps'])
+        self.assertEqual([c['id'] for c in state if c['year'] == '2026'], ['alps', 'cars'])
+        self.assertEqual([p['name'] for p in state[0]['photos']], ['2.jpg', '1.jpg'])
+        self.assertFalse(self.store.order_path.exists())
+
     def login_request(self, password='test-password-123', setup=None, headers=None):
         body = json.dumps({'password': password, 'confirmation': password,
                            'setup': not self.admin.password_path.exists() if setup is None else setup}).encode()

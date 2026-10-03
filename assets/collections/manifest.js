@@ -111,43 +111,43 @@ window.ZWIDY_COLLECTIONS = [
     "title": "Cars",
     "photos": [
       {
-        "src": "assets/collections/previews/23281a5d33a5c3389179a797-480.jpg",
-        "orientation": "portrait",
+        "src": "assets/collections/previews/707d79edfd026f4b318e6595-480.jpg",
+        "orientation": "landscape",
         "medium": "digital",
         "original": "assets/collections/2026/cars/A7400427.jpg",
-        "detail": "assets/collections/previews/23281a5d33a5c3389179a797-2000.jpg",
+        "detail": "assets/collections/previews/707d79edfd026f4b318e6595-2000.jpg",
+        "sourceHeight": 4119,
+        "height": 320,
         "detailWidth": 2000,
         "detailHeight": 1333,
-        "sourceHeight": 4119,
-        "width": 480,
-        "height": 672,
-        "sourceWidth": 6178
+        "sourceWidth": 6178,
+        "width": 480
       },
       {
-        "src": "assets/collections/previews/c0369666fd941126cd63ca2a-480.jpg",
-        "orientation": "portrait",
+        "src": "assets/collections/previews/345fb6100d9b8862be8165f3-480.jpg",
+        "orientation": "landscape",
         "medium": "analog",
         "original": "assets/collections/2026/cars/F1150012.JPG",
-        "detail": "assets/collections/previews/c0369666fd941126cd63ca2a-2000.jpg",
+        "detail": "assets/collections/previews/345fb6100d9b8862be8165f3-2000.jpg",
+        "height": 320,
         "sourceWidth": 3360,
-        "detailHeight": 1333,
-        "detailWidth": 2000,
         "sourceHeight": 2240,
-        "width": 480,
-        "height": 672
+        "detailWidth": 2000,
+        "detailHeight": 1333,
+        "width": 480
       },
       {
-        "src": "assets/collections/previews/3f804cfee7adad5a093e4b56-480.jpg",
-        "orientation": "portrait",
+        "src": "assets/collections/previews/8774477dceddd0830ba15bf0-480.jpg",
+        "orientation": "landscape",
         "medium": "analog",
         "original": "assets/collections/2026/cars/F1530032.JPG",
-        "detail": "assets/collections/previews/3f804cfee7adad5a093e4b56-2000.jpg",
-        "detailWidth": 2000,
-        "height": 672,
+        "detail": "assets/collections/previews/8774477dceddd0830ba15bf0-2000.jpg",
+        "sourceHeight": 1960,
+        "sourceWidth": 3123,
+        "height": 301,
         "detailHeight": 1255,
         "width": 480,
-        "sourceWidth": 3123,
-        "sourceHeight": 1960
+        "detailWidth": 2000
       }
     ],
     "locations": [

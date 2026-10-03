@@ -631,3 +631,9 @@ html[data-theme="light"] .photo-medium--digital,html[data-theme="light"] .photo-
 
 .photo-detail__summary-label{display:grid;gap:8px;margin:0 0 10px;color:var(--muted);font:11px var(--sans)}.photo-detail__order-summary{display:block;width:100%;min-height:0;resize:none;field-sizing:content;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;box-sizing:border-box;padding:12px;border:1px solid #596675;border-radius:6px;background:#101419;color:#e5e8eb;font:11px/1.55 var(--sans)}.photo-detail__copy-order{width:100%;min-height:40px;margin:0 0 14px;padding:9px 12px;border:1px solid #929fad;border-radius:5px;background:transparent;color:#e0e6ed;font:500 11px var(--sans);cursor:pointer}.photo-detail__copy-order:hover{border-color:#d7e0eb;background:#222a33}.photo-detail__copy-order:focus-visible,.photo-detail__order-summary:focus-visible{outline:2px solid #e0e6ed;outline-offset:3px}.photo-detail__order-contact{display:block}.photo-detail__order-note{margin-top:2px}.photo-detail__order-button{width:100%}
 html[data-theme="light"] .photo-detail__order-summary{border-color:#939ba2;background:#f5f1e9;color:#242724}html[data-theme="light"] .photo-detail__copy-order{border-color:#7f8b96;color:#38434d}html[data-theme="light"] .photo-detail__copy-order:hover{border-color:#53616d;background:#dfe2e2}html[data-theme="light"] .photo-detail__copy-order:focus-visible,html[data-theme="light"] .photo-detail__order-summary:focus-visible{outline-color:#30373d}
+
+/* Link to the static, crawlable photography archive. */
+.gallery-link { margin: 0 0 24px; font: 12px/1.6 var(--sans); }
+.gallery-link a { color: var(--muted); text-underline-offset: 4px; }
+.gallery-link a:hover { color: var(--foreground); }
+.gallery-link a:focus-visible { outline: 2px solid var(--foreground); outline-offset: 5px; }

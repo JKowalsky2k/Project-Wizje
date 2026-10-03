@@ -16,6 +16,19 @@ class ManifestTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.addCleanup(self.temp.cleanup)
 
+    def test_saved_collection_and_photo_order_with_new_and_removed_items(self):
+        for name in ['alps', 'cars', 'new']:
+            folder = self.root / name; folder.mkdir()
+            for photo in ['1.jpg', '2.jpg', '10.jpg']: (folder / photo).touch()
+        (self.root / 'display-order.json').write_text(json.dumps({
+            'collections': ['missing', 'cars', 'alps'],
+            'photos': {'cars': ['deleted.jpg', '10.jpg', '1.jpg']},
+        }))
+        manifest = collections.build_manifest(self.root)
+        self.assertEqual([c['id'] for c in manifest], ['cars', 'alps', 'new'])
+        self.assertEqual([p['src'].rsplit('/', 1)[-1] for p in manifest[0]['photos']], ['10.jpg', '1.jpg', '2.jpg'])
+        self.assertEqual([p['src'].rsplit('/', 1)[-1] for p in manifest[1]['photos']], ['1.jpg', '2.jpg', '10.jpg'])
+
     def test_film_metadata_is_published_only_for_analog_photos(self):
         folder = self.root / 'film'; folder.mkdir()
         for name in ['analog.jpg', 'digital.jpg']:

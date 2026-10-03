@@ -12,6 +12,7 @@ import re
 import secrets
 import unicodedata
 import time
+from display_order import DEFAULT_COLLECTIONS, read_order, ordered
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 from film_catalog import FILMS, ISO_VALUES, validate_film
@@ -109,6 +110,7 @@ class EditorStore:
         self.rebuild = rebuild
         self.types_path = photo_root / 'photo-types.json'
         self.info_path = photo_root / 'collection-info.json'
+        self.order_path = photo_root / 'display-order.json'
         self.trash_root = trash_root or credential_path(root).parent / 'trash'
         from media_library import MediaLibrary
         self.library = MediaLibrary(self)
@@ -135,6 +137,7 @@ class EditorStore:
 
     def state(self):
         config = self.types()
+        display_order = read_order(self.photo_root)
         info = read_json(self.info_path, {})
         previews = {}
         manifest = self.root / 'assets/collections/manifest.js'
@@ -157,10 +160,48 @@ class EditorStore:
                                'orientation': config.get('orientations', {}).get(key, 'portrait'),
                                'colorMode': config.get('colorModes', {}).get(key),
                                **config.get('filmDetails', {}).get(key, {})})
+            photos = ordered(photos, display_order.get('photos', {}).get(folder.name, []), key=lambda p: p['name'])
             items.append({'id': folder.name, 'title': info.get(folder.name, {}).get('title', KNOWN_TITLES.get(folder.name, folder.name.capitalize())),
                           'customTitle': 'title' in info.get(folder.name, {}), 'location': (info.get(folder.name, {}).get('locations') or [info.get(folder.name, {}).get('location')])[0],
                           'locations': info.get(folder.name, {}).get('locations', [info[folder.name]['location']] if info.get(folder.name, {}).get('location') else []), 'photos': photos})
-        return items
+        items = ordered(items, DEFAULT_COLLECTIONS, key=lambda c: c['id'])
+        return ordered(items, display_order.get('collections', []), key=lambda c: c['id'])
+
+    def reorder(self, names, collection=None, expected=None):
+        items = self.state()
+        if collection is None:
+            current = [item['id'] for item in items]
+        else:
+            self.folder(collection)
+            current = [p['name'] for item in items if item['id'] == collection for p in item['photos']]
+        if not isinstance(names, list) or any(not isinstance(name, str) for name in names):
+            raise EditorError('Nieprawidłowa kolejność / Invalid display order.')
+        if len(names) != len(current) or len(set(names)) != len(names) or set(names) != set(current):
+            raise EditorError('Lista uległa zmianie. Odśwież panel / The list changed. Refresh the panel.', 409)
+        if expected != current:
+            raise EditorError('Kolejność uległa zmianie. Odśwież panel / The order changed. Refresh the panel.', 409)
+        before = self.order_path.read_bytes() if self.order_path.exists() else None
+        config = read_order(self.photo_root)
+        if collection is None:
+            config['collections'] = names
+        else:
+            config.setdefault('photos', {})[collection] = names
+        derived_paths = [self.root / name for name in ('assets/collections/manifest.js', 'gallery.html', 'sitemap.xml', 'robots.txt')]
+        snapshots = {path: path.read_bytes() if path.exists() else None for path in derived_paths}
+        try:
+            write_json(self.order_path, config)
+            self.rebuild()
+        except Exception:
+            if before is None:
+                self.order_path.unlink(missing_ok=True)
+            else:
+                self.order_path.write_bytes(before)
+            for path, content in snapshots.items():
+                if content is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_bytes(content)
+            raise
 
     def create(self, name):
         if not isinstance(name, str) or not name.strip() or len(name.strip()) > 80:
@@ -680,6 +721,14 @@ class LocalAdmin:
                         raise EditorError('Nieprawidłowe dane.')
                     if url.path == '/admin/api/export':
                         result = self.export(handler)
+                    elif url.path == '/admin/api/reorder-collections':
+                        self.year_store(data.get('year')).reorder(data.get('order'), expected=data.get('expected'))
+                        result = {'ok': True}
+                    elif url.path == '/admin/api/reorder-photos':
+                        store = self.year_store(data.get('year'))
+                        store.folder(data.get('collection'))
+                        store.reorder(data.get('order'), collection=data['collection'], expected=data.get('expected'))
+                        result = {'ok': True}
                     elif url.path == '/admin/api/collections':
                         store = self.year_store(data.get('year'), create=True)
                         identifier = store.create(data.get('name'))

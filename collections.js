@@ -368,6 +368,7 @@
       this.element.setAttribute('aria-label', this.failed
         ? `${title} — ${copy().photoError}`
         : `${title} — ${copy().photoLabel} ${this.number + 1}`);
+      this.image.alt = `${title} — ${copy().photoLabel} ${this.number + 1}`;
       this.error.textContent = copy().photoError;
     }
 
