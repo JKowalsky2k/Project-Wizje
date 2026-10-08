@@ -637,3 +637,10 @@ html[data-theme="light"] .photo-detail__order-summary{border-color:#939ba2;backg
 .gallery-link a { color: var(--muted); text-underline-offset: 4px; }
 .gallery-link a:hover { color: var(--foreground); }
 .gallery-link a:focus-visible { outline: 2px solid var(--foreground); outline-offset: 5px; }
+
+.photo-globe__places { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 4px 10px; }
+.photo-globe__places button { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; padding: 8px 4px; }
+.photo-globe__places { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 0; width: 100%; overflow-x: auto; }
+.photo-globe__places button { flex: 0 0 auto; width: auto; white-space: nowrap; }
+.photo-globe__places button::before { content: none; }
+.photo-globe__separator { flex: 1 1 0; min-width: 12px; text-align: center; color: #b9c3d0; }

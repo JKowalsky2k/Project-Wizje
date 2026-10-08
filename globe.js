@@ -22,6 +22,8 @@
   const namespace = 'http://www.w3.org/2000/svg';
   const svg = host.querySelector('svg');
   const status = host.querySelector('.photo-globe__status');
+  const placeList = host.querySelector('.photo-globe__places');
+  const emptyMessage = host.querySelector('.photo-globe__empty');
   const radians = Math.PI / 180;
   let center = [15, 16];
   let selected = null;
@@ -56,10 +58,38 @@
   for (let lat = -60; lat <= 60; lat += 30) grid.push(Array.from({ length: 181 }, (_, i) => [-180 + i * 2, lat]));
   for (let lon = -180; lon < 180; lon += 30) grid.push(Array.from({ length: 91 }, (_, i) => [lon, -90 + i * 2]));
   function choose(place) {
-    selected = place;
-    center = [place.lon, place.lat - 32];
+    if (selected === place) {
+      selected = null;
+      center = [15, 16];
+      status.textContent = '';
+    } else {
+      selected = place;
+      center = [place.lon, place.lat - 32];
+      status.textContent = `${place[language()]} — ${language() === 'pl' ? 'przybliżona lokalizacja zdjęć' : 'approximate photo location'}`;
+    }
     render();
-    status.textContent = `${place[language()]} — ${language() === 'pl' ? 'przybliżona lokalizacja zdjęć' : 'approximate photo location'}`;
+    renderPlaces();
+  }
+  function renderPlaces() {
+    const focusedId = document.activeElement?.dataset.place;
+    placeList.replaceChildren();
+    emptyMessage.hidden = places.length > 0;
+    places.forEach((place, index) => {
+      if (index > 0) {
+        const separator = document.createElement('span');
+        separator.className = 'photo-globe__separator';
+        separator.setAttribute('aria-hidden', 'true');
+        separator.textContent = '·';
+        placeList.append(separator);
+      }
+      const button = document.createElement('button');
+      button.type = 'button'; button.dataset.place = place.id;
+      button.textContent = place[language()];
+      button.setAttribute('aria-pressed', String(selected === place));
+      button.addEventListener('click', () => choose(place));
+      placeList.append(button);
+      if (focusedId === place.id) button.focus({ preventScroll: true });
+    });
   }
   function render() {
     const focusedId = document.activeElement?.dataset.place;
@@ -79,10 +109,6 @@
       });
       svg.append(marker);
       if (focusedId === place.id) marker.focus({ preventScroll: true });
-      if (selected === place) {
-        const label = element('text', { x: x + 20, y: y - 17, class: 'photo-globe__label' });
-        label.textContent = place[language()]; svg.append(label);
-      }
     }
 
   }
@@ -94,9 +120,10 @@
     status.textContent = '';
     host.dataset.year = year;
     render();
+    renderPlaces();
   }
   document.addEventListener('collectionyearchange', event => selectYear(event.detail));
-  document.addEventListener('languagechange', () => { render(); status.textContent = ''; });
+  document.addEventListener('languagechange', () => { render(); renderPlaces(); status.textContent = ''; });
   const latestYear = collections.map(collection => String(collection.year || '2026')).sort((a, b) => Number(b) - Number(a))[0] || '2026';
   selectYear(document.documentElement.dataset.collectionYear || latestYear);
 })();
