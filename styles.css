@@ -645,3 +645,8 @@ html[data-theme="light"] .photo-detail__order-summary{border-color:#939ba2;backg
 .photo-globe__places button { flex: 0 0 auto; width: auto; white-space: nowrap; }
 .photo-globe__places button::before { content: none; }
 .photo-globe__separator { flex: 1 1 0; min-width: 12px; text-align: center; color: #b9c3d0; }
+html[data-theme="light"] .photo-globe__places button { color: #514e47; }
+html[data-theme="light"] .photo-globe__places button:hover,
+html[data-theme="light"] .photo-globe__places button[aria-pressed="true"] { color: #171817; border-bottom-color: #80602c; }
+html[data-theme="light"] .photo-globe__places button:focus-visible { outline-color: #4a463f; }
+html[data-theme="light"] .photo-globe__separator { color: #776f61; }
