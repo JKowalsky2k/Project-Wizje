@@ -41,12 +41,12 @@ const translations = {
     previousPhotos: "Previous photographs",
     photoError: "Photograph unavailable",
     photoLabel: "Photograph",
-    closePreview: "Close preview", detailCollection: "Collection", pixelDimensions: "Image dimensions", photoTechnique: "Technique", filmAndIso: "Film / ISO", previewAppearance: "Preview appearance", ornateFrame: "Decorative frame", frameNotice: "The frame is shown for visualization purposes only and is not for sale.", photoMargins: "Margins", marginColor: "Margin color", blackMat: "Black", whiteMat: "White", notSpecified: "Not specified",
+    closePreview: "Close preview", detailCollection: "Collection", photoTechnique: "Technique", filmAndIso: "Film / ISO", previewAppearance: "Preview appearance", ornateFrame: "Decorative frame", frameNotice: "The frame is shown for visualization purposes only and is not for sale.", photoMargins: "Margins", marginColor: "Margin color", blackMat: "Black", whiteMat: "White", notSpecified: "Not specified",
 
   },
   pl: {
     posterPriceLabel: "Cena plakatu", posterSize: "Format plakatu", orderTitle: "Zamówienia", orderSummary: "Gotowe zamówienie", copyOrder: "Kopiuj zamówienie", orderCopied: "Skopiowano", orderMessageTitle: "Dzień dobry, chcę zamówić plakat:", orderCollection: "Kolekcja", orderPhoto: "Zdjęcie", orderReference: "Kod zdjęcia", orderFormat: "Format", orderMargins: "Marginesy", orderNoMargins: "Brak", orderTechnique: "Technika", orderFilm: "Film", orderPrice: "Cena", orderSendInstruction: "Proszę o potwierdzenie dostępności, kosztu wysyłki i danych do płatności.", instagramOrders: "Skopiuj przygotowane zamówienie i wyślij je do nas na Instagramie.", orderOnInstagram: "Otwórz Instagram",
-    closePreview: "Zamknij podgląd", detailCollection: "Kolekcja", pixelDimensions: "Wymiary zdjęcia", photoTechnique: "Technika", filmAndIso: "Film / ISO", previewAppearance: "Wygląd podglądu", ornateFrame: "Ozdobna rama", frameNotice: "Rama służy wyłącznie do wizualizacji i nie jest przedmiotem sprzedaży.", photoMargins: "Marginesy", marginColor: "Kolor marginesów", blackMat: "Czarne", whiteMat: "Białe", notSpecified: "Nie podano",
+    closePreview: "Zamknij podgląd", detailCollection: "Kolekcja", photoTechnique: "Technika", filmAndIso: "Film / ISO", previewAppearance: "Wygląd podglądu", ornateFrame: "Ozdobna rama", frameNotice: "Rama służy wyłącznie do wizualizacji i nie jest przedmiotem sprzedaży.", photoMargins: "Marginesy", blackMat: "Czarne", whiteMat: "Białe", notSpecified: "Nie podano",
     pageTitle: "Wizje — autorska fotografia, plakaty i odbitki",
     metaDescription: "Odkryj autorską fotografię analogową i cyfrową Wizje. Przeglądaj kolekcje zdjęć i wybierz plakaty oraz odbitki do swojej przestrzeni.",
     homeLabel: "Wizje — Strona główna",

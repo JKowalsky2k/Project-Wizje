@@ -184,9 +184,6 @@
     collectionHeading(find('#photo-detail-title'), title, detailCollection.id);
     find('.photo-detail__year').textContent = detailCollection.year;
     find('.photo-detail__image').alt = `${title} — ${copy().photoLabel} ${detailCollection.photos.indexOf(detailPhoto) + 1}`;
-    const dimensions = detailPhoto.sourceWidth && detailPhoto.sourceHeight
-      ? `${detailPhoto.sourceWidth} × ${detailPhoto.sourceHeight} px` : copy().notSpecified;
-    find('[data-detail-dimensions]').textContent = dimensions;
     const badges = find('.photo-detail__badges'); badges.replaceChildren();
     const analog = detailPhoto.medium === 'analog';
     function badge(label, className) {
@@ -222,7 +219,6 @@
           <h2 id="photo-detail-title" class="collection__title"></h2>
           <p class="photo-detail__year"></p>
           <dl class="photo-detail__metadata">
-            <div><dt data-detail-copy="pixelDimensions"></dt><dd data-detail-dimensions=""></dd></div>
             <div><dt data-detail-copy="photoTechnique"></dt><dd class="photo-detail__badges"></dd></div>
             <div class="photo-detail__film"><dt data-detail-copy="filmAndIso"></dt><dd><span data-detail-film=""></span><span class="photo-medium film-iso" data-detail-iso=""></span></dd></div>
           </dl>
