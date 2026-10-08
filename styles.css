@@ -637,6 +637,7 @@ html[data-theme="light"] .photo-detail__order-summary{border-color:#939ba2;backg
 .gallery-link a { color: var(--muted); text-underline-offset: 4px; }
 .gallery-link a:hover { color: var(--foreground); }
 .gallery-link a:focus-visible { outline: 2px solid var(--foreground); outline-offset: 5px; }
+.photo-medium.film-brand--foma { background: #241511; color: #ec9377; border-color: #994f3d; }
 
 .photo-globe__places { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 4px 10px; }
 .photo-globe__places button { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; padding: 8px 4px; }

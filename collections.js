@@ -197,7 +197,7 @@
     find('.photo-detail__film').hidden = !analog;
     const film = find('[data-detail-film]'); film.textContent = detailPhoto.film || copy().notSpecified;
     film.className = 'photo-medium';
-    if (['kodak', 'fujifilm', 'ilford', 'harman', 'kono'].includes(detailPhoto.filmBrand)) film.classList.add(`film-brand--${detailPhoto.filmBrand}`);
+    if (['kodak', 'fujifilm', 'ilford', 'harman', 'foma', 'kono'].includes(detailPhoto.filmBrand)) film.classList.add(`film-brand--${detailPhoto.filmBrand}`);
     find('[data-detail-iso]').textContent = detailPhoto.iso ? `ISO ${detailPhoto.iso}` : copy().notSpecified;
     updateOrderSummary();
   }

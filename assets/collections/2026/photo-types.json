@@ -86,16 +86,16 @@
       "film": "kono-original-sunstroke",
       "iso": 200
     },
-    "cars/Car 5.png": {
-      "film": "kodak-tri-x",
-      "iso": 400
-    },
     "art/Art 1.png": {
       "film": "harman-phoenix-ii",
       "iso": 200
     },
     "art/Art 2.png": {
       "film": "fujifilm-400",
+      "iso": 400
+    },
+    "cars/Car 5.png": {
+      "film": "foma-fomapan-400",
       "iso": 400
     }
   },

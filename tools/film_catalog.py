@@ -15,6 +15,7 @@ FILMS = [
         ('ilford', 'ilford-hp5', 'Ilford HP5 Plus'),
         ('ilford', 'ilford-fp4', 'Ilford FP4 Plus'),
         ('ilford', 'ilford-delta', 'Ilford Delta'),
+        ('foma', 'foma-fomapan-400', 'Fomapan 400'),
         ('harman', 'harman-phoenix-200', 'HARMAN Phoenix 200'),
         ('harman', 'harman-phoenix-ii', 'HARMAN Phoenix II'),
         ('kono', 'kono-delight-art-100', 'KONO! Delight ART 100'),
