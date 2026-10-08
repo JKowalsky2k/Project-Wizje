@@ -15,7 +15,7 @@ from photo_previews import prepare_previews
 from seo import write_seo
 
 ROOT = Path(__file__).resolve().parents[1]
-PUBLIC_FILES = ('.htaccess', 'index.html', 'styles.css', 'script.js', 'collections.js', 'globe.js', 'favicon.svg', 'favicon.ico', 'assets/logo/social.jpg')
+PUBLIC_FILES = ('.htaccess', 'index.html', 'styles.css', 'script.js', 'collections.js', 'globe.js', 'favicon.svg', 'favicon.ico', 'assets/logo/social.jpg', 'assets/collections/posters.js')
 CSS_URL = re.compile(r'url\(\s*[\'\"]?([^\'\"\)]+?)[\'\"]?\s*\)', re.I)
 
 

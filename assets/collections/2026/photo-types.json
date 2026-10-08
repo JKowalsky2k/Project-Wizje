@@ -1,32 +1,162 @@
 {
   "photos": {
-    "alps/F1050025.JPG": "analog",
-    "alps/F1050019.JPG": "analog",
-    "alps/000318880035.jpg": "analog",
-    "cars/A7400427.jpg": "digital",
-    "cars/F1150012.JPG": "analog",
-    "cars/F1530032.JPG": "analog",
-    "alps/F1040037.JPG": "analog",
-    "alps/F1040025.JPG": "analog",
-    "alps/F1050011.JPG": "analog",
-    "dolomites/F1030009.JPG": "analog",
-    "dolomites/F1030010.JPG": "analog",
-    "dolomites/F1030033.JPG": "analog"
+    "alps/Alpy 2.png": "analog",
+    "alps/9.png": "analog",
+    "alps/Alpy 4.png": "analog",
+    "alps/Alpy 1.png": "analog",
+    "alps/Alpy 3.png": "analog",
+    "alps/Alpy 5.png": "analog",
+    "dolomites/Dolomity 1.png": "analog",
+    "dolomites/Dolomity 2.png": "analog",
+    "dolomites/Dolomity 3.png": "analog",
+    "dolomites/Dolomity 4.png": "analog",
+    "dolomites/Dolomity 5.png": "analog",
+    "dolomites/Dolomity 6.png": "analog",
+    "mazury/Art 7 (1).png": "digital",
+    "mazury/Art 7.png": "digital",
+    "mazury/Mazury 1.png": "digital",
+    "mazury/Mazury 2.png": "digital",
+    "mazury/Mazury 4.png": "digital",
+    "mazury/Mazury 5 7.png": "digital",
+    "cars/Car 1.png": "analog",
+    "cars/Car 2.png": "digital",
+    "cars/Car 3 _ Art X.png": "digital",
+    "cars/Car 4.png": "analog",
+    "cars/Car 5.png": "analog",
+    "art/Art 1.png": "analog",
+    "art/Art 2.png": "analog",
+    "art/Art 4.png": "digital",
+    "art/Art 5.png": "digital",
+    "art/Art 6.png": "digital"
   },
   "filmDetails": {
-    "alps/F1040037.JPG": {
+    "alps/Alpy 2.png": {
+      "film": "kodak-portra",
+      "iso": 400
+    },
+    "alps/9.png": {
+      "film": "kodak-portra",
+      "iso": 400
+    },
+    "alps/Alpy 4.png": {
+      "film": "kodak-ultramax",
+      "iso": 400
+    },
+    "alps/Alpy 1.png": {
+      "film": "kodak-portra",
+      "iso": 400
+    },
+    "alps/Alpy 3.png": {
       "film": "fujifilm-400",
       "iso": 400
     },
-    "alps/F1050025.JPG": {
+    "alps/Alpy 5.png": {
+      "film": "kodak-ultramax",
+      "iso": 400
+    },
+    "dolomites/Dolomity 1.png": {
+      "film": "fujifilm-400",
+      "iso": 400
+    },
+    "dolomites/Dolomity 3.png": {
+      "film": "fujifilm-400",
+      "iso": 400
+    },
+    "dolomites/Dolomity 5.png": {
+      "film": "fujifilm-400",
+      "iso": 400
+    },
+    "dolomites/Dolomity 2.png": {
+      "film": "fujifilm-400",
+      "iso": 400
+    },
+    "dolomites/Dolomity 6.png": {
+      "film": "fujifilm-400",
+      "iso": 400
+    },
+    "dolomites/Dolomity 4.png": {
+      "film": "fujifilm-400",
+      "iso": 400
+    },
+    "cars/Car 1.png": {
+      "film": "harman-phoenix-ii",
+      "iso": 200
+    },
+    "cars/Car 4.png": {
       "film": "kono-original-sunstroke",
       "iso": 200
+    },
+    "cars/Car 5.png": {
+      "film": "kodak-tri-x",
+      "iso": 400
+    },
+    "art/Art 1.png": {
+      "film": "harman-phoenix-ii",
+      "iso": 200
+    },
+    "art/Art 2.png": {
+      "film": "fujifilm-400",
+      "iso": 400
     }
   },
   "orientations": {
-    "alps/F1040037.JPG": "landscape",
-    "cars/A7400427.jpg": "landscape",
-    "cars/F1150012.JPG": "landscape",
-    "cars/F1530032.JPG": "landscape"
+    "alps/Alpy 2.png": "portrait",
+    "alps/9.png": "portrait",
+    "alps/Alpy 4.png": "portrait",
+    "alps/Alpy 1.png": "portrait",
+    "alps/Alpy 3.png": "portrait",
+    "alps/Alpy 5.png": "portrait",
+    "dolomites/Dolomity 1.png": "portrait",
+    "dolomites/Dolomity 2.png": "portrait",
+    "dolomites/Dolomity 3.png": "portrait",
+    "dolomites/Dolomity 4.png": "portrait",
+    "dolomites/Dolomity 5.png": "portrait",
+    "dolomites/Dolomity 6.png": "portrait",
+    "mazury/Art 7 (1).png": "portrait",
+    "mazury/Art 7.png": "portrait",
+    "mazury/Mazury 1.png": "portrait",
+    "mazury/Mazury 2.png": "portrait",
+    "mazury/Mazury 4.png": "portrait",
+    "mazury/Mazury 5 7.png": "portrait",
+    "cars/Car 1.png": "landscape",
+    "cars/Car 2.png": "landscape",
+    "cars/Car 3 _ Art X.png": "landscape",
+    "cars/Car 4.png": "landscape",
+    "cars/Car 5.png": "landscape",
+    "art/Art 1.png": "portrait",
+    "art/Art 2.png": "portrait",
+    "art/Art 4.png": "portrait",
+    "art/Art 5.png": "portrait",
+    "art/Art 6.png": "portrait"
+  },
+  "colorModes": {
+    "alps/Alpy 2.png": "color",
+    "alps/9.png": "color",
+    "alps/Alpy 4.png": "color",
+    "alps/Alpy 1.png": "color",
+    "alps/Alpy 3.png": "color",
+    "alps/Alpy 5.png": "color",
+    "dolomites/Dolomity 1.png": "color",
+    "dolomites/Dolomity 2.png": "color",
+    "dolomites/Dolomity 3.png": "color",
+    "dolomites/Dolomity 4.png": "color",
+    "dolomites/Dolomity 5.png": "color",
+    "dolomites/Dolomity 6.png": "color",
+    "mazury/Art 7 (1).png": "color",
+    "mazury/Art 7.png": "color",
+    "mazury/Mazury 1.png": "color",
+    "mazury/Mazury 2.png": "color",
+    "mazury/Mazury 4.png": "color",
+    "mazury/Mazury 5 7.png": "color",
+    "cars/Car 1.png": "color",
+    "cars/Car 2.png": "color",
+    "cars/Car 3 _ Art X.png": "color",
+    "cars/Car 4.png": "color",
+    "cars/Car 5.png": "monochrome",
+    "art/Art 1.png": "color",
+    "art/Art 2.png": "color",
+    "art/Art 4.png": "color",
+    "art/Art 5.png": "color",
+    "art/Art 6.png": "color"
   }
 }

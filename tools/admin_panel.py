@@ -29,7 +29,7 @@ ERRORS_EN = {
  'Nieprawidłowa ścieżka biblioteki.': 'Invalid library path.',
  'Nie znaleziono zdjęcia w bibliotece.': 'Photo not found in the library.',
  'Kolekcja zawiera już plik o tej nazwie.': 'This collection already contains a file with that name.',
- 'Aby usunąć trwale, wpisz dokładną nazwę pliku.': 'Enter the exact filename to permanently delete the photo.',
+ 'Potwierdź trwałe usunięcie zdjęcia.': 'Confirm permanent photo deletion.',
  'Nie można bezpiecznie wyczyścić kopii zdjęcia.': 'Cannot safely clean up photo copies.',
  'Trwałe usuwanie nie zostało zakończone. Odśwież panel, aby ponowić czyszczenie.': 'Permanent deletion is incomplete. Refresh the panel to retry cleanup.',
  'Nie można usunąć kolekcji zawierającej dowiązania symboliczne.': 'Cannot delete a collection containing symbolic links.',
@@ -469,6 +469,8 @@ class LocalAdmin:
             raise RuntimeError('Hasło musi być przechowywane poza katalogiem strony.')
         migrate_credentials(root, self.password_path)
         self.store = EditorStore(root, photo_root, rebuild, trash_root=self.password_path.parent / 'trash')
+        self.poster_catalog_path = root / 'assets/collections/posters.json'
+        self.poster_script_path = root / 'assets/collections/posters.js'
         self.store.library.finish_pending()
         self.exports = {}
         self.auth_csrf = secrets.token_urlsafe(32)
@@ -476,6 +478,38 @@ class LocalAdmin:
         self.csrf = secrets.token_urlsafe(32)
         self.sessions = {}
         self.assets = Path(__file__).parent / 'admin'
+
+    def poster_catalog(self):
+        posters = read_json(self.poster_catalog_path, [{'name': '50 × 70 cm', 'priceCents': 6999}])
+        if not isinstance(posters, list) or not posters:
+            raise EditorError('Katalog plakatów jest nieprawidłowy.')
+        return posters
+
+    def save_poster_catalog(self, posters):
+        if not isinstance(posters, list) or not posters or len(posters) > 30:
+            raise EditorError('Dodaj od 1 do 30 formatów plakatów.')
+        normalized, names = [], set()
+        for poster in posters:
+            if not isinstance(poster, dict):
+                raise EditorError('Nieprawidłowy format plakatu.')
+            name, price = poster.get('name'), poster.get('priceCents')
+            if (not isinstance(name, str) or not name.strip() or len(name.strip()) > 40
+                    or isinstance(price, bool) or not isinstance(price, int) or not 0 <= price <= 100000000):
+                raise EditorError('Podaj nazwę formatu i prawidłową cenę (0–1 000 000 zł).')
+            name = name.strip()
+            if name.casefold() in names:
+                raise EditorError('Formaty plakatów muszą mieć różne nazwy.')
+            names.add(name.casefold())
+            normalized.append({'name': name, 'priceCents': price})
+        write_json(self.poster_catalog_path, normalized)
+        script = '// Global poster catalogue. Managed in the local admin panel.\nwindow.ZWIDY_POSTERS = ' + json.dumps(normalized, ensure_ascii=False) + ';\n'
+        temp = self.poster_script_path.with_name('.posters.js.' + secrets.token_hex(6))
+        try:
+            temp.write_text(script, encoding='utf-8')
+            temp.replace(self.poster_script_path)
+        finally:
+            temp.unlink(missing_ok=True)
+        return normalized
 
     def year_store(self, year=None, create=False):
         year = str(year) if year is not None else self.store.photo_root.name
@@ -595,7 +629,7 @@ class LocalAdmin:
             with self.lock:
                 try:
                     self.store.library.finish_pending()
-                    self.send(handler, 200, {'collections': self.collections_state(), 'library': self.store.library.state(), 'films': FILMS, 'isoValues': ISO_VALUES, 'csrf': self.csrf})
+                    self.send(handler, 200, {'collections': self.collections_state(), 'library': self.store.library.state(), 'films': FILMS, 'isoValues': ISO_VALUES, 'posters': self.poster_catalog(), 'csrf': self.csrf})
                 except EditorError as error:
                     self.send(handler, error.status, {'error': str(error)})
             return True
@@ -721,6 +755,8 @@ class LocalAdmin:
                         raise EditorError('Nieprawidłowe dane.')
                     if url.path == '/admin/api/export':
                         result = self.export(handler)
+                    elif url.path == '/admin/api/posters':
+                        result = {'posters': self.save_poster_catalog(data.get('posters'))}
                     elif url.path == '/admin/api/reorder-collections':
                         self.year_store(data.get('year')).reorder(data.get('order'), expected=data.get('expected'))
                         result = {'ok': True}
@@ -737,7 +773,7 @@ class LocalAdmin:
                         self.year_store(data.get('year')).library.attach(data.get('id'), data.get('collection'))
                         result = {'ok': True}
                     elif url.path == '/admin/api/purge-photo':
-                        self.year_store(data.get('year')).library.purge(data.get('confirmation'), collection=data.get('collection'), name=data.get('name'), identifier=data.get('id'))
+                        self.year_store(data.get('year')).library.purge(data.get('confirmed'), collection=data.get('collection'), name=data.get('name'), identifier=data.get('id'))
                         self.exports.clear()
                         result = {'ok': True}
                     elif url.path == '/admin/api/delete-photo':

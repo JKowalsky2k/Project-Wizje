@@ -1,0 +1,42 @@
+{
+  "collections": [
+    "dolomites",
+    "alps",
+    "mazury",
+    "cars",
+    "art"
+  ],
+  "photos": {
+    "dolomites": [
+      "Dolomity 1.png",
+      "Dolomity 3.png",
+      "Dolomity 5.png",
+      "Dolomity 2.png",
+      "Dolomity 6.png",
+      "Dolomity 4.png"
+    ],
+    "alps": [
+      "Alpy 1.png",
+      "Alpy 2.png",
+      "9.png",
+      "Alpy 3.png",
+      "Alpy 4.png",
+      "Alpy 5.png"
+    ],
+    "mazury": [
+      "Art 7 (1).png",
+      "Art 7.png",
+      "Mazury 1.png",
+      "Mazury 4.png",
+      "Mazury 2.png",
+      "Mazury 5 7.png"
+    ],
+    "art": [
+      "Art 4.png",
+      "Art 1.png",
+      "Art 2.png",
+      "Art 5.png",
+      "Art 6.png"
+    ]
+  }
+}

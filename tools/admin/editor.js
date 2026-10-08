@@ -168,11 +168,12 @@ window.WizjeSortable = (() => {
   const $ = selector => document.querySelector(selector);
   const text = {
     pl: {
+      posterSettings: 'Plakaty i ceny', posterSettingsHint: 'Globalne formaty i ceny wyświetlane przy każdym zdjęciu.', posterAdd: 'Dodaj format', posterSave: 'Zapisz formaty i ceny', posterFormat: 'Format (cm)', posterPrice: 'Cena (zł)', posterRemove: 'Usuń format', posterSaved: 'Zapisano globalne formaty i ceny. Przygotuj nowy ZIP przed publikacją.',
       dragOrder: 'Przeciągnij, aby zmienić kolejność: {name}', draggingOrder: 'Przesuń w nowe miejsce i puść. Esc anuluje.', orderHint: 'Przeciągnij zdjęcie lub uchwyt ⋮⋮. Kolejność zapisze się po puszczeniu.',
       orderPosition: 'Pozycja {index} z {total}', moveEarlier: 'Przesuń wcześniej: {name}', moveLater: 'Przesuń później: {name}', orderSaved: 'Kolejność zapisana. Odśwież podgląd strony. Przed publikacją przygotuj nowy ZIP.',
       libraryTitle: 'Biblioteka zdjęć', libraryHint: 'Zdjęcia odłączone od kolekcji. Możesz dodać je ponownie bez przesyłania pliku.', libraryEmpty: 'Nie ma zdjęć odłączonych od kolekcji.', libraryTarget: 'Dodawanie do kolekcji: {collection}', libraryChoose: 'Wybierz lub utwórz kolekcję, aby dodać do niej zdjęcia z biblioteki.', libraryAdd: 'Dodaj do kolekcji', libraryAdded: 'Dodano „{name}” z biblioteki. Odśwież podgląd strony.',
-      purgePhoto: 'Usuń trwale', purgePhotoLabel: 'Usuń trwale zdjęcie {name}', purging: 'Trwałe usuwanie pliku i kopii aplikacji…', purged: 'Zdjęcie usunięte trwale z plików aplikacji. Podglądy pozostałych zdjęć zostały odbudowane. Przygotuj nową paczkę do publikacji.', wrongConfirmation: 'Nazwa pliku nie jest zgodna. Niczego nie usunięto.',
-      confirmPurge: 'TRWAŁE USUNIĘCIE: {name}\n\nUsunie oryginał i identyczne kopie ze wszystkich kolekcji oraz biblioteki/kosza. Wyczyści też WSZYSTKIE lokalne podglądy i paczki publikacji (foldery i ZIP-y); podglądy pozostałych zdjęć zostaną odbudowane.\n\nNie usuwa plików wysłanych wcześniej na hosting, pobranych kopii ani backupów systemowych. Operacji nie można cofnąć w panelu.\n\nAby potwierdzić, wpisz dokładną nazwę pliku:',
+      purgePhoto: 'Usuń trwale', purgePhotoLabel: 'Usuń trwale zdjęcie {name}', purging: 'Trwałe usuwanie pliku i kopii aplikacji…', purged: 'Zdjęcie usunięte trwale z plików aplikacji. Podglądy pozostałych zdjęć zostały odbudowane. Przygotuj nową paczkę do publikacji.',
+      confirmPurge: 'Trwale usunąć zdjęcie „{name}”?\n\nUsunie oryginał i identyczne kopie ze wszystkich kolekcji oraz biblioteki/kosza. Wyczyści też WSZYSTKIE lokalne podglądy i paczki publikacji (foldery i ZIP-y); podglądy pozostałych zdjęć zostaną odbudowane.\n\nNie usuwa plików wysłanych wcześniej na hosting, pobranych kopii ani backupów systemowych. Operacji nie można cofnąć w panelu.',
       deletePhoto: 'Odłącz od kolekcji', deletePhotoLabel: 'Odłącz zdjęcie {name} od kolekcji', deleteCollection: 'Usuń kolekcję',
       confirmDeletePhoto: 'Odłączyć zdjęcie „{name}” od kolekcji „{collection}”? Zostanie w bibliotece, gotowe do ponownego dodania.',
       confirmDeleteCollection: 'Usunąć kolekcję „{collection}”? Jej zdjęcia ({count}) pozostaną w bibliotece.',
@@ -202,11 +203,12 @@ window.WizjeSortable = (() => {
       alps: 'Alpy', cars: 'Samochody', dolomites: 'Dolomity', planes: 'Samoloty', torun: 'Toruń',
     },
     en: {
+      posterSettings: 'Posters and prices', posterSettingsHint: 'Global sizes and prices shown with every photo.', posterAdd: 'Add size', posterSave: 'Save sizes and prices', posterFormat: 'Size (cm)', posterPrice: 'Price (PLN)', posterRemove: 'Remove size', posterSaved: 'Global sizes and prices saved. Prepare a new ZIP before publishing.',
       dragOrder: 'Drag to reorder: {name}', draggingOrder: 'Move to a new position and release. Esc cancels.', orderHint: 'Drag a photo or the ⋮⋮ handle. Release to save its position.',
       orderPosition: 'Position {index} of {total}', moveEarlier: 'Move earlier: {name}', moveLater: 'Move later: {name}', orderSaved: 'Order saved. Refresh the website preview. Prepare a new ZIP before publishing.',
       libraryTitle: 'Photo library', libraryHint: 'Photos removed from collections. Add them again without uploading the file.', libraryEmpty: 'There are no detached photos.', libraryTarget: 'Adding to collection: {collection}', libraryChoose: 'Choose or create a collection to add photos from the library.', libraryAdd: 'Add to collection', libraryAdded: 'Added “{name}” from the library. Refresh the website preview.',
-      purgePhoto: 'Delete permanently', purgePhotoLabel: 'Permanently delete photo {name}', purging: 'Permanently deleting the file and application copies…', purged: 'Photo permanently removed from application files. Previews for remaining photos have been rebuilt. Prepare a new publishing package.', wrongConfirmation: 'The filename does not match. Nothing was deleted.',
-      confirmPurge: 'PERMANENT DELETION: {name}\n\nDeletes the original and identical copies from all collections and the library/trash. Also clears ALL local previews and publishing packages (folders and ZIPs); previews for remaining photos will be rebuilt.\n\nDoes not remove previously published hosting files, downloaded copies or system backups. This cannot be undone in the panel.\n\nTo confirm, enter the exact filename:',
+      purgePhoto: 'Delete permanently', purgePhotoLabel: 'Permanently delete photo {name}', purging: 'Permanently deleting the file and application copies…', purged: 'Photo permanently removed from application files. Previews for remaining photos have been rebuilt. Prepare a new publishing package.',
+      confirmPurge: 'Permanently delete “{name}”?\n\nThis removes the original and identical copies from all collections and the library/trash. It also clears ALL local previews and publishing packages (folders and ZIPs); previews for remaining photos will be rebuilt.\n\nIt does not remove previously published hosting files, downloaded copies or system backups. This cannot be undone in the panel.',
       deletePhoto: 'Remove from collection', deletePhotoLabel: 'Remove photo {name} from collection', deleteCollection: 'Delete collection',
       confirmDeletePhoto: 'Remove “{name}” from “{collection}”? It will stay in the library, ready to add again.',
       confirmDeleteCollection: 'Delete collection “{collection}”? Its photos ({count}) will remain in the library.',
@@ -240,7 +242,7 @@ window.WizjeSortable = (() => {
   try { if (localStorage.getItem('wizje-admin-language') === 'en') language = 'en'; } catch {}
   const t = (key, values = {}) => (text[language][key] ?? key).replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '');
   let lastStatus = { key: 'loading', values: {}, error: false };
-  let state = { collections: [], csrf: '' };
+  let state = { collections: [], posters: [], csrf: '' };
   let selectedId = null;
   let busy = false;
   let uploadDetails = {};
@@ -297,6 +299,39 @@ window.WizjeSortable = (() => {
     const code = document.createElement('code'); code.textContent = photoReference(photo);
     reference.append(label, code); return reference;
   }
+  function renderPosterSettings() {
+    const list = $('#poster-list');
+    list.replaceChildren();
+    for (const poster of state.posters || []) {
+      const row = document.createElement('div'); row.className = 'poster-row';
+      const nameLabel = document.createElement('label'); nameLabel.textContent = t('posterFormat');
+      const name = document.createElement('input'); name.type = 'text'; name.maxLength = 40; name.value = poster.name; name.required = true;
+      nameLabel.append(name);
+      const priceLabel = document.createElement('label'); priceLabel.textContent = t('posterPrice');
+      const price = document.createElement('input'); price.type = 'number'; price.min = '0'; price.max = '1000000'; price.step = '0.01'; price.value = (poster.priceCents / 100).toFixed(2); price.required = true;
+      priceLabel.append(price);
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'secondary'; remove.textContent = '−'; remove.title = t('posterRemove'); remove.setAttribute('aria-label', `${t('posterRemove')}: ${poster.name}`);
+      remove.addEventListener('click', () => { if (list.querySelectorAll('.poster-row').length > 1) row.remove(); });
+      row.append(nameLabel, priceLabel, remove); list.append(row);
+    }
+  }
+  $('#poster-add').addEventListener('click', () => {
+    const row = document.createElement('div'); row.className = 'poster-row';
+    const nameLabel = document.createElement('label'); nameLabel.textContent = t('posterFormat');
+    const name = document.createElement('input'); name.type = 'text'; name.maxLength = 40; name.placeholder = 'np. 70 × 100'; name.required = true; nameLabel.append(name);
+    const priceLabel = document.createElement('label'); priceLabel.textContent = t('posterPrice');
+    const price = document.createElement('input'); price.type = 'number'; price.min = '0'; price.max = '1000000'; price.step = '0.01'; price.value = '0'; price.required = true; priceLabel.append(price);
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'secondary'; remove.textContent = '−'; remove.title = t('posterRemove'); remove.setAttribute('aria-label', t('posterRemove')); remove.addEventListener('click', () => { if ($('#poster-list').querySelectorAll('.poster-row').length > 1) row.remove(); });
+    row.append(nameLabel, priceLabel, remove); $('#poster-list').append(row); name.focus();
+  });
+  $('#poster-save').addEventListener('click', () => mutate(async () => {
+    const posters = [...$('#poster-list').querySelectorAll('.poster-row')].map(row => ({
+      name: row.querySelector('input[type="text"]').value.trim(),
+      priceCents: Math.round(Number(row.querySelector('input[type="number"]').value) * 100),
+    }));
+    await request('posters', { posters });
+    invalidateExport(); await reload(); status('posterSaved');
+  }));
   function lock(value) {
     busy = value;
     document.querySelectorAll('button, input, select').forEach(control => { control.disabled = value || control.dataset.orderBoundary === 'true' || (control.dataset.requiresCollection === 'true' && !selected()); });
@@ -412,12 +447,10 @@ window.WizjeSortable = (() => {
     button.append(actionIcon('trash')); button.title = t('purgePhoto'); button.setAttribute('aria-label', t('purgePhotoLabel', { name: photo.name }));
     button.addEventListener('click', () => {
       if (busy) return;
-      const confirmation = window.prompt(t('confirmPurge', { name: photo.name }));
-      if (confirmation === null) return;
-      if (confirmation !== photo.name) { status('wrongConfirmation', {}, true); return; }
+      if (!window.confirm(t('confirmPurge', { name: photo.name }))) return;
       return mutate(async () => {
         status('purging'); invalidateExport();
-        await request('purge-photo', { ...target, confirmation });
+        await request('purge-photo', { ...target, confirmed: true });
         await reload(); status('purged');
       });
     });
@@ -450,12 +483,21 @@ window.WizjeSortable = (() => {
   }
   let editingLocationIndex = null;
   const collectionLocations = collection => collection.locations || (collection.location ? [collection.location] : []);
-  const locationPresets = [
-    { id: 'torun', name: 'Toruń', lat: 53.01, lon: 18.60 },
-    { id: 'wroclaw', name: 'Wrocław', lat: 51.10, lon: 17.03 },
-    { id: 'alps', name: 'Alpy Francuskie', nameEn: 'French Alps', label: 'frenchAlps', lat: 45.83, lon: 6.85 },
-    { id: 'dolomites', name: 'Dolomity · Włochy', nameEn: 'Dolomites · Italy', label: 'italianDolomites', lat: 46.43, lon: 11.85 },
-  ];
+  function locationPresets() {
+    const places = new Map();
+    for (const collection of state.collections) {
+      for (const location of collectionLocations(collection)) {
+        const lat = Number(location.lat), lon = Number(location.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+        const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+        if (!places.has(key)) places.set(key, {
+          id: `location-${places.size}`, name: location.name,
+          nameEn: location.nameEn, lat, lon,
+        });
+      }
+    }
+    return [...places.values()];
+  }
   function fillLocation(location) {
     $('#location-name').value = location?.name || '';
     $('#location-name-en').value = location?.nameEn || '';
@@ -464,9 +506,9 @@ window.WizjeSortable = (() => {
   }
   function renderLocation(collection) {
     const select = $('#location-preset'); select.replaceChildren();
-    for (const place of [{ id: '', name: t('customLocation') }, ...locationPresets]) {
+    for (const place of [{ id: '', name: t('customLocation') }, ...locationPresets()]) {
       const option = document.createElement('option'); option.value = place.id;
-      option.textContent = place.label ? t(place.label) : place.name; select.append(option);
+      option.textContent = place.id && language === 'en' ? (place.nameEn || place.name) : place.name; select.append(option);
     }
     resetLocationForm();
     const list = $('#collection-locations'); list.replaceChildren();
@@ -482,7 +524,7 @@ window.WizjeSortable = (() => {
       edit.addEventListener('click', () => {
         if (busy) return;
         editingLocationIndex = index; fillLocation(location);
-        select.value = locationPresets.find(place => place.lat === location.lat && place.lon === location.lon)?.id || '';
+        select.value = locationPresets().find(place => place.lat === location.lat && place.lon === location.lon)?.id || '';
         $('#save-location').textContent = t('saveLocation'); $('#cancel-location').hidden = false;
         $('#location-name').focus();
       });
@@ -504,7 +546,7 @@ window.WizjeSortable = (() => {
   }
   $('#cancel-location').addEventListener('click', resetLocationForm);
   $('#location-preset').addEventListener('change', () => {
-    const place = locationPresets.find(place => place.id === $('#location-preset').value);
+    const place = locationPresets().find(place => place.id === $('#location-preset').value);
     if (place) fillLocation(place);
   });
   $('#location-form').addEventListener('submit', event => {
@@ -595,6 +637,7 @@ window.WizjeSortable = (() => {
   }
   function render() {
     window.WizjeSortable.cancel();
+    renderPosterSettings();
     renderLibrary();
     renderUploadFilm();
     const navigation = $('#collections');

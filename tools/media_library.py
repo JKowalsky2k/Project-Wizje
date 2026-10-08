@@ -111,7 +111,7 @@ class MediaLibrary:
         return (not any(p.is_symlink() for p in (path, *path.parents))
                 and any(path.resolve().is_relative_to(root) and path.resolve() != root for root in allowed))
 
-    def purge(self, confirmation, collection=None, name=None, identifier=None):
+    def purge(self, confirmed, collection=None, name=None, identifier=None):
         if identifier is not None:
             item = self.find(identifier)
             source, filename = item['path'], item['name']
@@ -120,8 +120,8 @@ class MediaLibrary:
             filename = name
             if not source.is_file():
                 raise EditorError('Nie znaleziono zdjęcia.', 404)
-        if confirmation != filename:
-            raise EditorError('Aby usunąć trwale, wpisz dokładną nazwę pliku.')
+        if confirmed is not True:
+            raise EditorError('Potwierdź trwałe usunięcie zdjęcia.')
         fingerprint = digest(source)
         targets = set()
         # Remove byte-identical originals across collections and the old trash/library.

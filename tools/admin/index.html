@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wizje — pracownia</title>
   <link rel="stylesheet" href="/assets/logo/logo.css">
-  <link rel="stylesheet" href="/admin/editor.css?v=d107598a42">
-  <script src="/admin/editor.js?v=62cc521e5d" defer></script>
+  <link rel="stylesheet" href="/admin/editor.css?v=20261008-2">
+  <script src="/admin/editor.js?v=20261008-2" defer></script>
   <link rel="icon" href="/favicon.ico?v=ffec70d8f2" sizes="16x16 32x32 48x48">
   <link rel="icon" href="/favicon.svg?v=ffec70d8f2" type="image/svg+xml" sizes="any">
 </head>
@@ -34,6 +34,13 @@
           <button class="primary" type="submit" aria-label="Utwórz kolekcję" data-i18n-aria="createCollection"><span class="create-plus" aria-hidden="true"></span></button>
         </div>
       </form>
+      <section class="poster-settings" aria-labelledby="poster-settings-title">
+        <h2 id="poster-settings-title" data-i18n="posterSettings">Plakaty i ceny</h2>
+        <p class="crop-note" data-i18n="posterSettingsHint">Globalne formaty i ceny wyświetlane przy każdym zdjęciu.</p>
+        <div id="poster-list"></div>
+        <button id="poster-add" class="secondary" type="button" data-i18n="posterAdd">Dodaj format</button>
+        <button id="poster-save" class="primary" type="button" data-i18n="posterSave">Zapisz formaty i ceny</button>
+      </section>
       <section class="export-panel" aria-labelledby="export-title">
         <h2 id="export-title" data-i18n="exportTitle">Publikacja strony</h2>
         <p class="crop-note" data-i18n="exportHint">Przygotuj paczkę na hosting. Zawiera wyłącznie publiczną stronę i zdjęcia do wyświetlania.</p>

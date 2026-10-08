@@ -85,3 +85,4 @@
 .sort-ghost.collection-order-row svg { width: 18px; height: 18px; }
 .sort-ghost .collection-tree-name { flex: 1; }
 @media (prefers-reduced-motion: reduce) { .sort-ghost { transform: none; } }
+.poster-settings{border-top:1px solid var(--line);margin-top:24px;padding-top:18px}.poster-settings h2{margin:0 0 10px;font-size:16px}.poster-settings>.primary,.poster-settings>.secondary{width:100%;margin-top:8px}.poster-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(86px,.65fr) 36px;align-items:end;gap:8px;margin:12px 0}.poster-row label{display:grid;gap:6px;font-size:10px;color:var(--muted)}.poster-row input{min-width:0;width:100%;padding:8px;border:1px solid #55594d;border-radius:4px;background:#10110f;color:var(--text);font-size:12px}

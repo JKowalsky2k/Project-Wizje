@@ -5,6 +5,11 @@
   const galleries = [];
   const letterStyles = ['z', 'w', 'i', 'd', 'y'];
   const copy = () => translations[document.documentElement.lang] || translations.en;
+  const posters = () => Array.isArray(window.ZWIDY_POSTERS) && window.ZWIDY_POSTERS.length
+    ? window.ZWIDY_POSTERS : [{ name: '50 × 70 cm', priceCents: 6999 }];
+  const posterPrice = poster => new Intl.NumberFormat(document.documentElement.lang || 'pl', {
+    style: 'currency', currency: 'PLN', minimumFractionDigits: 2,
+  }).format(poster.priceCents / 100);
 
   // A UI deterrent only: public images remain accessible to the browser.
   function discouragePhotoSaving(surface) {
@@ -100,7 +105,8 @@
     const c = copy();
     const index = detailCollection.photos.indexOf(detailPhoto);
     const title = c[`${detailCollection.id}Title`] || detailCollection.title;
-    const size = detailDialog.querySelector('input[name="poster-size"]:checked')?.value || 'A4';
+    const size = detailDialog.querySelector('input[name="poster-size"]:checked')?.value || posters()[0].name;
+    const poster = posters().find(item => item.name === size) || posters()[0];
     const margins = detailDialog.querySelector('#detail-margins').checked;
     const matColor = detailDialog.dataset.matColor === 'white' ? c.whiteMat : c.blackMat;
     const lines = [
@@ -108,7 +114,8 @@
       `${c.orderCollection}: ${title} (${detailCollection.year})`,
       `${c.orderPhoto}: ${String(index + 1).padStart(2, '0')} / ${String(detailCollection.photos.length).padStart(2, '0')}`,
       `${c.orderReference}: ${photoReference(detailPhoto, index)}`,
-      `${c.orderFormat}: ${size} ${c[`size${size}`]}`,
+      `${c.orderFormat}: ${size}`,
+      `${c.orderPrice}: ${posterPrice(poster)}`,
       `${c.orderMargins}: ${margins ? matColor : c.orderNoMargins}`,
     ];
     lines.push('', c.orderSendInstruction);
@@ -117,6 +124,8 @@
 
   function updateOrderSummary() {
     if (!detailDialog || !detailPhoto) return;
+    const chosen = posters().find(item => item.name === detailDialog.querySelector('input[name="poster-size"]:checked')?.value) || posters()[0];
+    detailDialog.querySelector('[data-poster-price]').textContent = posterPrice(chosen);
     const field = detailDialog.querySelector('.photo-detail__order-summary');
     field.value = orderSummaryText();
     field.style.height = 'auto';
@@ -162,6 +171,8 @@
     if (!detailDialog || !detailPhoto) return;
     const find = selector => detailDialog.querySelector(selector);
     detailDialog.querySelectorAll('[data-detail-copy]').forEach(node => { node.textContent = copy()[node.dataset.detailCopy]; });
+    const selectedPoster = posters().find(item => item.name === detailDialog.querySelector('input[name="poster-size"]:checked')?.value) || posters()[0];
+    find('[data-poster-price]').textContent = posterPrice(selectedPoster);
     find('.photo-detail__close').setAttribute('aria-label', copy().closePreview);
     const order = find('.photo-detail__order');
     order.hidden = !instagramProfile;
@@ -229,11 +240,8 @@
             <h3 id="photo-order-title" data-detail-copy="orderTitle"></h3>
             <fieldset class="photo-detail__sizes">
               <legend data-detail-copy="posterSize"></legend>
-              <label><input type="radio" name="poster-size" value="A3"><span><strong>A3</strong><small data-detail-copy="sizeA3"></small></span></label>
-              <label><input type="radio" name="poster-size" value="A4" checked><span><strong>A4</strong><small data-detail-copy="sizeA4"></small></span></label>
-              <label><input type="radio" name="poster-size" value="A5"><span><strong>A5</strong><small data-detail-copy="sizeA5"></small></span></label>
             </fieldset>
-            <p class="photo-detail__price"><span data-detail-copy="posterPriceLabel"></span><strong data-detail-copy="posterPrice"></strong></p>
+            <p class="photo-detail__price"><span data-detail-copy="posterPriceLabel"></span><strong data-poster-price></strong></p>
             <label class="photo-detail__summary-label"><span data-detail-copy="orderSummary"></span>
               <textarea class="photo-detail__order-summary" rows="1" wrap="soft" readonly></textarea>
             </label>
@@ -251,6 +259,13 @@
     discouragePhotoSaving(detailDialog.querySelector('.detail-preview'));
     document.body.append(detailDialog);
     const find = selector => detailDialog.querySelector(selector);
+    const sizeChoices = find('.photo-detail__sizes');
+    posters().forEach((poster, index) => {
+      const label = document.createElement('label');
+      const input = document.createElement('input'); input.type = 'radio'; input.name = 'poster-size'; input.value = poster.name; input.checked = index === 0;
+      const span = document.createElement('span'); const strong = document.createElement('strong'); strong.textContent = poster.name; span.append(strong);
+      label.append(input, span); sizeChoices.append(label);
+    });
     find('.photo-detail__close').addEventListener('click', () => detailDialog.close());
     detailDialog.addEventListener('click', event => { if (event.target === detailDialog) {
       const bounds = detailDialog.getBoundingClientRect();
