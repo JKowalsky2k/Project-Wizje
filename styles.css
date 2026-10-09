@@ -530,6 +530,7 @@ html[lang="pl"] .intro__line--accent {
 /* All carousel slots keep identical box geometry while moving. Only the
    decoration changes, so percentage translations keep the same reference. */
 .drum-card__mat{padding:clamp(15px,2.6vw,24px);background:#050505}
+.collection__drum .drum-card[data-center="false"] .drum-card__frame{background:#050505;border-color:#ffffff55;border-radius:0}
 .drum-card[data-center="true"] .drum-card__mat{box-shadow:inset 0 0 0 1px #211d15}
 .drum-card__frame{position:relative;transition:box-shadow .5s ease,border-color .5s ease}
 .drum-card__frame::before{content:"";position:absolute;inset:-17px;pointer-events:none;border:16px solid #967033;border-image:linear-gradient(135deg,#f1d994 0%,#8c5f24 12%,#dbb65e 24%,#69431c 38%,#b1853c 55%,#533618 70%,#d5b16a 86%,#8e602c 100%) 16;opacity:0;box-shadow:0 0 0 1px #e8c675,0 0 0 3px #4b3117,0 0 0 4px #b9954f,0 14px 28px #000c,inset 0 0 0 2px #34220e;transition:opacity .5s ease}
@@ -550,7 +551,13 @@ body.has-photo-detail{overflow:hidden}
 .photo-detail::backdrop{background:#050505e8;backdrop-filter:blur(7px)}
 .photo-detail__close{position:absolute;right:14px;top:14px;z-index:5;display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid var(--rule);border-radius:50%;background:#171814;color:var(--foreground);font:24px/1 var(--sans);cursor:pointer}.photo-detail__close span{display:block;transform:translateY(-2px)}
 .photo-detail__layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;min-height:480px}
-.photo-detail__art{position:sticky;top:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;height:calc(100dvh - 42px);gap:20px;padding:52px 40px;background:radial-gradient(ellipse at center,#24241d,#0b0c0a 75%)}
+.photo-detail__art{position:sticky;top:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;height:calc(100dvh - 42px);gap:48px;padding:52px 40px;background:radial-gradient(ellipse at center,#24241d,#0b0c0a 75%)}
+.photo-detail__navigation{display:flex;justify-content:center;gap:16px;flex-shrink:0}
+.photo-detail__navigation button{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid var(--rule);border-radius:50%;background:#171814;color:var(--foreground);font:22px/1 var(--sans);cursor:pointer;touch-action:manipulation}
+.photo-detail__navigation button:hover{border-color:#a9b6c7;background:#252b30}
+.photo-detail__navigation button:focus-visible{outline:2px solid #a9b6c7;outline-offset:4px}
+html[data-theme="light"] .photo-detail__navigation button{background:#eee9e0;color:#171817;border-color:#aeb2ad}
+html[data-theme="light"] .photo-detail__navigation button:hover{background:#dce1e5;border-color:#707984}
 .photo-detail .detail-preview{--detail-ratio:5/7;--detail-height-ratio:1.4;position:relative;top:auto;left:auto;width:min(380px,44vh);max-width:100%;transform:none;backface-visibility:visible;cursor:default}
 /* Proportional insets keep the opening and outer frame at the same ratio
    in both orientations, accounting for the 1px border. */
@@ -607,6 +614,8 @@ html[data-theme="light"] .collection__drum::after{background:linear-gradient(90d
 html[data-theme="light"] .collection__arrow{background:#e9e4dbe8;color:#171817}
 html[data-theme="light"] .collection__arrow:hover,html[data-theme="light"] .year-picker__arrow:hover:not(:disabled){background:#dcd6cc}
 html[data-theme="light"] .collection__drum .drum-card[data-center="true"] .drum-card__mat{background:#f5f3ee;box-shadow:inset 0 0 0 1px #b9b8b2}
+html[data-theme="light"] .collection__drum .drum-card[data-center="false"] .drum-card__frame{background:#f5f3ee;border-color:#00000055}
+html[data-theme="light"] .collection__drum .drum-card[data-center="false"] .drum-card__mat{background:#f5f3ee}
 html[data-theme="light"] .photo-globe__sphere{fill:#e4dfd6;stroke:#979991}
 html[data-theme="light"] .photo-globe__grid{stroke:#c2beb5}
 html[data-theme="light"] .photo-globe__borders{stroke:#555b55}

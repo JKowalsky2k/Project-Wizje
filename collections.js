@@ -144,6 +144,7 @@
   let detailCollection = null;
   let detailOpener = null;
   let detailOpen = false;
+  let detailRequest = 0;
   let orderCopyTimer = null;
 
   function photoReference(collection, index) {
@@ -226,6 +227,9 @@
     const selectedPoster = posters().find(item => item.name === detailDialog.querySelector('input[name="poster-size"]:checked')?.value) || posters()[0];
     find('[data-poster-price]').textContent = posterPrice(selectedPoster);
     find('.photo-detail__close').setAttribute('aria-label', copy().closePreview);
+    find('.photo-detail__previous').setAttribute('aria-label', copy().previousPhotos);
+    find('.photo-detail__next').setAttribute('aria-label', copy().nextPhotos);
+    find('.photo-detail__navigation').hidden = detailCollection.photos.length < 2;
     const order = find('.photo-detail__order');
     order.hidden = !instagramProfile;
     if (instagramProfile) {
@@ -262,6 +266,10 @@
             <div class="drum-card__frame"><div class="drum-card__mat">
               <img class="photo-detail__image" decoding="async" draggable="false" alt="">
             </div>${['tl', 'tr', 'bl', 'br'].map(corner => `<span class="museum-corner museum-corner--${corner}" aria-hidden="true">${frameCorner}</span>`).join('')}</div>
+          </div>
+          <div class="photo-detail__navigation">
+            <button class="photo-detail__previous" type="button"><span aria-hidden="true">←</span></button>
+            <button class="photo-detail__next" type="button"><span aria-hidden="true">→</span></button>
           </div>
           <p class="photo-detail__load-error" role="status" hidden data-detail-copy="photoError"></p>
         </div>
@@ -314,6 +322,15 @@
       label.append(input, span); sizeChoices.append(label);
     });
     find('.photo-detail__close').addEventListener('click', () => detailDialog.close());
+    find('.photo-detail__previous').addEventListener('click', () => navigateDetail(-1));
+    find('.photo-detail__next').addEventListener('click', () => navigateDetail(1));
+    detailDialog.addEventListener('keydown', event => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.closest('input, textarea, select, [contenteditable]')) return;
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        navigateDetail(event.key === 'ArrowLeft' ? -1 : 1);
+      }
+    });
     detailDialog.addEventListener('click', event => { if (event.target === detailDialog) {
       const bounds = detailDialog.getBoundingClientRect();
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) detailDialog.close();
@@ -369,22 +386,41 @@
     syncDetailMatToTheme();
   }
   document.addEventListener('themechange', syncDetailMatToTheme);
-  function openDetail(card) {
-    if (card.slot !== 0 || card.collection.busy || card.element.getAttribute('aria-hidden') === 'true') return;
-    ensureDetailDialog();
-    detailPhoto = card.photo; detailCollection = card.collection; detailOpener = card.element;
+  function showDetailPhoto(photo) {
+    const request = ++detailRequest;
+    detailPhoto = photo;
     detailDialog.dataset.landscape = String(detailPhoto.orientation === 'landscape');
     detailDialog.style.setProperty("--photo-ratio", detailPhoto.sourceWidth > detailPhoto.sourceHeight ? `${detailPhoto.sourceWidth} / ${detailPhoto.sourceHeight}` : "7 / 5");
     detailDialog.querySelector('.photo-detail__load-error').hidden = true;
-    const photo = detailPhoto;
     const entry = loadDetail(photo, 'high');
     const previousImage = detailDialog.querySelector('.photo-detail__image');
     entry.image.className = 'photo-detail__image';
     if (previousImage !== entry.image) previousImage.replaceWith(entry.image);
-    entry.promise.catch(() => {
-      if (detailPhoto === photo && detailDialog.open) detailDialog.querySelector('.photo-detail__load-error').hidden = false;
+    const collection = detailCollection;
+    entry.promise.then(() => {
+      if (!detailDialog.open || detailRequest !== request || detailPhoto !== photo || detailCollection !== collection) return;
+      const index = collection.photos.indexOf(photo);
+      for (const direction of [-1, 1]) {
+        warmDetail(collection.photos[(index + direction + collection.photos.length) % collection.photos.length]);
+      }
+    }).catch(() => {
+      if (detailRequest === request && detailPhoto === photo && detailDialog.open) detailDialog.querySelector('.photo-detail__load-error').hidden = false;
     });
     detailCopy();
+  }
+
+  function navigateDetail(direction) {
+    if (!detailDialog?.open || !detailCollection || detailCollection.photos.length < 2) return;
+    const photos = detailCollection.photos;
+    const index = photos.indexOf(detailPhoto);
+    showDetailPhoto(photos[(index + direction + photos.length) % photos.length]);
+  }
+
+  function openDetail(card) {
+    if (card.slot !== 0 || card.collection.busy || card.element.getAttribute('aria-hidden') === 'true') return;
+    ensureDetailDialog();
+    detailCollection = card.collection; detailOpener = card.element;
+    showDetailPhoto(card.photo);
     detailOpen = true;
     galleries.forEach(gallery => gallery.schedule());
     document.body.classList.add('has-photo-detail');
