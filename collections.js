@@ -146,15 +146,17 @@
   let detailOpen = false;
   let orderCopyTimer = null;
 
-  function photoReference(photo, index) {
-    const fingerprint = String(photo.src || '').match(/\/([a-f0-9]{10,})-(?:480|2000)\.jpg/i)?.[1];
-    return fingerprint ? fingerprint.slice(0, 10).toUpperCase() : `${detailCollection.id}-${index + 1}`.toUpperCase();
+  function photoReference(collection, index) {
+    const name = translations.en[`${collection.id}Title`] || collection.title || collection.id;
+    return `${name.slice(0, 3).toUpperCase()}${String(index + 1).padStart(3, '0')}`;
   }
 
   function orderSummaryText() {
     if (!detailDialog || !detailPhoto || !detailCollection) return '';
     const c = copy();
-    const index = detailCollection.photos.indexOf(detailPhoto);
+    // Use the full collection order, regardless of orientation/color filters.
+    const collection = source.find(item => item.id === detailCollection.id && String(item.year || '2026') === detailCollection.year) || detailCollection;
+    const index = collection.photos.indexOf(detailPhoto);
     const title = c[`${detailCollection.id}Title`] || detailCollection.title;
     const size = detailDialog.querySelector('input[name="poster-size"]:checked')?.value || posters()[0].name;
     const poster = posters().find(item => item.name === size) || posters()[0];
@@ -163,8 +165,8 @@
     const lines = [
       c.orderMessageTitle,
       `${c.orderCollection}: ${title} (${detailCollection.year})`,
-      `${c.orderPhoto}: ${String(index + 1).padStart(2, '0')} / ${String(detailCollection.photos.length).padStart(2, '0')}`,
-      `${c.orderReference}: ${photoReference(detailPhoto, index)}`,
+      `${c.orderPhoto}: ${String(index + 1).padStart(2, '0')} / ${String(collection.photos.length).padStart(2, '0')}`,
+      `${c.orderReference}: ${photoReference(collection, index)}`,
       `${c.orderFormat}: ${size}`,
       `${c.orderPrice}: ${posterPrice(poster)}`,
       `${c.orderMargins}: ${margins ? matColor : c.orderNoMargins}`,
