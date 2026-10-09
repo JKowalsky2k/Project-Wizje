@@ -2,6 +2,7 @@
 (() => {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const imageLoads = new Map();
+  const detailLoads = new Map();
   const galleries = [];
   const letterStyles = ['z', 'w', 'i', 'd', 'y'];
   const copy = () => translations[document.documentElement.lang] || translations.en;
@@ -46,6 +47,56 @@
       imageLoads.set(photo.src, pending);
     }
     return imageLoads.get(photo.src);
+  }
+
+  function trimDetailCache() {
+    for (const [url, entry] of detailLoads) {
+      if (detailLoads.size <= 4) break;
+      if (entry.ready && !entry.image.isConnected) detailLoads.delete(url);
+    }
+  }
+
+  function loadDetail(photo, priority = 'low') {
+    const url = photo.detail || photo.src;
+    const cached = detailLoads.get(url);
+    if (cached) {
+      detailLoads.delete(url);
+      detailLoads.set(url, cached);
+      if (priority === 'high') cached.image.fetchPriority = 'high';
+      return cached;
+    }
+    const image = new Image();
+    image.decoding = 'async';
+    image.fetchPriority = priority;
+    image.draggable = false;
+    const entry = { image, ready: false, promise: null };
+    detailLoads.set(url, entry);
+    entry.promise = new Promise((resolve, reject) => {
+      const fail = error => {
+        image.onload = image.onerror = null;
+        if (detailLoads.get(url) === entry) detailLoads.delete(url);
+        reject(error);
+      };
+      image.onerror = () => fail(new Error('Photograph unavailable'));
+      image.onload = async () => {
+        try {
+          if (image.decode) await image.decode();
+          image.onload = image.onerror = null;
+          entry.ready = true;
+          trimDetailCache();
+          resolve(image);
+        } catch (error) { fail(error); }
+      };
+    });
+    image.src = url;
+    trimDetailCache();
+    return entry;
+  }
+
+  function warmDetail(photo, priority = 'low') {
+    const connection = navigator.connection;
+    if (connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType || '')) return;
+    loadDetail(photo, priority).promise.catch(() => {});
   }
 
   function paint(surface, photo) {
@@ -314,8 +365,6 @@
       else fallbackCopy();
     });
     syncDetailMatToTheme();
-    find('.photo-detail__image').addEventListener('error', () => { find('.photo-detail__load-error').hidden = false; });
-    find('.photo-detail__image').addEventListener('load', () => { find('.photo-detail__load-error').hidden = true; });
   }
   document.addEventListener('themechange', syncDetailMatToTheme);
   function openDetail(card) {
@@ -325,7 +374,14 @@
     detailDialog.dataset.landscape = String(detailPhoto.orientation === 'landscape');
     detailDialog.style.setProperty("--photo-ratio", detailPhoto.sourceWidth > detailPhoto.sourceHeight ? `${detailPhoto.sourceWidth} / ${detailPhoto.sourceHeight}` : "7 / 5");
     detailDialog.querySelector('.photo-detail__load-error').hidden = true;
-    detailDialog.querySelector('.photo-detail__image').src = detailPhoto.detail || detailPhoto.src;
+    const photo = detailPhoto;
+    const entry = loadDetail(photo, 'high');
+    const previousImage = detailDialog.querySelector('.photo-detail__image');
+    entry.image.className = 'photo-detail__image';
+    if (previousImage !== entry.image) previousImage.replaceWith(entry.image);
+    entry.promise.catch(() => {
+      if (detailPhoto === photo && detailDialog.open) detailDialog.querySelector('.photo-detail__load-error').hidden = false;
+    });
     detailCopy();
     detailOpen = true;
     galleries.forEach(gallery => gallery.schedule());
@@ -345,6 +401,12 @@
       this.element.className = 'drum-card';
       this.element.setAttribute('role', 'button');
       this.element.setAttribute('aria-haspopup', 'dialog');
+      const prepareDetail = () => {
+        if (this.slot === 0 && !this.collection.busy) warmDetail(this.photo, 'high');
+      };
+      this.element.addEventListener('pointerenter', prepareDetail);
+      this.element.addEventListener('pointerdown', prepareDetail, { passive: true });
+      this.element.addEventListener('focus', prepareDetail);
       this.element.addEventListener('click', event => {
         if (this.element.querySelector('.drum-card__frame').contains(event.target)) openDetail(this);
       });
@@ -355,7 +417,7 @@
         <div class="drum-card__frame">
           <div class="drum-card__mat">
           <div class="drum-card__image" aria-hidden="true">
-            <img alt="" decoding="async" draggable="false">
+            <img alt="" loading="lazy" decoding="async" draggable="false">
             <span class="drum-card__error" hidden></span>
           </div>
           </div>
@@ -457,6 +519,7 @@
       this.busy = false;
       this.queuedDirection = null;
       this.loaded = false;
+      this.initializing = null;
       this.timer = null;
       this.interval = 6000 + order * 350;
       this.element = document.createElement('article');
@@ -499,11 +562,18 @@
         this.schedule();
       });
       this.updateCopy();
+      if (this.visible) this.initialize();
+    }
+
+    initialize() {
+      if (this.initializing) return this.initializing;
       this.preloadNeighbours();
-      Promise.all(this.cards.map((card) => card.initialize())).then(() => {
+      this.initializing = Promise.all(this.cards.map((card) => card.initialize())).then(() => {
         this.loaded = true;
+        if (!this.element.hidden && !document.hidden) warmDetail(this.photos[this.offset]);
         this.schedule();
       });
+      return this.initializing;
     }
 
     updateCopy() {
@@ -517,6 +587,7 @@
 
     schedule() {
       clearTimeout(this.timer);
+      if (!detailOpen && !this.element.hidden && this.loaded && this.visible && !this.busy && !document.hidden) warmDetail(this.photos[this.offset]);
       if (detailOpen || this.element.hidden || !this.loaded || this.paused || this.busy || !this.visible || this.hovered || this.focused || document.hidden || this.photos.length < 2) return;
       this.timer = setTimeout(() => this.advance(), this.interval);
     }
@@ -540,6 +611,7 @@
       this.busy = true;
       const nextOffset = (this.offset + direction + this.photos.length) % this.photos.length;
       const nextHidden = (nextOffset + direction * 2 + this.photos.length) % this.photos.length;
+      if (this.visible && !document.hidden) warmDetail(this.photos[nextOffset]);
       try {
         await Promise.all(this.cards.filter(card => Math.abs(card.slot - direction) <= 1).map(card => loadPhoto(card.photo)));
         const startTime = document.timeline?.currentTime;
@@ -578,9 +650,18 @@
       const gallery = galleries.find(item => item.element === entry.target);
       if (!gallery) continue;
       gallery.visible = entry.isIntersecting;
+      if (gallery.visible) gallery.initialize();
       gallery.schedule();
     }
   }, { threshold: 0.15 }) : null;
+  const loadingObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const gallery = galleries.find(item => item.element === entry.target);
+      if (gallery) gallery.initialize();
+      loadingObserver.unobserve(entry.target);
+    }
+  }, { rootMargin: '300px 0px' }) : null;
 
   function updateFilterCopy() {
     collectionFilter.replaceChildren();
@@ -600,6 +681,7 @@
       gallery.queuedDirection = null;
       clearTimeout(gallery.timer);
       if (observer) observer.unobserve(gallery.element);
+      if (loadingObserver) loadingObserver.unobserve(gallery.element);
       gallery.cards.forEach(card => card.animations.forEach(animation => animation.cancel()));
     }
     galleries.length = 0;
@@ -611,6 +693,7 @@
       const gallery = new Collection({ ...data, photos }, galleries.length);
       galleries.push(gallery);
       if (observer) observer.observe(gallery.element);
+      if (loadingObserver) loadingObserver.observe(gallery.element);
     }
     galleries.forEach((gallery, index) => { gallery.element.dataset.yearLast = String(index === galleries.length - 1); });
     document.querySelector('[data-collection-count]').textContent = galleries.length ? `01 — ${String(galleries.length).padStart(2, '0')}` : '00';
