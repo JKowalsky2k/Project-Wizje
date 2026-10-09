@@ -141,7 +141,6 @@
     if (input) input.checked = true;
     updateOrderSummary();
   }
-
   function collectionHeading(heading, title, identity = title) {
     heading.replaceChildren();
     const accessible = document.createElement('span'); accessible.className = 'sr-only'; accessible.textContent = title;
@@ -177,8 +176,7 @@
     const order = find('.photo-detail__order');
     order.hidden = !instagramProfile;
     if (instagramProfile) {
-      order.querySelectorAll('a').forEach(link => { link.href = instagramProfile.url; });
-      find('.photo-detail__instagram-handle').textContent = '@' + instagramProfile.username;
+      order.querySelector('.photo-detail__instagram-button').href = instagramProfile.url;
     }
     const title = copy()[`${detailCollection.id}Title`] || detailCollection.title;
     collectionHeading(find('#photo-detail-title'), title, detailCollection.id);
@@ -204,7 +202,7 @@
     detailDialog.setAttribute('aria-labelledby', 'photo-detail-title');
     detailDialog.dataset.frame = 'true'; detailDialog.dataset.margins = 'true'; detailDialog.dataset.matColor = 'black';
     detailDialog.innerHTML = `
-      <button class="photo-detail__close" type="button" autofocus>×</button>
+      <button class="photo-detail__close" type="button" autofocus><span aria-hidden="true">×</span></button>
       <div class="photo-detail__layout">
         <div class="photo-detail__art">
           <div class="drum-card detail-preview" data-center="true">
@@ -245,8 +243,8 @@
             <p class="photo-detail__order-note" data-detail-copy="instagramOrders"></p>
             <div class="photo-detail__order-contact">
               <div class="photo-detail__order-links">
-                <a class="photo-detail__instagram-handle" target="_blank" rel="noopener noreferrer"></a>
-                <a class="photo-detail__order-button" target="_blank" rel="noopener noreferrer"><span data-detail-copy="orderOnInstagram"></span><span aria-hidden="true">↗</span></a>
+                <a class="photo-detail__order-button photo-detail__instagram-button" target="_blank" rel="noopener noreferrer"><span data-detail-copy="orderOnInstagram"></span><span aria-hidden="true">↗</span></a>
+                <button class="photo-detail__order-button photo-detail__email" type="button"><span data-detail-copy="orderByEmail"></span><span aria-hidden="true">⧉</span></button>
               </div>
             </div>
           </section>
@@ -294,6 +292,26 @@
       clearTimeout(orderCopyTimer);
       event.currentTarget.textContent = copy().orderCopied;
       orderCopyTimer = setTimeout(() => { if (detailDialog?.open) event.currentTarget.textContent = copy().copyOrder; }, 1800);
+    });
+    find('.photo-detail__email').addEventListener('click', event => {
+      const button = event.currentTarget;
+      const label = button.querySelector('span');
+      label.textContent = copy().emailCopied;
+      button.classList.add('is-copied');
+      clearTimeout(orderCopyTimer);
+      orderCopyTimer = setTimeout(() => {
+        button.classList.remove('is-copied');
+        if (detailDialog?.open) label.textContent = copy().orderByEmail;
+      }, 1800);
+      const fallbackCopy = () => {
+        const temporary = document.createElement('textarea');
+        temporary.value = 'kontakt@wizje.eu';
+        temporary.style.position = 'fixed'; temporary.style.opacity = '0';
+        document.body.append(temporary); temporary.select();
+        try { document.execCommand('copy'); } finally { temporary.remove(); }
+      };
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText('kontakt@wizje.eu').catch(fallbackCopy);
+      else fallbackCopy();
     });
     syncDetailMatToTheme();
     find('.photo-detail__image').addEventListener('error', () => { find('.photo-detail__load-error').hidden = false; });
@@ -405,20 +423,21 @@
       this.element.dataset.center = String(slot === 0);
     }
 
-    async moveTo(slot) {
+    async moveTo(slot, startTime) {
       const from = pose(this.slot, this.collection.photos.length);
       const to = pose(slot, this.collection.photos.length);
-      this.element.dataset.center = String(slot === 0);
+      // Keep the final pose underneath the animation. Finishing or cancelling
+      // it then reveals exactly the same position, without a style handoff.
+      this.place(slot);
       if (!reducedMotion.matches && this.element.animate) {
-        this.element.style.zIndex = to.zIndex;
         const animation = this.element.animate([
           { transform: from.transform, opacity: from.opacity },
           { transform: to.transform, opacity: to.opacity },
-        ], { duration: 500, easing: 'cubic-bezier(.22,.8,.25,1)', fill: 'both' });
+        ], { duration: 500, easing: 'cubic-bezier(.22,.8,.25,1)' });
+        if (typeof startTime === 'number') animation.startTime = startTime;
         this.animations = [animation];
         await Promise.allSettled([animation.finished]);
       }
-      this.place(slot);
       this.animations.forEach(animation => animation.cancel());
       this.animations = [];
     }
@@ -523,7 +542,8 @@
       const nextHidden = (nextOffset + direction * 2 + this.photos.length) % this.photos.length;
       try {
         await Promise.all(this.cards.filter(card => Math.abs(card.slot - direction) <= 1).map(card => loadPhoto(card.photo)));
-        await Promise.all(this.cards.map(card => card.moveTo(card.slot - direction)));
+        const startTime = document.timeline?.currentTime;
+        await Promise.all(this.cards.map(card => card.moveTo(card.slot - direction, startTime)));
         this.offset = nextOffset;
         const recycled = direction === 1 ? this.cards.shift() : this.cards.pop();
         recycled.place(direction * 2);
