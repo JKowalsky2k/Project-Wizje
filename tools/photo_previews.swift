@@ -4,7 +4,7 @@ import CoreGraphics
 import ImageIO
 import UniformTypeIdentifiers
 
-struct Job: Decodable { let source: String; let output: String; let detail: String; let metadata: String; let orientation: String }
+struct Job: Decodable { let source: String; let output: String; let detail: String; let inspection: String; let metadata: String; let orientation: String }
 enum PreviewError: Error { case decode(String), render(String), write(String) }
 let jobs = try JSONDecoder().decode([Job].self, from: FileHandle.standardInput.readDataToEndOfFile())
 // Portraits keep the existing crop; landscapes retain their full composition.
@@ -19,7 +19,9 @@ for job in jobs {
               let image = CGImageSourceCreateThumbnailAtIndex(input, 0, [
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceCreateThumbnailWithTransform: true,
-                kCGImageSourceThumbnailMaxPixelSize: 12000,
+                kCGImageSourceThumbnailMaxPixelSize: max(1, max(
+                    (CGImageSourceCopyPropertiesAtIndex(input, 0, nil) as? [CFString: Any])?[kCGImagePropertyPixelWidth] as? Int ?? 12000,
+                    (CGImageSourceCopyPropertiesAtIndex(input, 0, nil) as? [CFString: Any])?[kCGImagePropertyPixelHeight] as? Int ?? 12000)),
               ] as CFDictionary) else { throw PreviewError.decode(job.source) }
         let width = 480
         let height = job.orientation == "landscape" ? max(1, Int((480.0 * (image.width > image.height ? Double(image.height) / Double(image.width) : 5.0 / 7.0)).rounded())) : 672
@@ -60,6 +62,19 @@ for job in jobs {
         CGImageDestinationAddImage(detailDestination, renderedDetail,
             [kCGImageDestinationLossyCompressionQuality: 0.94] as CFDictionary)
         guard CGImageDestinationFinalize(detailDestination) else { throw PreviewError.write(job.detail) }
+        // Full-resolution sRGB inspection copy, without source EXIF/GPS metadata.
+        let inspectURL = URL(fileURLWithPath: job.inspection)
+        guard source.standardizedFileURL != inspectURL.standardizedFileURL,
+              let inspectContext = CGContext(data: nil, width: image.width, height: image.height,
+                bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { throw PreviewError.render(job.source) }
+        inspectContext.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        guard let inspectImage = inspectContext.makeImage(),
+              let inspectDestination = CGImageDestinationCreateWithURL(inspectURL as CFURL,
+                UTType.jpeg.identifier as CFString, 1, nil) else { throw PreviewError.write(job.inspection) }
+        CGImageDestinationAddImage(inspectDestination, inspectImage,
+            [kCGImageDestinationLossyCompressionQuality: 1.0] as CFDictionary)
+        guard CGImageDestinationFinalize(inspectDestination) else { throw PreviewError.write(job.inspection) }
         let properties = CGImageSourceCopyPropertiesAtIndex(input, 0, nil) as? [CFString: Any] ?? [:]
         var sourceWidth = properties[kCGImagePropertyPixelWidth] as? Int ?? image.width
         var sourceHeight = properties[kCGImagePropertyPixelHeight] as? Int ?? image.height

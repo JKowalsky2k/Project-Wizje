@@ -159,6 +159,7 @@ class EditorStore:
                                'medium': config.get('photos', {}).get(key),
                                'orientation': config.get('orientations', {}).get(key, 'portrait'),
                                'colorMode': config.get('colorModes', {}).get(key),
+                               'posterSizes': config.get('posterSizes', {}).get(key),
                                **config.get('filmDetails', {}).get(key, {})})
             photos = ordered(photos, display_order.get('photos', {}).get(folder.name, []), key=lambda p: p['name'])
             items.append({'id': folder.name, 'title': info.get(folder.name, {}).get('title', KNOWN_TITLES.get(folder.name, folder.name.capitalize())),
@@ -304,6 +305,26 @@ class EditorStore:
             write_json(self.types_path, before)
             raise
 
+    def set_poster_sizes(self, collection, name, sizes, catalog):
+        if not self.photo(collection, name).is_file():
+            raise EditorError('Nie znaleziono zdjęcia.', 404)
+        allowed = {poster['name'] for poster in catalog}
+        if sizes is not None and (not isinstance(sizes, list) or any(not isinstance(size, str) or size not in allowed for size in sizes) or len(set(sizes)) != len(sizes)):
+            raise EditorError('Nieprawidłowe formaty zdjęcia / Invalid photo sizes.')
+        before = self.types()
+        config = json.loads(json.dumps(before))
+        key = f'{collection}/{name}'
+        if sizes is None:
+            config.setdefault('posterSizes', {}).pop(key, None)
+        else:
+            config.setdefault('posterSizes', {})[key] = sizes
+        write_json(self.types_path, config)
+        try:
+            self.rebuild()
+        except Exception:
+            write_json(self.types_path, before)
+            raise
+
     def set_color_mode(self, collection, name, color_mode):
         if color_mode not in ('color', 'monochrome'):
             raise EditorError('Nieprawidłowa kolorystyka / Invalid color mode.')
@@ -428,12 +449,14 @@ class EditorStore:
         config['colorModes'] = {k: v for k, v in config.get('colorModes', {}).items() if k not in selected_colors}
         selected_orientations = {k: v for k, v in config.get('orientations', {}).items() if (k.startswith(collection + '/') if whole else k == key)}
         config['orientations'] = {k: v for k, v in config.get('orientations', {}).items() if k not in selected_orientations}
+        selected_sizes = {k: v for k, v in config.get('posterSizes', {}).items() if (k.startswith(collection + '/') if whole else k == key)}
+        config['posterSizes'] = {k: v for k, v in config.get('posterSizes', {}).items() if k not in selected_sizes}
         snapshot_paths = [self.types_path, self.info_path, self.root / 'assets/collections/manifest.js']
         snapshots = {path: path.read_bytes() if path.exists() else None for path in snapshot_paths}
         restore = {'year': self.photo_root.name, 'kind': 'collection' if whole else 'photo', 'collection': collection,
                    'files': [{'stored': str(index), 'original': item.relative_to(self.photo_root).as_posix()}
                              for index, item in enumerate(sources)],
-                   'photos': selected_types, 'filmDetails': selected_film, 'orientations': selected_orientations, 'colorModes': selected_colors, 'collectionInfo': before_info.get(collection), 'status': 'pending'}
+                   'photos': selected_types, 'posterSizes': selected_sizes, 'filmDetails': selected_film, 'orientations': selected_orientations, 'colorModes': selected_colors, 'collectionInfo': before_info.get(collection), 'status': 'pending'}
         write_json(trash / 'restore.json', restore)
         moved = []
         try:
@@ -497,6 +520,9 @@ class LocalAdmin:
                     or isinstance(price, bool) or not isinstance(price, int) or not 0 <= price <= 100000000):
                 raise EditorError('Podaj nazwę formatu i prawidłową cenę (0–1 000 000 zł).')
             name = name.strip()
+            dimensions = re.fullmatch(r'(\d+(?:[.,]\d+)?)\s*[×xX]\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?', name)
+            if not dimensions or any(not 0 < float(value.replace(',', '.')) <= 1000 for value in dimensions.groups()):
+                raise EditorError('Podaj format w cm, np. 30 × 40 cm / Enter dimensions in cm, e.g. 30 × 40 cm.')
             if name.casefold() in names:
                 raise EditorError('Formaty plakatów muszą mieć różne nazwy.')
             names.add(name.casefold())
@@ -788,6 +814,9 @@ class LocalAdmin:
                         result = {'ok': True}
                     elif url.path == '/admin/api/film':
                         self.year_store(data.get('year')).set_film(data.get('collection'), data.get('name'), data.get('film'), data.get('iso'))
+                        result = {'ok': True}
+                    elif url.path == '/admin/api/photo-sizes':
+                        self.year_store(data.get('year')).set_poster_sizes(data.get('collection'), data.get('name'), data.get('posterSizes'), self.poster_catalog())
                         result = {'ok': True}
                     elif url.path == '/admin/api/color-mode':
                         self.year_store(data.get('year')).set_color_mode(data.get('collection'), data.get('name'), data.get('colorMode'))

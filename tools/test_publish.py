@@ -17,6 +17,7 @@ class PublishTests(unittest.TestCase):
         self.write('index.html', '<link rel="stylesheet" href="styles.css">')
         self.write('script.js', '// public')
         self.write('collections.js', '// public gallery')
+        self.write('assets/collections/posters.js', 'window.ZWIDY_POSTERS = [];')
         self.write('globe.js', '// public globe')
         self.write('favicon.svg', '<svg/>')
         self.write('favicon.ico', 'icon')
@@ -35,6 +36,17 @@ class PublishTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content)
 
+    def test_exports_inspection_and_sizes_without_originals(self):
+        inspection = 'assets/collections/previews/abcdef-inspect.jpg'
+        self.write(inspection, 'source detail without metadata')
+        self.data[0]['photos'][0].update(inspection=inspection, posterSizes=['30 × 40 cm'])
+        build_public_tree(self.root, self.output, self.data)
+        manifest = json.loads((self.output / 'assets/collections/manifest.js').read_text().split(' = ', 1)[1].rstrip(';\n'))
+        self.assertEqual(manifest[0]['photos'][0]['posterSizes'], ['30 × 40 cm'])
+        self.assertTrue((self.output / inspection).is_file())
+        self.data[0]['photos'][0]['inspection'] = 'assets/collections/2026/private.jpg'
+        with self.assertRaisesRegex(ValueError, 'lupy'): build_public_tree(self.root, self.output, self.data)
+
     def test_exports_dependencies_and_licenses_but_not_private_data(self):
         for path in ['.local-admin/password.json', 'tools/admin/index.html', '.git/config',
                      'assets/collections/2026/photo-types.json', 'assets/collections/2026/test/private.jpg',
@@ -44,7 +56,7 @@ class PublishTests(unittest.TestCase):
         files = {p.relative_to(self.output).as_posix() for p in self.output.rglob('*') if p.is_file()}
         self.assertEqual(files, {'.htaccess', 'index.html', 'styles.css', 'script.js', 'collections.js', 'globe.js', 'favicon.svg', 'favicon.ico', 'assets/logo/logo.css', 'assets/logo/social.jpg', 'gallery.html', 'robots.txt', 'sitemap.xml',
                                 'assets/fonts/test.woff2', 'assets/fonts/test-OFL.txt',
-                                'assets/collections/previews/abcdef-480.jpg', 'assets/collections/manifest.js'})
+                                'assets/collections/previews/abcdef-480.jpg', 'assets/collections/manifest.js', 'assets/collections/posters.js'})
         manifest = (self.output / 'assets/collections/manifest.js').read_text()
         self.assertNotIn('secret', manifest)
         self.assertNotIn('original', manifest)

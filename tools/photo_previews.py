@@ -26,9 +26,10 @@ def prepare_previews(collections, root):
             filename = f'{fingerprint}-480.jpg'
             output = output_dir / filename
             detail = output_dir / f'{fingerprint}-2000.jpg'
+            inspection = output_dir / f'{fingerprint}-inspect.jpg'
             metadata = output_dir / f'{fingerprint}-info.json'
-            if any(not path.is_file() or path.stat().st_size == 0 for path in (output, detail, metadata)):
-                jobs.append({'source': str(source), 'output': str(output), 'detail': str(detail), 'metadata': str(metadata), 'orientation': photo.get('orientation', 'portrait')})
+            if any(not path.is_file() or path.stat().st_size == 0 for path in (output, detail, inspection, metadata)):
+                jobs.append({'source': str(source), 'output': str(output), 'detail': str(detail), 'inspection': str(inspection), 'metadata': str(metadata), 'orientation': photo.get('orientation', 'portrait')})
             updates.append((photo, f'assets/collections/previews/{quote(filename)}', f'assets/collections/previews/{detail.name}', metadata))
     if jobs:
         swift = shutil.which('swift')
@@ -41,5 +42,6 @@ def prepare_previews(collections, root):
         photo['original'] = photo['src']
         photo['src'] = preview
         photo['detail'] = detail
+        photo['inspection'] = detail.replace('-2000.jpg', '-inspect.jpg')
         photo.update(json.loads(metadata.read_text()))
     return collections

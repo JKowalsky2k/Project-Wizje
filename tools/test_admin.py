@@ -37,6 +37,51 @@ class AdminTests(unittest.TestCase):
         self.store = EditorStore(self.root, self.photos, rebuild, trash_root=self.password_path.parent / 'trash')
         self.admin = LocalAdmin(self.root, self.photos, rebuild, Lock(), password_path=self.password_path)
 
+    def test_photo_sizes_persist_validate_rollback_and_survive_library(self):
+        folder = self.photos / 'test'; folder.mkdir()
+        (folder / 'photo.jpg').write_bytes(b'photo')
+        catalog = [{'name': '30 × 40 cm', 'priceCents': 1000}, {'name': '50 × 70 cm', 'priceCents': 2000}]
+        self.store.set_poster_sizes('test', 'photo.jpg', ['30 × 40 cm'], catalog)
+        self.assertEqual(self.store.state()[0]['photos'][0]['posterSizes'], ['30 × 40 cm'])
+        for invalid in [['unknown'], ['30 × 40 cm', '30 × 40 cm'], '30 × 40 cm', [{}]]:
+            with self.assertRaises(EditorError): self.store.set_poster_sizes('test', 'photo.jpg', invalid, catalog)
+        self.store.delete_photo('test', 'photo.jpg')
+        item = self.store.library.state()[0]
+        self.store.library.attach(item['id'], 'test')
+        self.assertEqual(self.store.state()[0]['photos'][0]['posterSizes'], ['30 × 40 cm'])
+        previous = self.store.types()
+        rebuild = self.store.rebuild
+        def fail(): raise RuntimeError('failed rebuild')
+        self.store.rebuild = fail
+        with self.assertRaises(RuntimeError): self.store.set_poster_sizes('test', 'photo.jpg', [], catalog)
+        self.assertEqual(self.store.types(), previous)
+        self.store.rebuild = rebuild
+        self.store.set_poster_sizes('test', 'photo.jpg', [], catalog)
+        self.assertEqual(self.store.state()[0]['photos'][0]['posterSizes'], [])
+        self.store.set_poster_sizes('test', 'photo.jpg', None, catalog)
+        self.assertIsNone(self.store.state()[0]['photos'][0]['posterSizes'])
+        self.store.set_poster_sizes('test', 'photo.jpg', ['30 × 40 cm'], catalog)
+        self.store.library.purge(True, collection='test', name='photo.jpg')
+        self.assertNotIn('test/photo.jpg', self.store.types()['posterSizes'])
+
+    def test_photo_sizes_endpoint_authentication_and_year_isolation(self):
+        for year in ['2026', '2027']:
+            folder = self.root / 'assets/collections' / year / 'test'; folder.mkdir(parents=True)
+            (folder / 'photo.jpg').write_bytes(b'photo')
+        cookie = self.login()
+        body = json.dumps({'year': '2027', 'collection': 'test', 'name': 'photo.jpg', 'posterSizes': ['50 × 70 cm']}).encode()
+        for headers, expected in [({}, 401), ({'Cookie': cookie}, 403), ({'Cookie': cookie, 'X-Wizje-CSRF': self.admin.csrf}, 200)]:
+            request = FakeHandler('/admin/api/photo-sizes', headers, body)
+            self.admin.post(request)
+            self.assertEqual(request.status, expected, request.wfile.getvalue())
+        self.assertIsNone(self.admin.year_store('2026').state()[0]['photos'][0]['posterSizes'])
+        self.assertEqual(self.admin.year_store('2027').state()[0]['photos'][0]['posterSizes'], ['50 × 70 cm'])
+
+    def test_poster_catalog_requires_positive_physical_dimensions(self):
+        for name in ['custom', '0 × 40 cm', '-5 × 20 cm', '30 × 40 inches']:
+            with self.assertRaises(EditorError): self.admin.save_poster_catalog([{'name': name, 'priceCents': 1000}])
+        self.assertEqual(self.admin.save_poster_catalog([{'name': '30,5 x 40 cm', 'priceCents': 1000}])[0]['name'], '30,5 x 40 cm')
+
     def test_display_order_persists_and_rejects_stale_or_invalid_lists(self):
         for collection in ['alps', 'cars']:
             folder = self.photos / collection; folder.mkdir()

@@ -147,6 +147,157 @@
   let detailRequest = 0;
   let orderCopyTimer = null;
 
+  const availablePosters = (photo = detailPhoto) => posters().filter(poster => !Array.isArray(photo?.posterSizes) || photo.posterSizes.includes(poster.name));
+  function paperDimensions(poster, landscape) {
+    const match = poster?.name.match(/^(\d+(?:[.,]\d+)?)\s*[×xX]\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?$/);
+    if (!match) return null;
+    const dims = match.slice(1).map(value => Number(value.replace(',', '.'))).sort((a, b) => a - b);
+    if (dims.some(value => !Number.isFinite(value) || value <= 0)) return null;
+    return landscape ? dims.reverse() : dims;
+  }
+  const chosenPoster = () => availablePosters().find(poster => poster.name === detailDialog.querySelector('input[name="poster-size"]:checked')?.value) || availablePosters()[0];
+  function marginDescription() {
+    const dims = paperDimensions(chosenPoster(), detailPhoto.orientation === 'landscape');
+    if (!dims) return copy().marginUnknown;
+    const fraction = detailDialog.dataset.margins === 'true' ? .08 : 0;
+    const values = { x: dims[0] * fraction, y: dims[1] * fraction, w: dims[0] * (1 - 2 * fraction), h: dims[1] * (1 - 2 * fraction) };
+    return copy().marginDimensions.replace(/\{(\w+)\}/g, (_, key) => new Intl.NumberFormat(document.documentElement.lang, { maximumFractionDigits: 2 }).format(values[key]));
+  }
+  function renderMarginInfo() {
+    const box = detailDialog.querySelector('.photo-detail__margin-dimensions');
+    box.replaceChildren();
+    box.hidden = !chosenPoster();
+    if (box.hidden) return;
+    const dims = paperDimensions(chosenPoster(), detailPhoto.orientation === 'landscape');
+    if (!dims) { box.textContent = copy().marginUnknown; return; }
+    const format = value => new Intl.NumberFormat(document.documentElement.lang, { maximumFractionDigits: 2 }).format(value);
+    const fraction = detailDialog.dataset.margins === 'true' ? .08 : 0;
+    const title = document.createElement('span'); title.className = 'margin-info__title'; title.textContent = copy().marginInfoTitle;
+    const list = document.createElement('dl'); list.className = 'margin-info__list';
+    const rows = [
+      [copy().marginLeftRight, `${format(dims[0] * fraction)} cm`],
+      [copy().marginTopBottom, `${format(dims[1] * fraction)} cm`],
+      [copy().marginImageSize, `${format(dims[0] * (1 - 2 * fraction))} cm × ${format(dims[1] * (1 - 2 * fraction))} cm`],
+    ];
+    rows.forEach(([label, value], index) => {
+      const row = document.createElement('div'); row.className = index === 2 ? 'margin-info__image' : 'margin-info__row';
+      const term = document.createElement('dt'); term.textContent = label;
+      const definition = document.createElement('dd');
+      const strong = document.createElement('strong'); strong.textContent = value;
+      definition.append(strong); row.append(term, definition); list.append(row);
+    });
+    box.append(title, list);
+  }
+  function renderPhotoSizes() {
+    const field = detailDialog.querySelector('.photo-detail__sizes');
+    const previous = field.querySelector('input:checked')?.value;
+    field.querySelectorAll('label').forEach(node => node.remove());
+    const options = availablePosters();
+    const selected = options.some(poster => poster.name === previous) ? previous : options[0]?.name;
+    for (const poster of options) {
+      const label = document.createElement('label');
+      const input = document.createElement('input'); input.type = 'radio'; input.name = 'poster-size'; input.value = poster.name; input.checked = poster.name === selected;
+      const span = document.createElement('span'); const strong = document.createElement('strong'); strong.textContent = poster.name; span.append(strong);
+      label.append(input, span); field.append(label);
+    }
+  }
+
+  // Native source pixels, with the same centered object-fit:cover mapping as the preview.
+  function sourcePoint(x, y, rect, width, height) {
+    const scale = Math.max(rect.width / width, rect.height / height);
+    return { x: (x + (width * scale - rect.width) / 2) / scale, y: (y + (height * scale - rect.height) / 2) / scale };
+  }
+  let inspectionImage = null, inspectionURL = '', inspectionState = '', lensPoint = null;
+  function resetMagnifier() {
+    if (!detailDialog) return;
+    detailDialog.dataset.magnifier = 'false';
+    detailDialog.querySelector('.photo-detail__magnify').setAttribute('aria-pressed', 'false');
+    detailDialog.querySelector('.photo-detail__lens').hidden = true;
+    detailDialog.querySelector('.photo-detail__magnify-status').textContent = '';
+    inspectionImage = null; inspectionURL = ''; inspectionState = ''; lensPoint = null;
+  }
+  function hideLens() {
+    lensPoint = null;
+    detailDialog.querySelector('.photo-detail__lens').hidden = true;
+  }
+  function drawLens() {
+    if (!lensPoint || inspectionState !== 'ready' || !detailDialog.open) return;
+    const preview = detailDialog.querySelector('.detail-preview');
+    const img = detailDialog.querySelector('.photo-detail__image');
+    const rect = img.getBoundingClientRect(), outer = preview.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const canvas = detailDialog.querySelector('.photo-detail__lens');
+    const diameter = Math.min(170, outer.width, outer.height);
+    const x = lensPoint.x * rect.width, y = lensPoint.y * rect.height;
+    const point = sourcePoint(x, y, rect, inspectionImage.naturalWidth, inspectionImage.naturalHeight);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(diameter * dpr); canvas.height = Math.round(diameter * dpr);
+    canvas.style.width = canvas.style.height = `${diameter}px`;
+    canvas.style.left = `${Math.max(0, Math.min(outer.width - diameter, rect.left - outer.left + x - diameter / 2))}px`;
+    canvas.style.top = `${Math.max(0, Math.min(outer.height - diameter, rect.top - outer.top + y - diameter / 2 - (lensPoint.touch ? 65 : 0)))}px`;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr); ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#161713'; ctx.fillRect(0, 0, diameter, diameter);
+    ctx.drawImage(inspectionImage, diameter / 2 - point.x, diameter / 2 - point.y);
+    canvas.hidden = false;
+  }
+  function loadInspection() {
+    const url = detailPhoto?.inspection;
+    if (!url) return;
+    if (inspectionURL === url && inspectionState) return;
+    inspectionURL = url; inspectionState = 'loading';
+    const image = new Image(); inspectionImage = image;
+    const status = detailDialog.querySelector('.photo-detail__magnify-status');
+    status.textContent = copy().magnifierLoading;
+    const fail = () => {
+      if (inspectionImage !== image) return;
+      inspectionState = 'error'; status.textContent = copy().magnifierError; hideLens();
+    };
+    const timeout = setTimeout(fail, 30000);
+    image.onload = () => {
+      clearTimeout(timeout);
+      if (inspectionImage !== image) return;
+      inspectionState = 'ready'; status.textContent = ''; drawLens();
+    };
+    image.onerror = () => { clearTimeout(timeout); fail(); };
+    image.src = url;
+  }
+  function setupMagnifier() {
+    const preview = detailDialog.querySelector('.detail-preview');
+    const button = detailDialog.querySelector('.photo-detail__magnify');
+    button.addEventListener('click', () => {
+      const enabled = detailDialog.dataset.magnifier !== 'true';
+      if (!enabled) { resetMagnifier(); return; }
+      detailDialog.dataset.magnifier = 'true'; button.setAttribute('aria-pressed', 'true');
+      lensPoint = { x: .5, y: .5 }; loadInspection(); drawLens();
+    });
+    const move = event => {
+      if (event.pointerType !== 'mouse' && detailDialog.dataset.magnifier !== 'true') return;
+      const rect = detailDialog.querySelector('.photo-detail__image').getBoundingClientRect();
+      if (!rect.width || !rect.height || event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) { hideLens(); return; }
+      lensPoint = { x: (event.clientX - rect.left) / rect.width, y: (event.clientY - rect.top) / rect.height, touch: event.pointerType !== 'mouse' };
+      loadInspection(); drawLens();
+    };
+    preview.addEventListener('pointermove', move);
+    preview.addEventListener('pointerdown', event => {
+      if (detailDialog.dataset.magnifier !== 'true') return;
+      preview.setPointerCapture(event.pointerId); move(event);
+    });
+    preview.addEventListener('pointerleave', hideLens);
+    preview.addEventListener('pointercancel', hideLens);
+    preview.addEventListener('pointerup', event => { if (event.pointerType !== 'mouse') hideLens(); });
+    detailDialog.addEventListener('keydown', event => {
+      if (detailDialog.dataset.magnifier !== 'true' || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) || event.target.closest('input, textarea, select')) return;
+      event.preventDefault();
+      lensPoint ||= { x: .5, y: .5 };
+      const axis = ['ArrowLeft', 'ArrowRight'].includes(event.key) ? 'x' : 'y';
+      lensPoint[axis] = Math.max(0, Math.min(1, lensPoint[axis] + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -.05 : .05)));
+      loadInspection(); drawLens();
+    });
+    detailDialog.addEventListener('scroll', hideLens);
+    window.addEventListener('resize', hideLens);
+  }
+
   function photoReference(collection, index) {
     const name = translations.en[`${collection.id}Title`] || collection.title || collection.id;
     return `${name.slice(0, 3).toUpperCase()}${String(index + 1).padStart(3, '0')}`;
@@ -159,8 +310,9 @@
     const collection = source.find(item => item.id === detailCollection.id && String(item.year || '2026') === detailCollection.year) || detailCollection;
     const index = collection.photos.indexOf(detailPhoto);
     const title = c[`${detailCollection.id}Title`] || detailCollection.title;
-    const size = detailDialog.querySelector('input[name="poster-size"]:checked')?.value || posters()[0].name;
-    const poster = posters().find(item => item.name === size) || posters()[0];
+    const poster = chosenPoster();
+    if (!poster) return '';
+    const size = poster.name;
     const margins = detailDialog.querySelector('#detail-margins').checked;
     const matColor = detailDialog.dataset.matColor === 'white' ? c.whiteMat : c.blackMat;
     const lines = [
@@ -172,14 +324,21 @@
       `${c.orderPrice}: ${posterPrice(poster)}`,
       `${c.orderMargins}: ${margins ? matColor : c.orderNoMargins}`,
     ];
-    lines.push('', c.orderSendInstruction);
+    lines.push(marginDescription(), '', c.orderSendInstruction);
     return lines.join('\n');
   }
 
   function updateOrderSummary() {
     if (!detailDialog || !detailPhoto) return;
-    const chosen = posters().find(item => item.name === detailDialog.querySelector('input[name="poster-size"]:checked')?.value) || posters()[0];
-    detailDialog.querySelector('[data-poster-price]').textContent = posterPrice(chosen);
+    const chosen = chosenPoster();
+    detailDialog.querySelector('.photo-detail__order').hidden = !chosen || !instagramProfile;
+    detailDialog.querySelector('.photo-detail__unavailable').hidden = Boolean(chosen);
+    detailDialog.querySelector('[data-poster-price]').textContent = chosen ? posterPrice(chosen) : '';
+    renderMarginInfo();
+    const dims = paperDimensions(chosen, detailPhoto.orientation === 'landscape') || (detailPhoto.orientation === 'landscape' ? [70, 50] : [50, 70]);
+    const preview = detailDialog.querySelector('.detail-preview');
+    preview.style.setProperty('--detail-ratio', `${dims[0]} / ${dims[1]}`);
+    preview.style.setProperty('--detail-height-ratio', dims[1] / dims[0]);
     const field = detailDialog.querySelector('.photo-detail__order-summary');
     field.value = orderSummaryText();
     field.style.height = 'auto';
@@ -224,8 +383,8 @@
     if (!detailDialog || !detailPhoto) return;
     const find = selector => detailDialog.querySelector(selector);
     detailDialog.querySelectorAll('[data-detail-copy]').forEach(node => { node.textContent = copy()[node.dataset.detailCopy]; });
-    const selectedPoster = posters().find(item => item.name === detailDialog.querySelector('input[name="poster-size"]:checked')?.value) || posters()[0];
-    find('[data-poster-price]').textContent = posterPrice(selectedPoster);
+    find('.photo-detail__magnify').disabled = !detailPhoto.inspection;
+    if (!detailPhoto.inspection) find('.photo-detail__magnify-status').textContent = copy().magnifierUnavailable;
     find('.photo-detail__close').setAttribute('aria-label', copy().closePreview);
     find('.photo-detail__previous').setAttribute('aria-label', copy().previousPhotos);
     find('.photo-detail__next').setAttribute('aria-label', copy().nextPhotos);
@@ -266,6 +425,13 @@
             <div class="drum-card__frame"><div class="drum-card__mat">
               <img class="photo-detail__image" decoding="async" draggable="false" alt="">
             </div>${['tl', 'tr', 'bl', 'br'].map(corner => `<span class="museum-corner museum-corner--${corner}" aria-hidden="true">${frameCorner}</span>`).join('')}</div>
+            <canvas class="photo-detail__lens" aria-hidden="true" hidden></canvas>
+          </div>
+          <div class="photo-detail__inspection">
+            <button class="photo-detail__magnify" type="button" aria-pressed="false" aria-describedby="magnifier-hint magnifier-note" data-detail-copy="magnifier"></button>
+            <p id="magnifier-hint" data-detail-copy="magnifierHint"></p>
+            <p id="magnifier-note" data-detail-copy="magnifierNote"></p>
+            <p class="photo-detail__magnify-status" role="status"></p>
           </div>
           <div class="photo-detail__navigation">
             <button class="photo-detail__previous" type="button"><span aria-hidden="true">←</span></button>
@@ -285,17 +451,20 @@
             <legend data-detail-copy="previewAppearance"></legend>
             <label class="photo-detail__toggle"><span data-detail-copy="ornateFrame"></span><input id="detail-frame" type="checkbox" aria-describedby="detail-frame-notice" checked></label>
             <p id="detail-frame-notice" class="photo-detail__notice" data-detail-copy="frameNotice"></p>
-            <label class="photo-detail__toggle"><span data-detail-copy="photoMargins"></span><input id="detail-margins" type="checkbox" checked></label>
+            <label class="photo-detail__toggle"><span data-detail-copy="photoMargins"></span><input id="detail-margins" type="checkbox" aria-describedby="detail-margin-dimensions" checked></label>
+            <div id="detail-margin-dimensions" class="photo-detail__margin-dimensions" aria-live="polite"></div>
             <fieldset class="photo-detail__colors"><legend data-detail-copy="marginColor"></legend>
               <label><input type="radio" name="detail-color" value="black" checked><span class="mat-choice mat-choice--black" data-detail-copy="blackMat"></span></label>
               <label><input type="radio" name="detail-color" value="white"><span class="mat-choice mat-choice--white" data-detail-copy="whiteMat"></span></label>
             </fieldset>
           </fieldset>
+          <p class="photo-detail__unavailable" role="status" data-detail-copy="noPhotoSizes" hidden></p>
           <section class="photo-detail__order" aria-labelledby="photo-order-title" hidden>
             <h3 id="photo-order-title" data-detail-copy="orderTitle"></h3>
             <fieldset class="photo-detail__sizes">
               <legend data-detail-copy="posterSize"></legend>
             </fieldset>
+            <p class="photo-detail__notice" data-detail-copy="cropNotice"></p>
             <p class="photo-detail__price"><span data-detail-copy="posterPriceLabel"></span><strong data-poster-price></strong></p>
             <label class="photo-detail__summary-label"><span data-detail-copy="orderSummary"></span>
               <textarea class="photo-detail__order-summary" rows="1" wrap="soft" readonly></textarea>
@@ -314,18 +483,13 @@
     discouragePhotoSaving(detailDialog.querySelector('.detail-preview'));
     document.body.append(detailDialog);
     const find = selector => detailDialog.querySelector(selector);
-    const sizeChoices = find('.photo-detail__sizes');
-    posters().forEach((poster, index) => {
-      const label = document.createElement('label');
-      const input = document.createElement('input'); input.type = 'radio'; input.name = 'poster-size'; input.value = poster.name; input.checked = index === 0;
-      const span = document.createElement('span'); const strong = document.createElement('strong'); strong.textContent = poster.name; span.append(strong);
-      label.append(input, span); sizeChoices.append(label);
-    });
+    setupMagnifier();
     find('.photo-detail__close').addEventListener('click', () => detailDialog.close());
     find('.photo-detail__previous').addEventListener('click', () => navigateDetail(-1));
     find('.photo-detail__next').addEventListener('click', () => navigateDetail(1));
     detailDialog.addEventListener('keydown', event => {
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.closest('input, textarea, select, [contenteditable]')) return;
+      if (detailDialog.dataset.magnifier === 'true') return;
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         event.preventDefault();
         navigateDetail(event.key === 'ArrowLeft' ? -1 : 1);
@@ -336,13 +500,15 @@
       if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) detailDialog.close();
     } });
     detailDialog.addEventListener('close', () => {
+      resetMagnifier();
       detailOpen = false; document.body.classList.remove('has-photo-detail');
       if (detailOpener?.isConnected && detailOpener.getAttribute('aria-hidden') !== 'true') detailOpener.focus({ preventScroll: true });
       detailPhoto = null; detailCollection = null;
       galleries.forEach(gallery => gallery.schedule());
     });
-    find('#detail-frame').addEventListener('change', event => { detailDialog.dataset.frame = String(event.target.checked); });
+    find('#detail-frame').addEventListener('change', event => { hideLens(); detailDialog.dataset.frame = String(event.target.checked); });
     find('#detail-margins').addEventListener('change', event => {
+      hideLens();
       detailDialog.dataset.margins = String(event.target.checked);
       find('.photo-detail__colors').disabled = !event.target.checked;
       updateOrderSummary();
@@ -350,7 +516,7 @@
     detailDialog.querySelectorAll('input[name="detail-color"]').forEach(input => input.addEventListener('change', () => {
       if (input.checked) { detailDialog.dataset.matColor = input.value; updateOrderSummary(); }
     }));
-    detailDialog.querySelectorAll('input[name="poster-size"]').forEach(input => input.addEventListener('change', updateOrderSummary));
+    find('.photo-detail__sizes').addEventListener('change', () => { hideLens(); updateOrderSummary(); });
     find('.photo-detail__copy-order').addEventListener('click', async event => {
       const field = find('.photo-detail__order-summary');
       try {
@@ -388,7 +554,9 @@
   document.addEventListener('themechange', syncDetailMatToTheme);
   function showDetailPhoto(photo) {
     const request = ++detailRequest;
+    resetMagnifier();
     detailPhoto = photo;
+    renderPhotoSizes();
     detailDialog.dataset.landscape = String(detailPhoto.orientation === 'landscape');
     detailDialog.style.setProperty("--photo-ratio", detailPhoto.sourceWidth > detailPhoto.sourceHeight ? `${detailPhoto.sourceWidth} / ${detailPhoto.sourceHeight}` : "7 / 5");
     detailDialog.querySelector('.photo-detail__load-error').hidden = true;

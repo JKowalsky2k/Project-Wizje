@@ -168,7 +168,7 @@ window.WizjeSortable = (() => {
   const $ = selector => document.querySelector(selector);
   const text = {
     pl: {
-      posterSettings: 'Plakaty i ceny', posterSettingsHint: 'Globalne formaty i ceny wyświetlane przy każdym zdjęciu.', posterAdd: 'Dodaj format', posterSave: 'Zapisz formaty i ceny', posterFormat: 'Format (cm)', posterPrice: 'Cena (zł)', posterRemove: 'Usuń format', posterSaved: 'Zapisano globalne formaty i ceny. Przygotuj nowy ZIP przed publikacją.',
+      photoSizes: 'Dostępne formaty', allSizes: 'Wszystkie, także dodane później', savePhotoSizes: 'Zapisz formaty zdjęcia', marginHint: 'Z marginesami: lewy/prawy {x} cm, góra/dół {y} cm. Bez marginesów: 0 cm.', noSizesHint: 'Odznaczenie wszystkich formatów wyłącza zamawianie zdjęcia.', posterSettings: 'Plakaty i ceny', posterSettingsHint: 'Dodaj formaty w cm, np. 30 × 40 cm. Przy każdym zdjęciu wybierz dostępne formaty. Nowe zdjęcia domyślnie mają wszystkie formaty.', posterAdd: 'Dodaj format', posterSave: 'Zapisz formaty i ceny', posterFormat: 'Format (cm)', posterPrice: 'Cena (zł)', posterRemove: 'Usuń format', posterSaved: 'Zapisano globalne formaty i ceny. Przygotuj nowy ZIP przed publikacją.',
       dragOrder: 'Przeciągnij, aby zmienić kolejność: {name}', draggingOrder: 'Przesuń w nowe miejsce i puść. Esc anuluje.', orderHint: 'Przeciągnij zdjęcie lub uchwyt ⋮⋮. Kolejność zapisze się po puszczeniu.',
       orderPosition: 'Pozycja {index} z {total}', moveEarlier: 'Przesuń wcześniej: {name}', moveLater: 'Przesuń później: {name}', orderSaved: 'Kolejność zapisana. Odśwież podgląd strony. Przed publikacją przygotuj nowy ZIP.',
       libraryTitle: 'Biblioteka zdjęć', libraryHint: 'Zdjęcia odłączone od kolekcji. Możesz dodać je ponownie bez przesyłania pliku.', libraryEmpty: 'Nie ma zdjęć odłączonych od kolekcji.', libraryTarget: 'Dodawanie do kolekcji: {collection}', libraryChoose: 'Wybierz lub utwórz kolekcję, aby dodać do niej zdjęcia z biblioteki.', libraryAdd: 'Dodaj do kolekcji', libraryAdded: 'Dodano „{name}” z biblioteki. Odśwież podgląd strony.',
@@ -203,7 +203,7 @@ window.WizjeSortable = (() => {
       alps: 'Alpy', cars: 'Samochody', dolomites: 'Dolomity', planes: 'Samoloty', torun: 'Toruń',
     },
     en: {
-      posterSettings: 'Posters and prices', posterSettingsHint: 'Global sizes and prices shown with every photo.', posterAdd: 'Add size', posterSave: 'Save sizes and prices', posterFormat: 'Size (cm)', posterPrice: 'Price (PLN)', posterRemove: 'Remove size', posterSaved: 'Global sizes and prices saved. Prepare a new ZIP before publishing.',
+      photoSizes: 'Available sizes', allSizes: 'All, including future sizes', savePhotoSizes: 'Save photo sizes', marginHint: 'With margins: left/right {x} cm, top/bottom {y} cm. Without margins: 0 cm.', noSizesHint: 'Unchecking every size disables ordering for this photo.', posterSettings: 'Posters and prices', posterSettingsHint: 'Add sizes in cm, e.g. 30 × 40 cm. Select available sizes for each photo. New photos default to all sizes.', posterAdd: 'Add size', posterSave: 'Save sizes and prices', posterFormat: 'Size (cm)', posterPrice: 'Price (PLN)', posterRemove: 'Remove size', posterSaved: 'Global sizes and prices saved. Prepare a new ZIP before publishing.',
       dragOrder: 'Drag to reorder: {name}', draggingOrder: 'Move to a new position and release. Esc cancels.', orderHint: 'Drag a photo or the ⋮⋮ handle. Release to save its position.',
       orderPosition: 'Position {index} of {total}', moveEarlier: 'Move earlier: {name}', moveLater: 'Move later: {name}', orderSaved: 'Order saved. Refresh the website preview. Prepare a new ZIP before publishing.',
       libraryTitle: 'Photo library', libraryHint: 'Photos removed from collections. Add them again without uploading the file.', libraryEmpty: 'There are no detached photos.', libraryTarget: 'Adding to collection: {collection}', libraryChoose: 'Choose or create a collection to add photos from the library.', libraryAdd: 'Add to collection', libraryAdded: 'Added “{name}” from the library. Refresh the website preview.',
@@ -334,7 +334,7 @@ window.WizjeSortable = (() => {
   }));
   function lock(value) {
     busy = value;
-    document.querySelectorAll('button, input, select').forEach(control => { control.disabled = value || control.dataset.orderBoundary === 'true' || (control.dataset.requiresCollection === 'true' && !selected()); });
+    document.querySelectorAll('button, input, select').forEach(control => { control.disabled = value || control.dataset.orderBoundary === 'true' || control.dataset.sizeInherited === 'true' || (control.dataset.requiresCollection === 'true' && !selected()); });
     updateYearControls();
   }
   async function request(path, data, binary = false) {
@@ -750,6 +750,35 @@ window.WizjeSortable = (() => {
         await request('film', { ...targetCollection(collection), name: photo.name, ...next });
         invalidateExport(); await reload(); status('filmSaved');
       })));
+      const sizes = document.createElement('fieldset'); sizes.className = 'photo-sizes';
+      const legend = document.createElement('legend'); legend.textContent = t('photoSizes'); sizes.append(legend);
+      const allLabel = document.createElement('label');
+      const all = document.createElement('input'); all.type = 'checkbox'; all.checked = photo.posterSizes == null;
+      const allText = document.createElement('span'); allText.textContent = t('allSizes');
+      allLabel.append(all, allText); sizes.append(allLabel);
+      const choices = [];
+      for (const poster of state.posters || []) {
+        const row = document.createElement('label');
+        const input = document.createElement('input'); input.type = 'checkbox'; input.value = poster.name;
+        input.checked = all.checked || photo.posterSizes.includes(poster.name); input.disabled = all.checked; input.dataset.sizeInherited = String(all.checked);
+        const text = document.createElement('span'); text.textContent = poster.name;
+        const match = poster.name.match(/^(\d+(?:[.,]\d+)?)\s*[×xX]\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?$/);
+        if (match) {
+          const dims = match.slice(1).map(v => Number(v.replace(',', '.'))).sort((a, b) => a - b);
+          if (photo.orientation === 'landscape') dims.reverse();
+          const hint = document.createElement('small');
+          hint.textContent = t('marginHint', { x: +(dims[0] * .08).toFixed(2), y: +(dims[1] * .08).toFixed(2) }); text.append(hint);
+        }
+        row.append(input, text); sizes.append(row); choices.push(input);
+      }
+      all.addEventListener('change', () => choices.forEach(input => { input.disabled = all.checked; input.dataset.sizeInherited = String(all.checked); if (all.checked) input.checked = true; }));
+      const note = document.createElement('p'); note.className = 'crop-note'; note.textContent = t('noSizesHint'); sizes.append(note);
+      const saveSizes = document.createElement('button'); saveSizes.type = 'button'; saveSizes.className = 'secondary'; saveSizes.textContent = t('savePhotoSizes');
+      saveSizes.addEventListener('click', () => mutate(async () => {
+        await request('photo-sizes', { ...targetCollection(collection), name: photo.name, posterSizes: all.checked ? null : choices.filter(input => input.checked).map(input => input.value) });
+        invalidateExport(); await reload(); status('saved', { name: photo.name });
+      }));
+      sizes.append(saveSizes); card.append(sizes);
       card.append(actions); grid.append(card);
     });
   }

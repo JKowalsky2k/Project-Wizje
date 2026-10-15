@@ -16,6 +16,15 @@ class ManifestTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.addCleanup(self.temp.cleanup)
 
+    def test_photo_sizes_export_preserves_explicit_and_inherited_choices(self):
+        folder = self.root / 'test'; folder.mkdir()
+        for name in ['1.jpg', '2.jpg', '3.jpg']: (folder / name).touch()
+        (self.root / 'photo-types.json').write_text(json.dumps({'posterSizes': {'test/1.jpg': ['30 × 40 cm'], 'test/2.jpg': []}}))
+        photos = collections.build_manifest(self.root)[0]['photos']
+        self.assertEqual(photos[0]['posterSizes'], ['30 × 40 cm'])
+        self.assertEqual(photos[1]['posterSizes'], [])
+        self.assertNotIn('posterSizes', photos[2])
+
     def test_saved_collection_and_photo_order_with_new_and_removed_items(self):
         for name in ['alps', 'cars', 'new']:
             folder = self.root / name; folder.mkdir()

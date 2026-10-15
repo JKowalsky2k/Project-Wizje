@@ -147,3 +147,29 @@ W panelu administratora przeciągnij nazwę kolekcji lub uchwyt **⋮⋮**, aby 
 Odśwież podgląd, aby zobaczyć efekt. Kolejność obowiązuje w bębnach zdjęć, galerii HTML i nowej paczce publikacyjnej. Po zmianie przygotuj nowy ZIP — wcześniej wygenerowana paczka zachowuje poprzedni układ.
 
 Ustawienia są zapisywane osobno dla każdego roku w `display-order.json`. Nie zmieniają nazw ani zawartości oryginalnych plików. Nowe elementy, których nie ma w zapisanej kolejności, pojawiają się za ustawionymi elementami. Usunięte elementy są pomijane. Jeśli inna karta zmieni listę lub jej kolejność, panel odświeży dane zamiast nadpisać je nieaktualną wersją.
+
+## Formaty zdjęć, marginesy i lupa
+
+W sekcji „Plakaty i ceny” dodaj formaty w centymetrach (np. `30 × 40 cm`) i ceny.
+Na karcie zdjęcia w „Dostępne formaty” odznacz „Wszystkie, także dodane później”,
+zaznacz dozwolone formaty i kliknij „Zapisz formaty zdjęcia”. Brak zaznaczonych
+formatów wyłącza zamawianie tego zdjęcia. Domyślne „Wszystkie” uwzględnia także
+formaty dodane później. Zmiana nazwy formatu wymaga ponownego przypisania go
+zdjęciom z ręcznym wyborem; zmiana samej ceny zachowuje przypisania.
+
+Margines z każdej strony wynosi 8% odpowiedniego wymiaru papieru. Dla pionowego
+30 × 40 cm jest to po 2,4 cm z lewej i prawej oraz po 3,2 cm na górze i dole.
+Przy zdjęciu poziomym wymiary zamieniają się miejscami. Panel pokazuje wartości
+przy formatach, a strona przelicza je po wyborze rozmiaru i wyłączeniu marginesów.
+Podgląd pokazuje centralne przycięcie do proporcji wybranego papieru; ozdobna rama
+nie wchodzi do wymiarów wydruku.
+
+Lupa pojawia się po najechaniu myszą. Na telefonie należy włączyć przycisk „Lupa”
+i przesuwać palcem po zdjęciu. Wyłączenie przywraca przewijanie na obszarze zdjęcia.
+Przy włączonej lupie strzałki klawiatury przesuwają oglądany detal.
+
+Generator tworzy dodatkowy `*-inspect.jpg`: kopię sRGB w rozdzielczości źródła,
+bez metadanych EXIF/GPS, zapisaną z maksymalną jakością JPEG. Kopia jest publiczna
+w paczce strony, ale pobierana przez lupę dopiero na żądanie. Lupa pokazuje 100%
+(1 piksel obrazu na 1 piksel CSS), nie symulację fizycznego rozmiaru wydruku.
+Po zmianach ustawień przygotuj nowy ZIP przez panel lub `python3 tools/publish.py`.
