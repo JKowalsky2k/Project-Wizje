@@ -158,5 +158,70 @@
     "art/Art 5.png": "color",
     "art/Art 6.png": "color",
     "art/Art 7 (2).png": "color"
+  },
+  "posterSizes": {
+    "dolomites/Dolomity 1.png": [
+      "15 x 21 cm"
+    ],
+    "dolomites/Dolomity 4.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "alps/Alpy 5.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "alps/Alpy 1.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "alps/Alpy 2.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "alps/9.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "alps/Alpy 3.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "alps/Alpy 4.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "cars/Car 1.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "cars/Car 5.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "cars/Car 4.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "art/Art 1.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "dolomites/Dolomity 3.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "dolomites/Dolomity 5.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "dolomites/Dolomity 2.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "dolomites/Dolomity 6.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ]
   }
 }

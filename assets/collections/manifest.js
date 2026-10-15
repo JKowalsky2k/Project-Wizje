@@ -9,6 +9,9 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/e42fcc7c08c84ef3e0c8310f-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Fujifilm 400",
@@ -27,6 +30,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/c1205691b7b8868ac19787be-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Fujifilm 400",
@@ -45,6 +52,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/030fa9f896c106fbfba18c9b-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Fujifilm 400",
@@ -63,6 +74,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/8129736850ee7fa9bcffad9d-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Fujifilm 400",
@@ -81,6 +96,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/5930d407851ed71867d3684b-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Fujifilm 400",
@@ -99,6 +118,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/2b806a6a0ebd24a4c0762617-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Fujifilm 400",
@@ -138,6 +161,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/8f01dba8ace593a103913d6d-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Kodak Portra",
@@ -156,6 +183,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/0de3fcb3141377eaebe9892b-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Kodak Portra",
@@ -174,6 +205,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/f2861173113dbcfcb89b36c3-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Kodak Portra",
@@ -192,6 +227,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/477230f824912fcc09578c37-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Fujifilm 400",
@@ -210,6 +249,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/eb002a35cc0a5f349b3399a3-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Kodak UltraMax",
@@ -228,6 +271,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/6ae2b0c8b0d94cadf2efce23-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Kodak UltraMax",
@@ -393,6 +440,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/e18b077ddd99ce53f3b9491f-480.jpg",
         "orientation": "landscape",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 200,
         "film": "HARMAN Phoenix II",
@@ -411,6 +462,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/20ebfa953dc843f62d00696b-480.jpg",
         "orientation": "landscape",
         "colorMode": "monochrome",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 400,
         "film": "Fomapan 400",
@@ -429,6 +484,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/850ec42fb237bcde3b8c844f-480.jpg",
         "orientation": "landscape",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 200,
         "film": "KONO! Original Sunstroke",
@@ -495,6 +554,10 @@ window.ZWIDY_COLLECTIONS = [
         "src": "assets/collections/previews/1127eeeb5b3bc708d399f3c7-480.jpg",
         "orientation": "portrait",
         "colorMode": "color",
+        "posterSizes": [
+          "30 x 40 cm",
+          "15 x 21 cm"
+        ],
         "medium": "analog",
         "iso": 200,
         "film": "HARMAN Phoenix II",
