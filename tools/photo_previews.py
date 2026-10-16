@@ -20,16 +20,21 @@ def prepare_previews(collections, root):
             if photo.get('crop'):
                 continue
             source = root / unquote(photo['src'])
-            stat = source.stat()
-            identity = f'{photo["src"]}:{stat.st_size}:{stat.st_mtime_ns}:{recipe}:{photo.get("orientation", "portrait")}'
+            # Content hashing also detects replacements that retain size and mtime.
+            digest = hashlib.sha256()
+            with source.open('rb') as handle:
+                for block in iter(lambda: handle.read(1024 * 1024), b''):
+                    digest.update(block)
+            identity = f'{photo["src"]}:{digest.hexdigest()}:{recipe}:{photo.get("orientation", "portrait")}'
             fingerprint = hashlib.sha256(identity.encode()).hexdigest()[:24]
             filename = f'{fingerprint}-480.jpg'
             output = output_dir / filename
             detail = output_dir / f'{fingerprint}-2000.jpg'
+            high = output_dir / f'{fingerprint}-1440.jpg'
             inspection = output_dir / f'{fingerprint}-inspect.jpg'
             metadata = output_dir / f'{fingerprint}-info.json'
-            if any(not path.is_file() or path.stat().st_size == 0 for path in (output, detail, inspection, metadata)):
-                jobs.append({'source': str(source), 'output': str(output), 'detail': str(detail), 'inspection': str(inspection), 'metadata': str(metadata), 'orientation': photo.get('orientation', 'portrait')})
+            if any(not path.is_file() or path.stat().st_size == 0 for path in (output, high, detail, inspection, metadata)):
+                jobs.append({'source': str(source), 'output': str(output), 'detail': str(detail), 'high': str(high), 'inspection': str(inspection), 'metadata': str(metadata), 'orientation': photo.get('orientation', 'portrait')})
             updates.append((photo, f'assets/collections/previews/{quote(filename)}', f'assets/collections/previews/{detail.name}', metadata))
     if jobs:
         swift = shutil.which('swift')
@@ -42,6 +47,7 @@ def prepare_previews(collections, root):
         photo['original'] = photo['src']
         photo['src'] = preview
         photo['detail'] = detail
+        photo['previewHigh'] = detail.replace('-2000.jpg', '-1440.jpg')
         photo['inspection'] = detail.replace('-2000.jpg', '-inspect.jpg')
         photo.update(json.loads(metadata.read_text()))
     return collections

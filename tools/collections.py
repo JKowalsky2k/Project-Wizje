@@ -135,7 +135,7 @@ class Handler(SimpleHTTPRequestHandler):
             r'/(?:index\.html|styles\.css|script\.js|collections\.js|globe\.js|favicon\.svg|favicon\.ico|robots\.txt|sitemap\.xml|gallery\.html|font-preview\.html)?'
             r'|/assets/logo/(?:logo\.css|social\.jpg)'
             r'|/assets/fonts/[a-zA-Z0-9_-]+\.(?:woff2?|ttf|otf|txt)'
-            r'|/assets/collections/(?:manifest\.js|posters\.js|previews/[a-f0-9]+-(?:480|2000|inspect)\.jpg)', path)
+            r'|/assets/collections/(?:manifest\.js|posters\.js|previews/[a-f0-9]+-(?:480|1440|2000|inspect)\.jpg)', path)
         if not public:
             self.send_error(404)
             return
@@ -161,8 +161,8 @@ class Handler(SimpleHTTPRequestHandler):
         super().log_message(format, *args)
 
     def end_headers(self):
-        if urlsplit(self.path).path in ('/assets/collections/manifest.js', '/assets/collections/posters.js'):
-            self.send_header('Cache-Control', 'no-store')
+        if not urlsplit(self.path).path.startswith('/admin'):
+            self.send_header('Cache-Control', 'no-store, no-transform')
         super().end_headers()
 
 

@@ -16,6 +16,18 @@ class ManifestTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.addCleanup(self.temp.cleanup)
 
+    def test_public_responses_disable_cache_for_html_css_js_and_images(self):
+        from unittest.mock import patch
+        from http.server import SimpleHTTPRequestHandler
+        for path in ['/', '/styles.css?v=release', '/collections.js', '/assets/collections/previews/abc-1440.jpg']:
+            handler = collections.Handler.__new__(collections.Handler)
+            handler.path = path
+            headers = []
+            handler.send_header = lambda name, value: headers.append((name, value))
+            with patch.object(SimpleHTTPRequestHandler, 'end_headers'):
+                handler.end_headers()
+            self.assertIn(('Cache-Control', 'no-store, no-transform'), headers)
+
     def test_photo_sizes_export_preserves_explicit_and_inherited_choices(self):
         folder = self.root / 'test'; folder.mkdir()
         for name in ['1.jpg', '2.jpg', '3.jpg']: (folder / name).touch()

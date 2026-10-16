@@ -19,6 +19,17 @@
     }
   }
 
+  function configureGalleryImage(image, photo) {
+    if (photo.previewHigh) {
+      image.sizes = photo.orientation === 'landscape' ? '(max-width: 760px) 58vw, 380px' : '(max-width: 760px) 44vw, 280px';
+      image.srcset = `${photo.src} 480w, ${photo.previewHigh} 1440w`;
+    } else {
+      image.removeAttribute('srcset');
+      image.removeAttribute('sizes');
+    }
+    image.src = photo.src;
+  }
+
   function loadPhoto(photo) {
     if (!imageLoads.has(photo.src)) {
       const pending = new Promise((resolve, reject) => {
@@ -39,7 +50,7 @@
           }
         };
         image.onerror = () => finish(new Error('Image unavailable'));
-        image.src = photo.src;
+        configureGalleryImage(image, photo);
       }).catch((error) => {
         imageLoads.delete(photo.src);
         throw error;
@@ -120,7 +131,7 @@
     const angle = -direction * (distance === 1 ? 34 : 58);
     const scale = distance === 0 ? 1 : distance === 1 ? .9 : .74;
     return {
-      transform: `translate(-50%, -50%) translateX(${x}%) translateZ(${depth}px) rotateY(${angle}deg) scale(${scale})`,
+      transform: slot === 0 ? 'translate(-50%, -50%)' : `translate(-50%, -50%) translateX(${x}%) translateZ(${depth}px) rotateY(${angle}deg) scale(${scale})`,
       opacity: visible ? (slot === 0 ? 1 : .48) : 0,
       zIndex: slot === 0 ? 3 : distance === 1 ? 2 : 0,
     };
@@ -207,11 +218,10 @@
     const scale = Math.max(rect.width / width, rect.height / height);
     return { x: (x + (width * scale - rect.width) / 2) / scale, y: (y + (height * scale - rect.height) / 2) / scale };
   }
-  let inspectionImage = null, inspectionURL = '', inspectionState = '', lensPoint = null;
+  let inspectionImage = null, inspectionURL = '', inspectionState = '', lensPoint = null, touchPointer = null;
   function resetMagnifier() {
     if (!detailDialog) return;
-    detailDialog.dataset.magnifier = 'false';
-    detailDialog.querySelector('.photo-detail__magnify').setAttribute('aria-pressed', 'false');
+    touchPointer = null;
     detailDialog.querySelector('.photo-detail__lens').hidden = true;
     detailDialog.querySelector('.photo-detail__magnify-status').textContent = '';
     inspectionImage = null; inspectionURL = ''; inspectionState = ''; lensPoint = null;
@@ -264,38 +274,36 @@
   }
   function setupMagnifier() {
     const preview = detailDialog.querySelector('.detail-preview');
-    const button = detailDialog.querySelector('.photo-detail__magnify');
-    button.addEventListener('click', () => {
-      const enabled = detailDialog.dataset.magnifier !== 'true';
-      if (!enabled) { resetMagnifier(); return; }
-      detailDialog.dataset.magnifier = 'true'; button.setAttribute('aria-pressed', 'true');
-      lensPoint = { x: .5, y: .5 }; loadInspection(); drawLens();
-    });
-    const move = event => {
-      if (event.pointerType !== 'mouse' && detailDialog.dataset.magnifier !== 'true') return;
+    const insideImage = event => {
       const rect = detailDialog.querySelector('.photo-detail__image').getBoundingClientRect();
-      if (!rect.width || !rect.height || event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) { hideLens(); return; }
+      return rect.width && rect.height && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+    };
+    const move = event => {
+      if (!detailPhoto?.inspection || (event.pointerType !== 'mouse' && event.pointerId !== touchPointer)) return;
+      if (!insideImage(event)) { hideLens(); return; }
+      const rect = detailDialog.querySelector('.photo-detail__image').getBoundingClientRect();
       lensPoint = { x: (event.clientX - rect.left) / rect.width, y: (event.clientY - rect.top) / rect.height, touch: event.pointerType !== 'mouse' };
       loadInspection(); drawLens();
     };
+    const retry = () => { if (inspectionState === 'error') inspectionState = ''; };
+    const stop = () => { touchPointer = null; hideLens(); };
+    preview.addEventListener('pointerenter', event => {
+      if (event.pointerType === 'mouse') { retry(); move(event); }
+    });
     preview.addEventListener('pointermove', move);
     preview.addEventListener('pointerdown', event => {
-      if (detailDialog.dataset.magnifier !== 'true') return;
-      preview.setPointerCapture(event.pointerId); move(event);
+      if (event.pointerType === 'mouse' || event.isPrimary === false || touchPointer !== null || !detailPhoto?.inspection || !insideImage(event)) return;
+      touchPointer = event.pointerId;
+      preview.setPointerCapture(event.pointerId);
+      retry(); move(event);
     });
     preview.addEventListener('pointerleave', hideLens);
-    preview.addEventListener('pointercancel', hideLens);
-    preview.addEventListener('pointerup', event => { if (event.pointerType !== 'mouse') hideLens(); });
-    detailDialog.addEventListener('keydown', event => {
-      if (detailDialog.dataset.magnifier !== 'true' || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) || event.target.closest('input, textarea, select')) return;
-      event.preventDefault();
-      lensPoint ||= { x: .5, y: .5 };
-      const axis = ['ArrowLeft', 'ArrowRight'].includes(event.key) ? 'x' : 'y';
-      lensPoint[axis] = Math.max(0, Math.min(1, lensPoint[axis] + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -.05 : .05)));
-      loadInspection(); drawLens();
-    });
-    detailDialog.addEventListener('scroll', hideLens);
-    window.addEventListener('resize', hideLens);
+    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+      preview.addEventListener(type, event => { if (event.pointerId === touchPointer) stop(); });
+    }
+    detailDialog.addEventListener('scroll', stop);
+    window.addEventListener('resize', stop);
+    window.addEventListener('blur', stop);
   }
 
   function photoReference(collection, index) {
@@ -383,8 +391,6 @@
     if (!detailDialog || !detailPhoto) return;
     const find = selector => detailDialog.querySelector(selector);
     detailDialog.querySelectorAll('[data-detail-copy]').forEach(node => { node.textContent = copy()[node.dataset.detailCopy]; });
-    find('.photo-detail__magnify').disabled = !detailPhoto.inspection;
-    if (!detailPhoto.inspection) find('.photo-detail__magnify-status').textContent = copy().magnifierUnavailable;
     find('.photo-detail__close').setAttribute('aria-label', copy().closePreview);
     find('.photo-detail__previous').setAttribute('aria-label', copy().previousPhotos);
     find('.photo-detail__next').setAttribute('aria-label', copy().nextPhotos);
@@ -418,7 +424,6 @@
     detailDialog.setAttribute('aria-labelledby', 'photo-detail-title');
     detailDialog.dataset.frame = 'true'; detailDialog.dataset.margins = 'true'; detailDialog.dataset.matColor = 'black';
     detailDialog.innerHTML = `
-      <button class="photo-detail__close" type="button" autofocus><span aria-hidden="true">×</span></button>
       <div class="photo-detail__layout">
         <div class="photo-detail__art">
           <div class="drum-card detail-preview" data-center="true">
@@ -427,12 +432,7 @@
             </div>${['tl', 'tr', 'bl', 'br'].map(corner => `<span class="museum-corner museum-corner--${corner}" aria-hidden="true">${frameCorner}</span>`).join('')}</div>
             <canvas class="photo-detail__lens" aria-hidden="true" hidden></canvas>
           </div>
-          <div class="photo-detail__inspection">
-            <button class="photo-detail__magnify" type="button" aria-pressed="false" aria-describedby="magnifier-hint magnifier-note" data-detail-copy="magnifier"></button>
-            <p id="magnifier-hint" data-detail-copy="magnifierHint"></p>
-            <p id="magnifier-note" data-detail-copy="magnifierNote"></p>
-            <p class="photo-detail__magnify-status" role="status"></p>
-          </div>
+          <p class="photo-detail__magnify-status sr-only" role="status"></p>
           <div class="photo-detail__navigation">
             <button class="photo-detail__previous" type="button"><span aria-hidden="true">←</span></button>
             <button class="photo-detail__next" type="button"><span aria-hidden="true">→</span></button>
@@ -440,7 +440,10 @@
           <p class="photo-detail__load-error" role="status" hidden data-detail-copy="photoError"></p>
         </div>
         <aside class="photo-detail__info">
-          <p class="photo-detail__eyebrow" data-detail-copy="detailCollection"></p>
+          <div class="photo-detail__panel-header">
+            <p class="photo-detail__eyebrow" data-detail-copy="detailCollection"></p>
+            <button class="photo-detail__close" type="button" autofocus><span aria-hidden="true">×</span></button>
+          </div>
           <h2 id="photo-detail-title" class="collection__title"></h2>
           <p class="photo-detail__year"></p>
           <dl class="photo-detail__metadata">
@@ -489,7 +492,6 @@
     find('.photo-detail__next').addEventListener('click', () => navigateDetail(1));
     detailDialog.addEventListener('keydown', event => {
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.closest('input, textarea, select, [contenteditable]')) return;
-      if (detailDialog.dataset.magnifier === 'true') return;
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         event.preventDefault();
         navigateDetail(event.key === 'ArrowLeft' ? -1 : 1);
@@ -652,7 +654,7 @@
         this.image.hidden = true;
       } else {
         this.surface.style.backgroundImage = 'none';
-        this.image.src = photo.src;
+        configureGalleryImage(this.image, photo);
         this.image.hidden = false;
       }
       this.medium.replaceChildren();

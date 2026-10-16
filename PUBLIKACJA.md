@@ -95,3 +95,27 @@ Po uruchomieniu pełnej strony:
 4. Zweryfikuj domenę w Google Search Console (rekord DNS z własnego konta), zgłoś `https://wizje.eu/sitemap.xml` i sprawdź stronę narzędziem kontroli adresu URL.
 
 Mapa i metadane ułatwiają wykrycie treści, ale nie gwarantują indeksacji ani pozycji. Przy rozwoju galerii warto dodać indywidualne opisy zdjęć i osobne podstrony kolekcji. Obecne podpisy identyfikują kolekcję, technikę i numer fotografii; nie zgadują zawartości kadru.
+
+## Odświeżanie plików po aktualizacji
+
+Nowe paczki automatycznie nadają wersję adresom CSS, JS i ikon na podstawie plików
+wydania. Nie trzeba ręcznie zmieniać `?v=` po edycji strony lub cennika.
+Konfiguracja Apache i przykład Nginx wysyłają `Cache-Control: no-store, no-transform`:
+przeglądarka ponownie pobiera potrzebne zasoby po odświeżeniu, a pośrednicy nie powinni
+zmieniać jakości zdjęć. Obrazy niewidoczne i lupa nadal są ładowane na żądanie.
+Oznacza to większy transfer przy kolejnych wejściach.
+
+Na Apache prześlij również ukryty `.htaccess` z paczki i upewnij się, że hosting
+obsługuje `mod_headers`. Na Nginx administrator stosuje aktualny przykład konfiguracji.
+Jeśli CDN lub hosting nadpisuje nagłówki, trzeba wyłączyć jego regułę cache dla strony.
+Nowe nagłówki nie usuwają wcześniej zapisanych kopii HTML: po pierwszym wdrożeniu
+może być potrzebne jednorazowe twarde odświeżenie lub wyczyszczenie cache hostingu.
+
+Galeria ma miniatury 480 i 1440 px dobierane przez przeglądarkę do szerokości i
+gęstości pikseli ekranu. Duży podgląd i lupa zachowują osobne obrazy; oryginały
+pozostają bez zmian.
+
+Nazwy podglądów zależą od skrótu zawartości zdjęcia i wersji generatora, więc podmiana
+zdjęcia generuje nowe pliki także przy zachowanym rozmiarze pliku i dacie modyfikacji.
+Generator pomija w kopiach podglądu wąski, całkowicie biały pasek przy prawej krawędzi
+poziomych eksportów (maks. 8 pikseli). Szersze białe obszary i oryginały zachowuje.

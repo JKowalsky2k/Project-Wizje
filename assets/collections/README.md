@@ -164,9 +164,10 @@ przy formatach, a strona przelicza je po wyborze rozmiaru i wyłączeniu margine
 Podgląd pokazuje centralne przycięcie do proporcji wybranego papieru; ozdobna rama
 nie wchodzi do wymiarów wydruku.
 
-Lupa pojawia się po najechaniu myszą. Na telefonie należy włączyć przycisk „Lupa”
-i przesuwać palcem po zdjęciu. Wyłączenie przywraca przewijanie na obszarze zdjęcia.
-Przy włączonej lupie strzałki klawiatury przesuwają oglądany detal.
+Lupa pojawia się po najechaniu myszą na zdjęcie i znika po wyjechaniu poza nie.
+Na telefonie dotknij zdjęcia i przesuwaj palcem bez odrywania go od ekranu.
+Po puszczeniu palca lupa znika. Podczas oglądania detalu zdjęcie przechwytuje gest;
+stronę można przewijać, zaczynając ruch poza zdjęciem.
 
 Generator tworzy dodatkowy `*-inspect.jpg`: kopię sRGB w rozdzielczości źródła,
 bez metadanych EXIF/GPS, zapisaną z maksymalną jakością JPEG. Kopia jest publiczna

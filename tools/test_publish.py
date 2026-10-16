@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from publish import build_public_tree
+from publish import build_public_tree, version_public_assets
 
 
 class PublishTests(unittest.TestCase):
@@ -35,6 +35,33 @@ class PublishTests(unittest.TestCase):
         path = self.root / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content)
+
+    def test_release_versions_update_after_css_or_catalogue_changes(self):
+        self.write('index.html', '<link href="styles.css?v=old" rel="stylesheet"><script src="assets/collections/posters.js?v=old"></script>')
+        build_public_tree(self.root, self.output, self.data)
+        first = version_public_assets(self.output)
+        page = (self.output / 'index.html').read_text()
+        self.assertIn('styles.css?v=' + first, page)
+        self.assertIn('posters.js?v=' + first, page)
+        self.assertNotIn('?v=old', page)
+        self.assertEqual(version_public_assets(self.output), first)
+        (self.output / 'styles.css').write_text('body {color: red}')
+        second = version_public_assets(self.output)
+        self.assertNotEqual(first, second)
+        (self.output / 'assets/collections/posters.js').write_text('window.ZWIDY_POSTERS = [{name:"30 × 40 cm"}];')
+        third = version_public_assets(self.output)
+        self.assertNotEqual(second, third)
+        self.assertIn('styles.css?v=' + third, (self.output / 'index.html').read_text())
+
+    def test_retina_preview_export_and_path_validation(self):
+        high = 'assets/collections/previews/abcdef-1440.jpg'
+        self.write(high, 'Retina preview')
+        self.data[0]['photos'][0]['previewHigh'] = high
+        build_public_tree(self.root, self.output, self.data)
+        self.assertTrue((self.output / high).is_file())
+        self.assertIn('previewHigh', (self.output / 'assets/collections/manifest.js').read_text())
+        self.data[0]['photos'][0]['previewHigh'] = 'assets/collections/2026/private.jpg'
+        with self.assertRaisesRegex(ValueError, 'Retina'): build_public_tree(self.root, self.output, self.data)
 
     def test_exports_inspection_and_sizes_without_originals(self):
         inspection = 'assets/collections/previews/abcdef-inspect.jpg'

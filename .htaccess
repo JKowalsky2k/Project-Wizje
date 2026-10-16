@@ -6,10 +6,12 @@ RewriteEngine On
 RewriteRule ^(?:index\.html|styles\.css|script\.js|collections\.js|globe\.js|favicon\.svg|favicon\.ico|robots\.txt|sitemap\.xml|gallery\.html)?$ - [END]
 RewriteRule ^assets/logo/(?:logo\.css|social\.jpg)$ - [END]
 RewriteRule ^assets/fonts/[a-zA-Z0-9_-]+\.(?:woff2?|ttf|otf|txt)$ - [END]
-RewriteRule ^assets/collections/(?:manifest\.js|posters\.js|previews/[a-f0-9]+-(?:480|2000|inspect)\.jpg)$ - [END]
+RewriteRule ^assets/collections/(?:manifest\.js|posters\.js|previews/[a-f0-9]+-(?:480|1440|2000|inspect)\.jpg)$ - [END]
 RewriteRule ^\.well-known/acme-challenge/[a-zA-Z0-9_-]+$ - [END]
 RewriteRule ^ - [F,END]
 <IfModule mod_headers.c>
+    # Reload public assets on every refresh; prevent proxy image recompression.
+    Header always set Cache-Control "no-store, no-transform"
     Header always set X-Content-Type-Options "nosniff"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set X-Frame-Options "DENY"

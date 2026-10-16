@@ -6,6 +6,7 @@ class Element {
   replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
   remove() { this.parent.children = this.parent.children.filter(node => node !== this); }
   setAttribute(k,v) { this[k] = v; }
+  removeAttribute(k) { delete this[k]; }
   addEventListener(k,v) { (this.handlers[k] ||= []).push(v); }
   emit(k,v = {}) { (this.handlers[k] || []).forEach(fn => fn(v)); }
   querySelectorAll(selector) { return this.children.filter(child => selector === 'label'); }
@@ -30,9 +31,15 @@ const code = readFile('collections.js');
 // Keep the production dialog code, omit gallery bootstrap and expose its closures for the fixture.
 eval(code.slice(0, code.indexOf('  class DrumCard')) + `
   const source = [];
-  api = {paperDimensions, sourcePoint, availablePosters, renderPhotoSizes, updateOrderSummary, marginDescription, setupMagnifier, resetMagnifier,
+  api = {configureGalleryImage, pose, paperDimensions, sourcePoint, availablePosters, renderPhotoSizes, updateOrderSummary, marginDescription, setupMagnifier, resetMagnifier,
     set(photo) { detailDialog = dialog; detailPhoto = photo; detailCollection = {id:'test',title:'Test',year:'2026',photos:[photo]}; }};
 })();`);
+const galleryImage = new Element();
+api.configureGalleryImage(galleryImage, {src:'small.jpg',previewHigh:'large.jpg',orientation:'portrait'});
+assert(galleryImage.srcset === 'small.jpg 480w, large.jpg 1440w' && galleryImage.sizes.includes('280px'), 'Retina candidates and portrait sizing');
+api.configureGalleryImage(galleryImage, {src:'other.jpg',orientation:'landscape'});
+assert(!galleryImage.srcset && !galleryImage.sizes && galleryImage.src === 'other.jpg', 'missing Retina candidate clears stale sources');
+assert(api.pose(0,3).transform === 'translate(-50%, -50%)', 'center photo does not keep a 3D raster layer');
 assert(JSON.stringify(api.paperDimensions({name:'30 × 40 cm'}, false)) === '[30,40]', 'portrait dimensions');
 assert(JSON.stringify(api.paperDimensions({name:'30 x 40 cm'}, true)) === '[40,30]', 'landscape dimensions');
 assert(api.paperDimensions({name:'0 × 40 cm'}, false) === null, 'zero rejected');
@@ -57,23 +64,56 @@ api.set({inspection:'test.jpg'}); assert(api.availablePosters().length === 2, 'i
 const point = api.sourcePoint(150,200,{width:300,height:400},3360,2240);
 assert(point.x === 1680 && point.y === 1120, 'cover crop maps to native source center');
 api.setupMagnifier();
-const preview = node('.detail-preview'), button = node('.photo-detail__magnify');
-preview.emit('pointermove',{pointerType:'touch',clientX:150,clientY:200});
-assert(!nextImage, 'touch scroll does not load magnifier');
-button.emit('click'); nextImage.onload();
-assert(dialog.dataset.magnifier === 'true' && !node('.photo-detail__lens').hidden, 'toggle loads native detail');
-assert(lastDraw[0].naturalWidth === 3360, 'draw uses full resolution');
-preview.emit('pointermove',{pointerType:'touch',clientX:200,clientY:200});
-assert(lastDraw[1] < -1595, 'touch movement changes source sample');
-preview.emit('pointercancel'); assert(node('.photo-detail__lens').hidden, 'cancel hides lens');
-let prevented = false;
-dialog.emit('keydown',{key:'ArrowRight',target:{closest:()=>false},preventDefault(){prevented=true;}});
-assert(prevented && !node('.photo-detail__lens').hidden, 'keyboard moves lens');
-api.resetMagnifier(); assert(node('.photo-detail__lens').hidden && button['aria-pressed'] === 'false', 'navigation reset');
-preview.emit('pointermove',{pointerType:'mouse',clientX:150,clientY:200});
-nextImage.onerror(); assert(node('.photo-detail__magnify-status').textContent === 'error', 'loading errors visible');
+const preview = node('.detail-preview');
+const lens = node('.photo-detail__lens');
 api.resetMagnifier();
+preview.emit('pointermove',{pointerType:'touch',pointerId:1,clientX:150,clientY:200});
+assert(!nextImage && lens.hidden, 'touch requires a held pointer');
+preview.emit('pointerdown',{pointerType:'touch',pointerId:1,clientX:150,clientY:200});
+nextImage.onload();
+assert(!lens.hidden && lastDraw[0].naturalWidth === 3360, 'touch down loads source and shows lens');
+preview.emit('pointermove',{pointerType:'touch',pointerId:1,clientX:200,clientY:200});
+assert(lastDraw[1] < -1595, 'held touch moves source sample');
+const firstDraw = lastDraw;
+preview.emit('pointerdown',{pointerType:'touch',pointerId:2,isPrimary:false,clientX:50,clientY:50});
+preview.emit('pointermove',{pointerType:'touch',pointerId:2,clientX:50,clientY:50});
+preview.emit('pointerup',{pointerType:'touch',pointerId:2});
+assert(lastDraw === firstDraw && !lens.hidden, 'second finger cannot move or end first gesture');
+preview.emit('pointerup',{pointerType:'touch',pointerId:1});
+assert(lens.hidden, 'release immediately hides lens');
+preview.emit('pointermove',{pointerType:'touch',pointerId:1,clientX:150,clientY:200});
+assert(lens.hidden, 'released touch cannot reopen lens');
+preview.emit('pointerdown',{pointerType:'touch',pointerId:3,clientX:150,clientY:200});
+assert(!lens.hidden, 'next touch uses cached source');
+preview.emit('pointercancel',{pointerType:'touch',pointerId:3});
+assert(lens.hidden, 'cancel hides lens');
+preview.emit('pointerdown',{pointerType:'touch',pointerId:4,clientX:350,clientY:200});
+preview.emit('pointermove',{pointerType:'touch',pointerId:4,clientX:150,clientY:200});
+assert(lens.hidden, 'gesture starting outside photo does not activate lens');
+preview.emit('pointerdown',{pointerType:'touch',pointerId:5,clientX:150,clientY:200});
+preview.emit('lostpointercapture',{pointerId:5});
+assert(lens.hidden, 'lost capture hides lens');
+api.resetMagnifier();
+preview.emit('pointerdown',{pointerType:'touch',pointerId:6,clientX:150,clientY:200});
+preview.emit('pointerup',{pointerType:'touch',pointerId:6});
+nextImage.onload();
+assert(lens.hidden, 'source arriving after release cannot reopen lens');
+preview.emit('pointerenter',{pointerType:'mouse',clientX:150,clientY:200});
+assert(!lens.hidden, 'mouse hover opens automatically');
+preview.emit('pointermove',{pointerType:'mouse',clientX:350,clientY:200});
+assert(lens.hidden, 'mouse outside actual image hides lens');
 preview.emit('pointermove',{pointerType:'mouse',clientX:150,clientY:200});
+assert(!lens.hidden, 'mouse returning to image opens lens');
+preview.emit('pointerleave',{pointerType:'mouse'});
+assert(lens.hidden, 'mouse leave hides lens');
+api.resetMagnifier();
+preview.emit('pointerenter',{pointerType:'mouse',clientX:150,clientY:200});
+nextImage.onerror(); assert(node('.photo-detail__magnify-status').textContent === 'error', 'loading errors exposed');
+const failed = nextImage;
+preview.emit('pointerleave',{pointerType:'mouse'});
+preview.emit('pointerenter',{pointerType:'mouse',clientX:150,clientY:200});
+assert(nextImage !== failed, 'new hover retries a failed load');
 const stale = nextImage; api.resetMagnifier(); stale.onload();
-assert(node('.photo-detail__lens').hidden, 'stale load cannot show previous photo');
-print('Detail checks passed: sizes, margins, orders, source mapping, mouse/touch/keyboard, loading failure and stale load.');
+assert(lens.hidden, 'stale load cannot show previous photo');
+assert(!code.includes('class="photo-detail__magnify"') && !code.includes('data-detail-copy="magnifierHint"'), 'button and description removed');
+print('Detail checks passed: sizes, margins, orders, held-touch lifecycle, multitouch, mouse hover, retries and stale loads.');

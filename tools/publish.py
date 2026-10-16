@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime
 from importlib.util import module_from_spec, spec_from_file_location
 import json
+import hashlib
 from pathlib import Path, PurePosixPath
 import re
 import shutil
@@ -89,7 +90,11 @@ def build_public_tree(root, destination, collections):
                 raise ValueError('Kolekcja wymaga osobnych zdjęć i wygenerowanych podglądów. '
                                  'Dodaj zdjęcia przez panel; stare plansze Canva nie są publikowane.')
             copy(src)
-            public_photo = {key: photo[key] for key in ('src', 'width', 'height', 'medium', 'film', 'filmBrand', 'iso', 'detail', 'sourceWidth', 'sourceHeight', 'detailWidth', 'detailHeight', 'orientation', 'colorMode', 'posterSizes', 'inspection') if key in photo}
+            public_photo = {key: photo[key] for key in ('src', 'width', 'height', 'medium', 'film', 'filmBrand', 'iso', 'detail', 'sourceWidth', 'sourceHeight', 'detailWidth', 'detailHeight', 'orientation', 'colorMode', 'posterSizes', 'inspection', 'previewHigh') if key in photo}
+            if photo.get('previewHigh'):
+                if not re.fullmatch(r'assets/collections/previews/[a-f0-9]+-1440\.jpg', photo['previewHigh']):
+                    raise ValueError('Nieprawidłowy podgląd Retina.')
+                copy(photo['previewHigh'])
             if photo.get('detail'):
                 if not re.fullmatch(r'assets/collections/previews/[a-f0-9]+-2000\.jpg', photo['detail']):
                     raise ValueError('Nieprawidłowy duży podgląd zdjęcia.')
@@ -113,6 +118,28 @@ def build_public_tree(root, destination, collections):
     return photo_count
 
 
+def version_public_assets(destination):
+    """Automatically refresh HTML asset URLs whenever a release's app files change."""
+    paths = sorted(path for path in destination.rglob('*') if path.is_file() and path.suffix in ('.css', '.js', '.svg', '.ico'))
+    digest = hashlib.sha256()
+    for path in paths:
+        digest.update(path.relative_to(destination).as_posix().encode())
+        digest.update(path.read_bytes())
+    version = digest.hexdigest()[:16]
+    pattern = re.compile(r'(?P<prefix>\b(?:src|href)=["\'])(?P<url>[^"\']+)(?P<end>["\'])')
+    for html in destination.glob('*.html'):
+        def replace(match):
+            parsed = urlsplit(match['url'])
+            if parsed.scheme or parsed.netloc or parsed.path.startswith('/'):
+                return match[0]
+            asset = destination / unquote(parsed.path)
+            if asset.suffix not in ('.css', '.js', '.svg', '.ico') or not asset.is_file():
+                return match[0]
+            return match['prefix'] + parsed.path + '?v=' + version + match['end']
+        html.write_text(pattern.sub(replace, html.read_text(encoding='utf-8')), encoding='utf-8')
+    return version
+
+
 def publish(root=ROOT):
     spec = spec_from_file_location('wizje_collection_builder', Path(__file__).with_name('collections.py'))
     builder = module_from_spec(spec)
@@ -130,6 +157,7 @@ def publish(root=ROOT):
         site = stage / 'site'
         site.mkdir()
         count = build_public_tree(root, site, collections)
+        version_public_assets(site)
         staged_zip = stage / 'website.zip'
         with zipfile.ZipFile(staged_zip, 'w', zipfile.ZIP_DEFLATED) as bundle:
             for file in sorted(site.rglob('*')):
