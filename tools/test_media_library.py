@@ -104,7 +104,7 @@ class LibraryTests(unittest.TestCase):
         (release / 'photo.jpg').write_bytes(b'old public copy')
         archive = release.with_suffix('.zip'); archive.write_bytes(b'old ZIP')
         unrelated = self.root / 'dist/my-notes.txt'; unrelated.write_text('unrelated')
-        self.store.library.purge('photo.jpg', identifier=item['id'])
+        self.store.library.purge(True, identifier=item['id'])
         self.assertFalse(duplicate.exists())
         self.assertFalse((future / 'duplicate.jpg').exists())
         self.assertEqual(json.loads(future_types.read_text())['photos'], {})
@@ -122,10 +122,10 @@ class LibraryTests(unittest.TestCase):
     def test_permanent_delete_requires_exact_confirmation_and_safe_paths(self):
         original = self.photo()
         with self.assertRaises(EditorError): self.store.library.purge('wrong', collection='first', name='photo.jpg')
-        with self.assertRaises(EditorError): self.store.library.purge('photo.jpg', collection='../first', name='photo.jpg')
+        with self.assertRaises(EditorError): self.store.library.purge(True, collection='../first', name='photo.jpg')
         with self.assertRaises(EditorError): self.store.library.find('../private')
         (self.previews / 'linked.jpg').symlink_to(original)
-        with self.assertRaises(EditorError): self.store.library.purge('photo.jpg', collection='first', name='photo.jpg')
+        with self.assertRaises(EditorError): self.store.library.purge(True, collection='first', name='photo.jpg')
         self.assertTrue(original.exists())
         self.assertFalse(self.store.library.journal.exists())
 
@@ -134,7 +134,7 @@ class LibraryTests(unittest.TestCase):
         def fail(): raise RuntimeError('preview renderer failed')
         self.store.rebuild = fail
         with self.assertRaises(EditorError) as failure:
-            self.store.library.purge('photo.jpg', collection='first', name='photo.jpg')
+            self.store.library.purge(True, collection='first', name='photo.jpg')
         self.assertEqual(failure.exception.status, 503)
         self.assertFalse(original.exists())
         self.assertTrue(self.store.library.journal.exists())

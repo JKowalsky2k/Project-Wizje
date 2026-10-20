@@ -174,3 +174,13 @@ bez metadanych EXIF/GPS, zapisaną z maksymalną jakością JPEG. Kopia jest pub
 w paczce strony, ale pobierana przez lupę dopiero na żądanie. Lupa pokazuje 100%
 (1 piksel obrazu na 1 piksel CSS), nie symulację fizycznego rozmiaru wydruku.
 Po zmianach ustawień przygotuj nowy ZIP przez panel lub `python3 tools/publish.py`.
+
+## Praca ze zdjęciami w panelu
+
+- Lista ma wyszukiwanie po nazwie i kodzie oraz filtry techniki, orientacji, kolorystyki, dostępności do zamówienia i brakujących danych.
+- Zaznacz zdjęcia i ustaw pola w sekcji edycji grupowej. Pola „Bez zmian” zachowują wartości. Możesz też przenieść zaznaczone zdjęcia do innej kolekcji lub roku. Cała grupa zapisuje się razem; konflikt nazwy pliku pozostawia ją bez zmian.
+- Kliknij miniaturę lub **Edytuj zdjęcie**, aby otworzyć duży podgląd z ustawieniami. Przyciski i strzałki klawiatury przechodzą między zdjęciami widocznymi po filtrowaniu. Ramka, marginesy i format w podglądzie służą do sprawdzenia wyglądu.
+- Zapis pokazuje stan przy polu. Błąd można ponowić. Ostatnią edycję, przeniesienie grupy lub odłączenie zdjęcia można cofnąć przyciskiem **Cofnij ostatnią zmianę**. Cofanie jest dostępne w bieżącej sesji przez godzinę; nie nadpisuje późniejszych zmian.
+- Odłączanie i trwałe usuwanie pojedynczego zdjęcia nie otwierają pytań o potwierdzenie. Trwałego usunięcia nie da się cofnąć.
+- Import pokazuje osobno przesyłanie i przygotowywanie podglądów. Nieudane pliki można ponowić bez ponownego wysyłania dodanych zdjęć.
+- Sekcja publikacji pokazuje zmiany od ostatniego ZIP-a przygotowanego w panelu.

@@ -143,7 +143,7 @@ class EditorStore:
         manifest = self.root / 'assets/collections/manifest.js'
         if manifest.exists():
             data = json.loads(manifest.read_text().split(' = ', 1)[1].rstrip(';\n'))
-            previews = {p.get('original', p['src']): p['src'] for c in data for p in c['photos']}
+            previews = {p.get('original', p['src']): p for c in data for p in c['photos']}
         items = []
         for folder in sorted(self.photo_root.iterdir(), key=lambda p: p.name.casefold()):
             if not folder.is_dir() or folder.is_symlink() or folder.name.startswith('.'):
@@ -155,7 +155,10 @@ class EditorStore:
                 key = f'{folder.name}/{file.name}'
                 src = file.relative_to(self.root).as_posix()
                 src = '/'.join(quote(part) for part in src.split('/'))
-                photos.append({'name': file.name, 'preview': '/' + previews.get(src, src),
+                preview = previews.get(src, {})
+                photos.append({'name': file.name, 'preview': '/' + preview.get('src', src),
+                               'detail': '/' + preview.get('detail', preview.get('src', src)),
+                               **{key: preview[key] for key in ('sourceWidth', 'sourceHeight', 'detailWidth', 'detailHeight') if key in preview},
                                'medium': config.get('photos', {}).get(key),
                                'orientation': config.get('orientations', {}).get(key, 'portrait'),
                                'colorMode': config.get('colorModes', {}).get(key),
@@ -360,7 +363,7 @@ class EditorStore:
             write_json(self.types_path, before)
             raise
 
-    def upload(self, collection, name, medium, content, film=None, iso=None, orientation='portrait', color_mode='color'):
+    def upload(self, collection, name, medium, content, film=None, iso=None, orientation='portrait', color_mode='color', rebuild=True):
         if color_mode not in ('color', 'monochrome'):
             raise EditorError('Nieprawidłowa kolorystyka / Invalid color mode.')
         if orientation not in ('portrait', 'landscape'):
@@ -398,10 +401,33 @@ class EditorStore:
             raise EditorError(f'Plik {name} już istnieje. Zmień jego nazwę przed dodaniem.', 409)
         try:
             write_json(self.types_path, config)
-            self.rebuild()  # The image decoder also validates the complete upload.
+            if rebuild:
+                self.rebuild()  # The image decoder also validates the complete upload.
         except Exception:
             path.unlink(missing_ok=True)
             write_json(self.types_path, before)
+            raise
+
+    def upload_batch(self, collection, files, medium, film=None, iso=None, orientation='portrait', color_mode='color'):
+        """Validate and commit a bounded group with one decode/build pass."""
+        before = self.types()
+        created = []
+        derived = [self.root / name for name in ('assets/collections/manifest.js', 'gallery.html', 'sitemap.xml', 'robots.txt')]
+        snapshots = {path: path.read_bytes() if path.exists() else None for path in derived}
+        try:
+            for name, content in files:
+                self.upload(collection, name, medium, content, film, iso, orientation, color_mode, rebuild=False)
+                created.append(self.photo(collection, name))
+            self.rebuild()
+        except Exception:
+            for path in created:
+                path.unlink(missing_ok=True)
+            write_json(self.types_path, before)
+            for path, content in snapshots.items():
+                if content is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_bytes(content)
             raise
 
     def delete_photo(self, collection, name):
@@ -500,6 +526,8 @@ class LocalAdmin:
         self.login_failures = []
         self.csrf = secrets.token_urlsafe(32)
         self.sessions = {}
+        from admin_actions import EditorActions
+        self.actions = EditorActions(self)
         self.assets = Path(__file__).parent / 'admin'
 
     def poster_catalog(self):
@@ -625,17 +653,25 @@ class LocalAdmin:
         if path == '/admin/api/auth':
             self.send(handler, 200, {'setup': not self.password_path.exists(), 'csrf': self.auth_csrf})
             return True
-        public_files = {'/admin/login.js': ('login.js', 'text/javascript'),
-                        '/admin/editor.css': ('editor.css', 'text/css')}
+        # Opening the local editor creates a browser session without a login screen.
+        # Keep sessions for CSRF protection, undo ownership and private ZIP links.
+        if path in ('/admin', '/admin/'):
+            headers = None
+            if not self.authenticated(handler):
+                now = time.monotonic()
+                self.sessions = {key: expiry for key, expiry in self.sessions.items() if expiry > now}
+                session = secrets.token_urlsafe(32)
+                self.sessions[session] = now + 12 * 60 * 60
+                headers = {'Set-Cookie': f'{self.cookie_name(handler)}={session}; HttpOnly; SameSite=Strict; Path=/admin; Max-Age=43200'}
+            self.send(handler, 200, (self.assets / 'index.html').read_bytes(), 'text/html; charset=utf-8', headers=headers)
+            return True
+        public_files = {'/admin/editor.css': ('editor.css', 'text/css')}
         if path in public_files:
             name, mime = public_files[path]
             self.send(handler, 200, (self.assets / name).read_bytes(), mime)
             return True
         if not self.authenticated(handler):
-            if path in ('/admin', '/admin/'):
-                self.send(handler, 200, (self.assets / 'login.html').read_bytes(), 'text/html; charset=utf-8')
-            else:
-                self.send(handler, 401, {'error': 'Zaloguj się ponownie w panelu.'})
+            self.send(handler, 401, {'error': 'Odśwież panel i spróbuj ponownie.'})
             return True
         if path.startswith('/admin/download/'):
             self.download(handler, path.rsplit('/', 1)[-1])
@@ -655,7 +691,9 @@ class LocalAdmin:
             with self.lock:
                 try:
                     self.store.library.finish_pending()
-                    self.send(handler, 200, {'collections': self.collections_state(), 'library': self.store.library.state(), 'films': FILMS, 'isoValues': ISO_VALUES, 'posters': self.poster_catalog(), 'csrf': self.csrf})
+                    collections = self.collections_state()
+                    self.send(handler, 200, {'collections': collections, 'library': self.store.library.state(), 'films': FILMS, 'isoValues': ISO_VALUES, 'posters': self.poster_catalog(), 'csrf': self.csrf,
+                                             'publication': self.actions.publication_status(collections)})
                 except EditorError as error:
                     self.send(handler, error.status, {'error': str(error)})
             return True
@@ -714,6 +752,7 @@ class LocalAdmin:
         self.exports = {key: value for key, value in self.exports.items() if value['expires'] > now}
         identifier = secrets.token_urlsafe(24)
         self.exports[identifier] = {'path': archive, 'session': self.session(handler), 'expires': now + 3600}
+        self.actions.published(archive.name)
         return {'download': '/admin/download/' + identifier, 'name': archive.name,
                 'photos': photos, 'collections': collections, 'bytes': archive.stat().st_size}
 
@@ -756,7 +795,16 @@ class LocalAdmin:
             return
         try:
             length = int(handler.headers.get('Content-Length', '0'))
-            maximum = 2048 if login else (MAX_UPLOAD if url.path.endswith('/upload') else 64 * 1024)
+            if login:
+                maximum = 2048
+            elif url.path.endswith('/upload-batch'):
+                maximum = MAX_UPLOAD + 65540
+            elif url.path.endswith('/upload'):
+                maximum = MAX_UPLOAD
+            elif url.path.endswith('/bulk-photos'):
+                maximum = 256 * 1024
+            else:
+                maximum = 64 * 1024
             if length < 0 or length > maximum:
                 raise EditorError('Plik lub żądanie jest zbyt duże.', 413)
             content = handler.rfile.read(length)
@@ -767,7 +815,29 @@ class LocalAdmin:
                     self.login(handler, json.loads(content))
                     return
                 self.store.library.finish_pending()
-                if url.path == '/admin/api/upload':
+                if url.path == '/admin/api/upload-batch':
+                    if len(content) < 4:
+                        raise EditorError('Nieprawidłowe dane.')
+                    size = int.from_bytes(content[:4], 'big')
+                    if not 0 < size <= 65536 or 4 + size > len(content):
+                        raise EditorError('Nieprawidłowe dane.')
+                    entries = json.loads(content[4:4 + size])
+                    if not isinstance(entries, list) or not 1 <= len(entries) <= 100:
+                        raise EditorError('Nieprawidłowe dane.')
+                    files, offset = [], 4 + size
+                    for entry in entries:
+                        if not isinstance(entry, dict) or type(entry.get('size')) is not int or not 0 < entry['size'] <= MAX_UPLOAD or offset + entry['size'] > len(content):
+                            raise EditorError('Nieprawidłowe dane.')
+                        files.append((entry.get('name'), content[offset:offset + entry['size']]))
+                        offset += entry['size']
+                    if offset != len(content):
+                        raise EditorError('Nieprawidłowe dane.')
+                    args = parse_qs(url.query)
+                    self.year_store(args.get('year', [None])[0]).upload_batch(args.get('collection', [''])[0], files,
+                        args.get('medium', [''])[0], args.get('film', [None])[0], args.get('iso', [None])[0],
+                        args.get('orientation', ['portrait'])[0], args.get('colorMode', ['color'])[0])
+                    result = {'ok': True, 'count': len(files)}
+                elif url.path == '/admin/api/upload':
                     args = parse_qs(url.query)
                     self.year_store(args.get('year', [None])[0]).upload(args.get('collection', [''])[0], args.get('name', [''])[0], args.get('medium', [''])[0], content, args.get('film', [None])[0], args.get('iso', [None])[0], args.get('orientation', ['portrait'])[0], args.get('colorMode', ['color'])[0])
                     result = {'ok': True}
@@ -779,8 +849,25 @@ class LocalAdmin:
                     data = json.loads(content)
                     if not isinstance(data, dict):
                         raise EditorError('Nieprawidłowe dane.')
+                    metadata_routes = ('/admin/api/medium', '/admin/api/orientation', '/admin/api/color-mode', '/admin/api/film', '/admin/api/photo-sizes')
+                    before = None
+                    if url.path in metadata_routes:
+                        from admin_actions import snapshot
+                        before = snapshot([self.year_store(data.get('year')).types_path])
+                    elif url.path == '/admin/api/posters':
+                        from admin_actions import snapshot
+                        before = snapshot([self.poster_catalog_path, self.poster_script_path])
+                    elif url.path in ('/admin/api/locations', '/admin/api/location', '/admin/api/reorder-photos', '/admin/api/reorder-collections'):
+                        from admin_actions import snapshot
+                        store = self.year_store(data.get('year'))
+                        before = snapshot([store.info_path if url.path in ('/admin/api/locations', '/admin/api/location') else store.order_path])
                     if url.path == '/admin/api/export':
                         result = self.export(handler)
+                    elif url.path == '/admin/api/bulk-photos':
+                        result = self.actions.bulk(handler, data)
+                    elif url.path == '/admin/api/undo':
+                        self.actions.undo(handler, data.get('token'))
+                        result = {'ok': True}
                     elif url.path == '/admin/api/posters':
                         result = {'posters': self.save_poster_catalog(data.get('posters'))}
                     elif url.path == '/admin/api/reorder-collections':
@@ -801,9 +888,13 @@ class LocalAdmin:
                     elif url.path == '/admin/api/purge-photo':
                         self.year_store(data.get('year')).library.purge(data.get('confirmed'), collection=data.get('collection'), name=data.get('name'), identifier=data.get('id'))
                         self.exports.clear()
+                        self.actions.history.clear()
                         result = {'ok': True}
                     elif url.path == '/admin/api/delete-photo':
-                        result = {'ok': True, 'trashId': self.year_store(data.get('year')).delete_photo(data.get('collection'), data.get('name'))}
+                        store = self.year_store(data.get('year'))
+                        trash_id = store.delete_photo(data.get('collection'), data.get('name'))
+                        item = next(item for item in store.library.entries() if item['path'].is_relative_to(store.trash_root / trash_id))
+                        result = {'ok': True, 'trashId': trash_id, 'undo': self.actions.remember(handler, action=lambda: store.library.attach(item['id'], data['collection']))}
                     elif url.path == '/admin/api/delete-collection':
                         result = {'ok': True, 'trashId': self.year_store(data.get('year')).delete_collection(data.get('collection'))}
                     elif url.path == '/admin/api/locations':
@@ -829,6 +920,13 @@ class LocalAdmin:
                         result = {'ok': True}
                     else:
                         raise EditorError('Nie znaleziono operacji.', 404)
+                    if url.path in metadata_routes:
+                        store = self.year_store(data.get('year'))
+                        result['photo'] = next(photo for collection in store.state() if collection['id'] == data.get('collection')
+                                               for photo in collection['photos'] if photo['name'] == data.get('name'))
+                    if before is not None:
+                        result['undo'] = self.actions.remember(handler, before)
+                result['publication'] = self.actions.publication_status()
                 self.send(handler, 200, result)
         except EditorError as error:
             self.send(handler, error.status, {'error': str(error)})

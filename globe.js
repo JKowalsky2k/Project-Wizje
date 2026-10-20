@@ -33,16 +33,21 @@
     for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
     return node;
   }
-  function project(lon, lat) {
-    const delta = (lon - center[0]) * radians, phi = lat * radians, tilt = center[1] * radians;
-    return [450 + 460 * Math.cos(phi) * Math.sin(delta),
-      430 - 460 * (Math.cos(tilt) * Math.sin(phi) - Math.sin(tilt) * Math.cos(phi) * Math.cos(delta)),
-      Math.sin(tilt) * Math.sin(phi) + Math.cos(tilt) * Math.cos(phi) * Math.cos(delta)];
+  const vector = ([lon, lat]) => {
+    const phi = lat * radians, lambda = lon * radians, cos = Math.cos(phi);
+    return [cos * Math.cos(lambda), cos * Math.sin(lambda), Math.sin(phi)];
+  };
+  let view = [], geometryKey = '';
+  function projectVector([x, y, z]) {
+    const depth = x * view[0] + y * view[1];
+    return [450 + 460 * (y * view[0] - x * view[1]),
+      430 - 460 * (view[2] * z - view[3] * depth), view[3] * z + view[2] * depth];
   }
+  const project = (lon, lat) => projectVector(vector([lon, lat]));
   function outline(points) {
     let path = '', previous = null;
     for (const coordinates of points) {
-      const point = project(...coordinates);
+      const point = projectVector(coordinates);
       if (previous && (previous[2] >= 0) !== (point[2] >= 0)) {
         const t = previous[2] / (previous[2] - point[2]);
         const x = previous[0] + t * (point[0] - previous[0]);
@@ -57,6 +62,13 @@
   const grid = [];
   for (let lat = -60; lat <= 60; lat += 30) grid.push(Array.from({ length: 181 }, (_, i) => [-180 + i * 2, lat]));
   for (let lon = -180; lon < 180; lon += 30) grid.push(Array.from({ length: 91 }, (_, i) => [lon, -90 + i * 2]));
+  const borderVectors = borders.map(points => points.map(vector));
+  const gridVectors = grid.map(points => points.map(vector));
+  const sphere = element('circle', { cx: 450, cy: 430, r: 460, class: 'photo-globe__sphere' });
+  const gridPath = element('path', { class: 'photo-globe__grid' });
+  const borderPath = element('path', { class: 'photo-globe__borders' });
+  const markers = element('g');
+  svg.replaceChildren(sphere, gridPath, borderPath, markers);
   function choose(place) {
     if (selected === place) {
       selected = null;
@@ -93,10 +105,14 @@
   }
   function render() {
     const focusedId = document.activeElement?.dataset.place;
-    svg.replaceChildren();
-    const sphere = element('circle', { cx: 450, cy: 430, r: 460, class: 'photo-globe__sphere' }); svg.append(sphere);
-    svg.append(element('path', { d: grid.map(outline).join(''), class: 'photo-globe__grid' }));
-    svg.append(element('path', { d: borders.map(outline).join(''), class: 'photo-globe__borders' }));
+    const key = center.join('/');
+    if (key !== geometryKey) {
+      view = [Math.cos(center[0] * radians), Math.sin(center[0] * radians), Math.cos(center[1] * radians), Math.sin(center[1] * radians)];
+      gridPath.setAttribute('d', gridVectors.map(outline).join(''));
+      borderPath.setAttribute('d', borderVectors.map(outline).join(''));
+      geometryKey = key;
+    }
+    markers.replaceChildren();
     for (const place of places) {
       const [x, y, depth] = project(place.lon, place.lat);
       if (depth < 0) continue;
@@ -107,13 +123,14 @@
       marker.addEventListener('keydown', event => {
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(place); }
       });
-      svg.append(marker);
+      markers.append(marker);
       if (focusedId === place.id) marker.focus({ preventScroll: true });
     }
 
   }
   function selectYear(year) {
     year = String(year);
+    if (host.dataset.year === year) return;
     places = placesForYear(year);
     selected = null;
     center = [15, 16];

@@ -79,6 +79,8 @@ class MediaLibrary:
         before = self.store.types()
         manifest = self.store.root / 'assets/collections/manifest.js'
         previous_manifest = manifest.read_bytes() if manifest.exists() else None
+        from admin_actions import snapshot, restore
+        previous_derived = snapshot(self.store.root / name for name in ('gallery.html', 'sitemap.xml', 'robots.txt'))
         config = json.loads(json.dumps(before))
         config.setdefault('photos', {})[collection + '/' + item['name']] = item['medium']
         key = collection + '/' + item['name']
@@ -101,6 +103,7 @@ class MediaLibrary:
                 manifest.unlink(missing_ok=True)
             else:
                 manifest.write_bytes(previous_manifest)
+            restore(previous_derived)
             raise
 
     def photo_roots(self):

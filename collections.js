@@ -2,6 +2,7 @@
 (() => {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const imageLoads = new Map();
+  const galleryImageSources = new WeakMap();
   const detailLoads = new Map();
   const galleries = [];
   const letterStyles = ['z', 'w', 'i', 'd', 'y'];
@@ -20,20 +21,27 @@
   }
 
   function configureGalleryImage(image, photo) {
+    const identity = [photo.src, photo.previewMedium, photo.previewHigh, photo.orientation].join('|');
+    // Reassigning src/srcset can restart an already decoded image during a turn.
+    if (galleryImageSources.get(image) === identity && (!image.complete || image.naturalWidth > 0)) return;
     if (photo.previewHigh) {
-      image.sizes = photo.orientation === 'landscape' ? '(max-width: 760px) 58vw, 380px' : '(max-width: 760px) 44vw, 280px';
-      image.srcset = `${photo.src} 480w, ${photo.previewHigh} 1440w`;
+      image.sizes = photo.orientation === 'landscape' ? '(max-width: 760px) 58vw, 380px' : '(max-width: 760px) 42vw, 240px';
+      image.srcset = [ `${photo.src} 480w`, photo.previewMedium && `${photo.previewMedium} 960w`, `${photo.previewHigh} 1440w` ].filter(Boolean).join(', ');
     } else {
       image.removeAttribute('srcset');
       image.removeAttribute('sizes');
     }
     image.src = photo.src;
+    galleryImageSources.set(image, identity);
   }
 
-  function loadPhoto(photo) {
+  function loadPhoto(photo, target = null) {
+    if (target) { target.loading = 'eager'; configureGalleryImage(target, photo); }
     if (!imageLoads.has(photo.src)) {
       const pending = new Promise((resolve, reject) => {
-        const image = new Image();
+        const image = target || new Image();
+        image.decoding = 'async';
+        if (!target) image.fetchPriority = 'low';
         const timeout = setTimeout(() => finish(new Error('Image timeout')), 15000);
         function finish(error) {
           clearTimeout(timeout);
@@ -50,14 +58,18 @@
           }
         };
         image.onerror = () => finish(new Error('Image unavailable'));
-        configureGalleryImage(image, photo);
+        if (!target) configureGalleryImage(image, photo);
+        else if (image.complete && image.naturalWidth) image.onload();
       }).catch((error) => {
         imageLoads.delete(photo.src);
         throw error;
       });
       imageLoads.set(photo.src, pending);
     }
-    return imageLoads.get(photo.src);
+    const pending = imageLoads.get(photo.src);
+    // A prefetched Image and the DOM image have separate decode lifecycles.
+    // Finish decoding the element which will actually move before starting it.
+    return target?.decode ? pending.then(() => target.decode()) : pending;
   }
 
   function trimDetailCache() {
@@ -131,7 +143,9 @@
     const angle = -direction * (distance === 1 ? 34 : 58);
     const scale = distance === 0 ? 1 : distance === 1 ? .9 : .74;
     return {
-      transform: slot === 0 ? 'translate(-50%, -50%)' : `translate(-50%, -50%) translateX(${x}%) translateZ(${depth}px) rotateY(${angle}deg) scale(${scale})`,
+      // Keep an identical 3D transform list at rest and throughout the animation.
+      // Dropping to a 2D center pose can replace the raster at the last frame.
+      transform: `translate(-50%, -50%) translateX(${x}%) translateZ(${depth}px) rotateY(${angle}deg) scale(${scale})`,
       opacity: visible ? (slot === 0 ? 1 : .48) : 0,
       zIndex: slot === 0 ? 3 : distance === 1 ? 2 : 0,
     };
@@ -225,35 +239,46 @@
     const scale = Math.min(rect.width / width, rect.height / height);
     return { x: (x + (width * scale - rect.width) / 2) / scale, y: (y + (height * scale - rect.height) / 2) / scale };
   }
-  let inspectionImage = null, inspectionURL = '', inspectionState = '', lensPoint = null, touchPointer = null;
+  let inspectionImage = null, inspectionURL = '', inspectionState = '', lensPoint = null, touchPointer = null, lensFrame = null;
+  function queueLens() {
+    if (lensFrame !== null) return;
+    lensFrame = requestAnimationFrame(() => { lensFrame = null; drawLens(); });
+  }
   function resetMagnifier() {
     if (!detailDialog) return;
     touchPointer = null;
-    detailDialog.querySelector('.photo-detail__lens').hidden = true;
+    hideLens();
     detailDialog.querySelector('.photo-detail__magnify-status').textContent = '';
     inspectionImage = null; inspectionURL = ''; inspectionState = ''; lensPoint = null;
   }
   function hideLens() {
+    if (lensFrame !== null) cancelAnimationFrame(lensFrame);
+    lensFrame = null;
     lensPoint = null;
     detailDialog.querySelector('.photo-detail__lens').hidden = true;
   }
   function drawLens() {
-    if (!lensPoint || inspectionState !== 'ready' || !detailDialog.open) return;
+    if (!lensPoint || !detailDialog.open) return;
     const preview = detailDialog.querySelector('.detail-preview');
     const img = detailDialog.querySelector('.photo-detail__image');
     const rect = img.getBoundingClientRect(), outer = preview.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
+    const x = lensPoint.clientX - rect.left, y = lensPoint.clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) { hideLens(); return; }
+    loadInspection();
+    if (inspectionState !== 'ready') return;
     const canvas = detailDialog.querySelector('.photo-detail__lens');
     const diameter = Math.min(170, outer.width, outer.height);
-    const x = lensPoint.x * rect.width, y = lensPoint.y * rect.height;
     const point = sourcePoint(x, y, rect, inspectionImage.naturalWidth, inspectionImage.naturalHeight);
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(diameter * dpr); canvas.height = Math.round(diameter * dpr);
+    const pixels = Math.round(diameter * dpr);
+    if (canvas.width !== pixels || canvas.height !== pixels) { canvas.width = pixels; canvas.height = pixels; }
     canvas.style.width = canvas.style.height = `${diameter}px`;
-    canvas.style.left = `${Math.max(0, Math.min(outer.width - diameter, rect.left - outer.left + x - diameter / 2))}px`;
-    canvas.style.top = `${Math.max(0, Math.min(outer.height - diameter, rect.top - outer.top + y - diameter / 2 - (lensPoint.touch ? 65 : 0)))}px`;
+    const left = Math.max(0, Math.min(outer.width - diameter, rect.left - outer.left + x - diameter / 2));
+    const top = Math.max(0, Math.min(outer.height - diameter, rect.top - outer.top + y - diameter / 2 - (lensPoint.touch ? 65 : 0)));
+    canvas.style.transform = `translate(${left}px,${top}px)`;
     const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr); ctx.imageSmoothingEnabled = false;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = '#161713'; ctx.fillRect(0, 0, diameter, diameter);
     ctx.drawImage(inspectionImage, diameter / 2 - point.x, diameter / 2 - point.y);
     canvas.hidden = false;
@@ -264,6 +289,7 @@
     if (inspectionURL === url && inspectionState) return;
     inspectionURL = url; inspectionState = 'loading';
     const image = new Image(); inspectionImage = image;
+    image.decoding = 'async';
     const status = detailDialog.querySelector('.photo-detail__magnify-status');
     status.textContent = copy().magnifierLoading;
     const fail = () => {
@@ -271,10 +297,13 @@
       inspectionState = 'error'; status.textContent = copy().magnifierError; hideLens();
     };
     const timeout = setTimeout(fail, 30000);
-    image.onload = () => {
+    image.onload = async () => {
       clearTimeout(timeout);
       if (inspectionImage !== image) return;
-      inspectionState = 'ready'; status.textContent = ''; drawLens();
+      try { if (image.decode) await image.decode(); }
+      catch { fail(); return; }
+      if (inspectionImage !== image) return;
+      inspectionState = 'ready'; status.textContent = ''; queueLens();
     };
     image.onerror = () => { clearTimeout(timeout); fail(); };
     image.src = url;
@@ -287,10 +316,8 @@
     };
     const move = event => {
       if (!detailPhoto?.inspection || (event.pointerType !== 'mouse' && event.pointerId !== touchPointer)) return;
-      if (!insideImage(event)) { hideLens(); return; }
-      const rect = detailDialog.querySelector('.photo-detail__image').getBoundingClientRect();
-      lensPoint = { x: (event.clientX - rect.left) / rect.width, y: (event.clientY - rect.top) / rect.height, touch: event.pointerType !== 'mouse' };
-      loadInspection(); drawLens();
+      lensPoint = { clientX: event.clientX, clientY: event.clientY, touch: event.pointerType !== 'mouse' };
+      queueLens();
     };
     const retry = () => { if (inspectionState === 'error') inspectionState = ''; };
     const stop = () => { touchPointer = null; hideLens(); };
@@ -664,7 +691,6 @@
         this.image.hidden = true;
       } else {
         this.surface.style.backgroundImage = 'none';
-        configureGalleryImage(this.image, photo);
         this.image.hidden = false;
       }
       this.medium.replaceChildren();
@@ -684,7 +710,8 @@
     async initialize() {
       const photo = this.photo;
       try {
-        await loadPhoto(photo);
+        this.image.fetchPriority = this.slot === 0 ? 'high' : 'low';
+        await loadPhoto(photo, this.image);
       } catch {
         if (this.photo !== photo) return;
         this.failed = true;
@@ -740,11 +767,12 @@
       this.initializing = null;
       this.timer = null;
       this.interval = 6000 + order * 350;
+      const titleId = `collection-${this.year}-${this.id}-title`;
       this.element = document.createElement('article');
       this.element.className = 'collection';
-      this.element.setAttribute('aria-labelledby', `collection-${order}-title`);
+      this.element.setAttribute('aria-labelledby', titleId);
       this.element.innerHTML = `
-        <h3 class="collection__title" id="collection-${order}-title"></h3>
+        <h3 class="collection__title" id="${titleId}"></h3>
         <div class="collection__stage">
           <div class="collection__drum"></div>
           <button class="collection__arrow collection__previous" type="button"><span aria-hidden="true">←</span></button>
@@ -785,10 +813,9 @@
 
     initialize() {
       if (this.initializing) return this.initializing;
-      this.preloadNeighbours();
-      this.initializing = Promise.all(this.cards.map((card) => card.initialize())).then(() => {
+      this.initializing = Promise.all(this.cards.filter(card => Math.abs(card.slot) <= 1).sort((a, b) => Math.abs(a.slot) - Math.abs(b.slot)).map((card) => card.initialize())).then(() => {
         this.loaded = true;
-        if (!this.element.hidden && !document.hidden) warmDetail(this.photos[this.offset]);
+        this.preloadNeighbours();
         this.schedule();
       });
       return this.initializing;
@@ -797,7 +824,10 @@
     updateCopy() {
       const title = copy()[`${this.id}Title`] || this.title;
       const heading = this.element.querySelector('.collection__title');
-      collectionHeading(heading, title, this.id);
+      if (heading.dataset.title !== title) {
+        collectionHeading(heading, title, this.id);
+        heading.dataset.title = title;
+      }
       this.previousButton.setAttribute('aria-label', `${title} — ${copy().previousPhotos}`);
       this.nextButton.setAttribute('aria-label', `${title} — ${copy().nextPhotos}`);
       this.cards.forEach((card) => card.updateLabel());
@@ -805,14 +835,14 @@
 
     schedule() {
       clearTimeout(this.timer);
-      if (!detailOpen && !this.element.hidden && this.loaded && this.visible && !this.busy && !document.hidden) warmDetail(this.photos[this.offset]);
       if (detailOpen || this.element.hidden || !this.loaded || this.paused || this.busy || !this.visible || this.hovered || this.focused || document.hidden || this.photos.length < 2) return;
       this.timer = setTimeout(() => this.advance(), this.interval);
     }
 
     preloadNeighbours() {
       // Keep the next few photographs ready in either direction, without waiting.
-      for (const step of [-3, -2, -1, 0, 1, 2, 3]) {
+      if (this.element.hidden || document.hidden || !this.visible) return;
+      for (const step of [-2, 2]) {
         const index = ((this.offset + step) % this.photos.length + this.photos.length) % this.photos.length;
         loadPhoto(this.photos[index]).catch(() => {});
       }
@@ -829,23 +859,24 @@
       this.busy = true;
       const nextOffset = (this.offset + direction + this.photos.length) % this.photos.length;
       const nextHidden = (nextOffset + direction * 2 + this.photos.length) % this.photos.length;
-      if (this.visible && !document.hidden) warmDetail(this.photos[nextOffset]);
       try {
-        await Promise.all(this.cards.filter(card => Math.abs(card.slot - direction) <= 1).map(card => loadPhoto(card.photo)));
+        await Promise.all(this.cards.filter(card => Math.abs(card.slot - direction) <= 1).map(card => {
+          card.image.fetchPriority = card.slot === direction ? 'high' : 'low';
+          return loadPhoto(card.photo, card.image);
+        }));
         const startTime = document.timeline?.currentTime;
         await Promise.all(this.cards.map(card => card.moveTo(card.slot - direction, startTime)));
         this.offset = nextOffset;
         const recycled = direction === 1 ? this.cards.shift() : this.cards.pop();
         recycled.place(direction * 2);
         recycled.setPhoto(this.photos[nextHidden], nextHidden);
-        recycled.initialize();
+        if (!this.element.hidden && !document.hidden) recycled.initialize();
         if (direction === 1) this.cards.push(recycled);
         else this.cards.unshift(recycled);
       } catch {
         // A failed download leaves the current selection in place for retry.
       } finally {
         this.busy = false;
-        this.updateCopy();
         this.preloadNeighbours();
         const queued = this.queuedDirection;
         this.queuedDirection = null;
@@ -856,6 +887,7 @@
   }
 
   const source = (window.ZWIDY_COLLECTIONS || []).filter(data => data.photos.length);
+  const galleryCache = new Map();
   const availableYears = [...new Set(source.map(data => String(data.year || '2026')))].sort((a, b) => Number(b) - Number(a));
   const years = availableYears.length ? availableYears : ['2026'];
   let selectedCollection = "all";
@@ -896,6 +928,7 @@
   function applyFilters() {
     for (const gallery of galleries) {
       gallery.element.hidden = true;
+      gallery.visible = false;
       gallery.queuedDirection = null;
       clearTimeout(gallery.timer);
       if (observer) observer.unobserve(gallery.element);
@@ -908,10 +941,24 @@
       if (String(data.year || '2026') !== selectedYear || (selectedCollection !== 'all' && data.id !== selectedCollection)) continue;
       const photos = data.photos.filter(photo => (selectedOrientation === 'all' || (photo.orientation || 'portrait') === selectedOrientation) && (selectedColorMode === 'all' || photo.colorMode === selectedColorMode));
       if (!photos.length) continue;
-      const gallery = new Collection({ ...data, photos }, galleries.length);
+      const key = `${selectedYear}/${data.id}/${selectedOrientation}/${selectedColorMode}`;
+      let gallery = galleryCache.get(key);
+      if (gallery) {
+        galleryCache.delete(key);
+        gallery.element.hidden = false;
+        gallery.updateCopy();
+        document.querySelector('#collection-list').append(gallery.element);
+      } else gallery = new Collection({ ...data, photos }, galleries.length);
+      galleryCache.set(key, gallery);
       galleries.push(gallery);
       if (observer) observer.observe(gallery.element);
       if (loadingObserver) loadingObserver.observe(gallery.element);
+      if (!observer) { gallery.visible = true; gallery.initialize(); gallery.schedule(); }
+    }
+    // Bound retained DOM while keeping recent filter selections ready.
+    for (const [key, gallery] of galleryCache) {
+      if (galleryCache.size <= Math.max(12, galleries.length)) break;
+      if (!galleries.includes(gallery)) galleryCache.delete(key);
     }
     galleries.forEach((gallery, index) => { gallery.element.dataset.yearLast = String(index === galleries.length - 1); });
     document.querySelector('[data-collection-count]').textContent = galleries.length ? `01 — ${String(galleries.length).padStart(2, '0')}` : '00';
@@ -921,10 +968,11 @@
 
   function selectYear(year) {
     if (!years.includes(year)) return;
+    const changed = document.documentElement.dataset.collectionYear !== year;
     if (selectedYear !== year) selectedCollection = 'all';
     selectedYear = year;
     document.documentElement.dataset.collectionYear = year;
-    document.dispatchEvent(new CustomEvent('collectionyearchange', { detail: year }));
+    if (changed) document.dispatchEvent(new CustomEvent('collectionyearchange', { detail: year }));
     applyFilters();
     document.querySelector('#year-status').textContent = `${copy().yearSelected} ${year}`;
   }

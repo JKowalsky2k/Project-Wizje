@@ -9,7 +9,20 @@ from tempfile import TemporaryDirectory
 import unittest
 import zlib
 
-from photo_previews import prepare_previews
+from photo_previews import prepare_previews, source_digest
+
+
+class DigestCacheTests(unittest.TestCase):
+    def test_repeated_build_uses_cached_hash_but_publish_verifies_content(self):
+        from unittest.mock import patch
+        with TemporaryDirectory() as directory:
+            source = Path(directory) / 'source.jpg'
+            source.write_bytes(b'original')
+            digest = source_digest(source)
+            with patch.object(Path, 'open', side_effect=AssertionError('unchanged source was read again')):
+                self.assertEqual(source_digest(source), digest)
+            with patch.object(Path, 'open', side_effect=OSError('verification reads source')):
+                with self.assertRaises(OSError): source_digest(source, verify=True)
 
 
 def png(width, height, white_right, rgb=b'\x48\x70\x90'):
@@ -39,7 +52,7 @@ class PreviewEdgeTests(unittest.TestCase):
                 self.assertEqual(photo['sourceWidth'], width)
                 self.assertEqual(photo['sourceHeight'], 30)
                 self.assertEqual(photo['trimmedRight'], 3 if white == 3 else 0)
-                for key in ('src', 'previewHigh', 'detail', 'inspection'):
+                for key in ('src', 'previewMedium', 'previewHigh', 'detail', 'inspection'):
                     self.assertTrue((root / photo[key]).is_file())
                 self.assertEqual(hashlib.sha256((folder / name).read_bytes()).digest(), fingerprints[name])
 

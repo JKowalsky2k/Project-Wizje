@@ -10,6 +10,13 @@ IMAGE_NS = 'http://www.google.com/schemas/sitemap-image/1.1'
 SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 
 
+def write_if_changed(path, content):
+    if isinstance(content, str):
+        content = content.encode('utf-8')
+    if not path.exists() or path.read_bytes() != content:
+        path.write_bytes(content)
+
+
 def write_seo(destination, collections):
     sections, navigation, images = [], [], []
     for index, collection in enumerate(collections, 1):
@@ -89,8 +96,8 @@ def write_seo(destination, collections):
 </body>
 </html>
 '''
-    (destination / 'gallery.html').write_text(html, encoding='utf-8')
-    (destination / 'robots.txt').write_text(f'User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}sitemap.xml\n', encoding='utf-8')
+    write_if_changed(destination / 'gallery.html', html)
+    write_if_changed(destination / 'robots.txt', f'User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}sitemap.xml\n')
     ET.register_namespace('', SITEMAP_NS)
     ET.register_namespace('image', IMAGE_NS)
     sitemap = ET.Element(f'{{{SITEMAP_NS}}}urlset')
@@ -101,7 +108,7 @@ def write_seo(destination, collections):
             for image in dict.fromkeys(images):
                 element = ET.SubElement(entry, f'{{{IMAGE_NS}}}image')
                 ET.SubElement(element, f'{{{IMAGE_NS}}}loc').text = image
-    ET.ElementTree(sitemap).write(destination / 'sitemap.xml', encoding='utf-8', xml_declaration=True)
+    write_if_changed(destination / 'sitemap.xml', ET.tostring(sitemap, encoding='utf-8', xml_declaration=True))
 
 
 if __name__ == '__main__':

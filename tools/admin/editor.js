@@ -22,7 +22,7 @@ window.WizjeSortable = (() => {
       const offset = { x: event.clientX - initial.left, y: event.clientY - initial.top };
       const start = { x: event.clientX, y: event.clientY };
       let x = start.x, y = start.y, ghost = null, frame = null, dragging = false;
-      let lastTime = null;
+      let lastTime = null, dirty = true;
       const animations = new Map();
       let layout = new Map();
       function measure() {
@@ -33,8 +33,7 @@ window.WizjeSortable = (() => {
       }
 
       function place() {
-        ghost.style.left = `${x - offset.x}px`;
-        ghost.style.top = `${y - offset.y}px`;
+        ghost.style.transform = `translate(${x - offset.x}px,${y - offset.y}px)`;
         // Hit-test final layout slots, never the temporarily animated tile positions.
         const px = x + (window.scrollX || 0), py = y + (window.scrollY || 0);
         const target = [...layout].find(([child, rect]) => {
@@ -45,8 +44,9 @@ window.WizjeSortable = (() => {
         if (!target || target === tile || target.parentElement !== container) return;
         const children = [...container.children];
         const positions = new Map();
+        animations.forEach(animation => animation.cancel());
+        animations.clear();
         for (const child of children) {
-          animations.get(child)?.cancel();
           positions.set(child, child.getBoundingClientRect());
         }
         container.insertBefore(tile, children.indexOf(target) > children.indexOf(tile) ? target.nextSibling : target);
@@ -54,7 +54,8 @@ window.WizjeSortable = (() => {
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         for (const child of children) {
           if (child === tile || !child.animate) continue;
-          const before = positions.get(child), after = child.getBoundingClientRect();
+          const before = positions.get(child), measured = layout.get(child);
+          const after = { left: measured.left - (window.scrollX || 0), top: measured.top - (window.scrollY || 0) };
           if (before.left === after.left && before.top === after.top) continue;
           animations.set(child, child.animate([
             { transform: `translate(${before.left - after.left}px, ${before.top - after.top}px)` },
@@ -72,7 +73,7 @@ window.WizjeSortable = (() => {
         const speed = y < edge ? -Math.min(1, (edge - y) / edge)
           : y > innerHeight - edge ? Math.min(1, (y - innerHeight + edge) / edge) : 0;
         if (speed) window.scrollBy(0, speed * elapsed * .7);
-        place();
+        if (dirty || speed) { place(); dirty = false; }
         frame = requestAnimationFrame(tick);
       }
 
@@ -102,7 +103,7 @@ window.WizjeSortable = (() => {
           frame = requestAnimationFrame(tick);
         }
         next.preventDefault();
-        place();
+        dirty = true;
       }
 
       function finish(commit) {
@@ -141,6 +142,7 @@ window.WizjeSortable = (() => {
       function up(next) {
         if (next.pointerId !== event.pointerId) return;
         x = next.clientX; y = next.clientY;
+        if (dragging) place();
         finish(true);
       }
       function cancelPointer(next) { if (next.pointerId === event.pointerId) finish(false); }
@@ -158,6 +160,31 @@ window.WizjeSortable = (() => {
   return { attach, cancel: () => active?.(), isDragging: () => active !== null };
 })();
 
+/* Shared photo view calculations, independent of the DOM. */
+window.WizjePhotoTools = {
+  reference(photo) { return String(photo.preview || '').match(/\/([a-f0-9]{10,})-(?:480|2000)\.jpg/i)?.[1].slice(0, 10).toUpperCase() || ''; },
+  available(photo, posters) { return posters.some(poster => photo.posterSizes == null || photo.posterSizes.includes(poster.name)); },
+  missing(photo) { return !photo.medium || !photo.colorMode || (photo.medium === 'analog' && (!photo.film || !photo.iso)); },
+  matches(photo, filters, posters) {
+    return (!filters.search || `${photo.name} ${this.reference(photo)}`.toLocaleLowerCase().includes(filters.search.toLocaleLowerCase()))
+      && (!filters.medium || photo.medium === filters.medium)
+      && (!filters.orientation || (photo.orientation || 'portrait') === filters.orientation)
+      && (!filters.color || photo.colorMode === filters.color)
+      && (!filters.available || this.available(photo, posters) === (filters.available === 'yes'))
+      && (!filters.missing || this.missing(photo));
+  },
+  fit(photo, name, margins) {
+    const match = String(name).match(/^(\d+(?:[.,]\d+)?)\s*[×xX]\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?$/);
+    let dims = match ? match.slice(1).map(value => Number(value.replace(',', '.'))).sort((a,b) => a-b) : [50,70];
+    if (dims.some(value => !Number.isFinite(value) || value <= 0)) dims = [50,70];
+    if (photo.orientation === 'landscape') dims.reverse();
+    const width = photo.detailWidth || photo.sourceWidth || dims[0], height = photo.detailHeight || photo.sourceHeight || dims[1];
+    const scale = Math.min(dims[0]/width, dims[1]/height) * (margins ? .84 : 1);
+    const w = width * scale, h = height * scale;
+    return {paperWidth:dims[0],paperHeight:dims[1],w,h,x:(dims[0]-w)/2,y:(dims[1]-h)/2};
+  },
+};
+
 /* Workshop editor. */
 (() => {
   if (location.protocol !== 'http:' || !['127.0.0.1', 'localhost'].includes(location.hostname)) {
@@ -168,14 +195,12 @@ window.WizjeSortable = (() => {
   const $ = selector => document.querySelector(selector);
   const text = {
     pl: {
-      photoSizes: 'Dostępne formaty', allSizes: 'Wszystkie, także dodane później', savePhotoSizes: 'Zapisz formaty zdjęcia', marginHint: 'Z marginesami: lewy/prawy {x} cm, góra/dół {y} cm. Bez marginesów: 0 cm.', noSizesHint: 'Odznaczenie wszystkich formatów wyłącza zamawianie zdjęcia.', posterSettings: 'Plakaty i ceny', posterSettingsHint: 'Dodaj formaty w cm, np. 30 × 40 cm. Przy każdym zdjęciu wybierz dostępne formaty. Nowe zdjęcia domyślnie mają wszystkie formaty.', posterAdd: 'Dodaj format', posterSave: 'Zapisz formaty i ceny', posterFormat: 'Format (cm)', posterPrice: 'Cena (zł)', posterRemove: 'Usuń format', posterSaved: 'Zapisano globalne formaty i ceny. Przygotuj nowy ZIP przed publikacją.',
-      dragOrder: 'Przeciągnij, aby zmienić kolejność: {name}', draggingOrder: 'Przesuń w nowe miejsce i puść. Esc anuluje.', orderHint: 'Przeciągnij zdjęcie lub uchwyt ⋮⋮. Kolejność zapisze się po puszczeniu.',
+      photoSizes: 'Dostępne formaty', allSizes: 'Wszystkie, także dodane później', savePhotoSizes: 'Zapisz formaty zdjęcia', marginHint: 'Minimalne marginesy: lewy/prawy {x} cm, góra/dół {y} cm. Dodatkowe odstępy zależą od proporcji zdjęcia.', noSizesHint: 'Odznaczenie wszystkich formatów wyłącza zamawianie zdjęcia.', posterSettings: 'Plakaty i ceny', posterSettingsHint: 'Dodaj formaty w cm, np. 30 × 40 cm. Przy każdym zdjęciu wybierz dostępne formaty. Nowe zdjęcia domyślnie mają wszystkie formaty.', posterAdd: 'Dodaj format', posterSave: 'Zapisz formaty i ceny', posterFormat: 'Format (cm)', posterPrice: 'Cena (zł)', posterRemove: 'Usuń format', posterSaved: 'Zapisano globalne formaty i ceny. Przygotuj nowy ZIP przed publikacją.',
+      dragOrder: 'Przeciągnij, aby zmienić kolejność: {name}', draggingOrder: 'Przesuń w nowe miejsce i puść. Esc anuluje.', orderHint: 'Przeciągnij uchwyt ⋮⋮, aby zmienić kolejność. Przy aktywnych filtrach najpierw je wyczyść.',
       orderPosition: 'Pozycja {index} z {total}', moveEarlier: 'Przesuń wcześniej: {name}', moveLater: 'Przesuń później: {name}', orderSaved: 'Kolejność zapisana. Odśwież podgląd strony. Przed publikacją przygotuj nowy ZIP.',
       libraryTitle: 'Biblioteka zdjęć', libraryHint: 'Zdjęcia odłączone od kolekcji. Możesz dodać je ponownie bez przesyłania pliku.', libraryEmpty: 'Nie ma zdjęć odłączonych od kolekcji.', libraryTarget: 'Dodawanie do kolekcji: {collection}', libraryChoose: 'Wybierz lub utwórz kolekcję, aby dodać do niej zdjęcia z biblioteki.', libraryAdd: 'Dodaj do kolekcji', libraryAdded: 'Dodano „{name}” z biblioteki. Odśwież podgląd strony.',
       purgePhoto: 'Usuń trwale', purgePhotoLabel: 'Usuń trwale zdjęcie {name}', purging: 'Trwałe usuwanie pliku i kopii aplikacji…', purged: 'Zdjęcie usunięte trwale z plików aplikacji. Podglądy pozostałych zdjęć zostały odbudowane. Przygotuj nową paczkę do publikacji.',
-      confirmPurge: 'Trwale usunąć zdjęcie „{name}”?\n\nUsunie oryginał i identyczne kopie ze wszystkich kolekcji oraz biblioteki/kosza. Wyczyści też WSZYSTKIE lokalne podglądy i paczki publikacji (foldery i ZIP-y); podglądy pozostałych zdjęć zostaną odbudowane.\n\nNie usuwa plików wysłanych wcześniej na hosting, pobranych kopii ani backupów systemowych. Operacji nie można cofnąć w panelu.',
       deletePhoto: 'Odłącz od kolekcji', deletePhotoLabel: 'Odłącz zdjęcie {name} od kolekcji', deleteCollection: 'Usuń kolekcję',
-      confirmDeletePhoto: 'Odłączyć zdjęcie „{name}” od kolekcji „{collection}”? Zostanie w bibliotece, gotowe do ponownego dodania.',
       confirmDeleteCollection: 'Usunąć kolekcję „{collection}”? Jej zdjęcia ({count}) pozostaną w bibliotece.',
       photoDeleted: 'Odłączono zdjęcie „{name}”. Plik jest w bibliotece. Odśwież podgląd strony. Przed publikacją przygotuj nowy ZIP.',
       collectionDeleted: 'Usunięto kolekcję „{collection}”. Odśwież podgląd strony. Przed publikacją przygotuj nowy ZIP.',
@@ -203,14 +228,12 @@ window.WizjeSortable = (() => {
       alps: 'Alpy', cars: 'Samochody', dolomites: 'Dolomity', planes: 'Samoloty', torun: 'Toruń',
     },
     en: {
-      photoSizes: 'Available sizes', allSizes: 'All, including future sizes', savePhotoSizes: 'Save photo sizes', marginHint: 'With margins: left/right {x} cm, top/bottom {y} cm. Without margins: 0 cm.', noSizesHint: 'Unchecking every size disables ordering for this photo.', posterSettings: 'Posters and prices', posterSettingsHint: 'Add sizes in cm, e.g. 30 × 40 cm. Select available sizes for each photo. New photos default to all sizes.', posterAdd: 'Add size', posterSave: 'Save sizes and prices', posterFormat: 'Size (cm)', posterPrice: 'Price (PLN)', posterRemove: 'Remove size', posterSaved: 'Global sizes and prices saved. Prepare a new ZIP before publishing.',
-      dragOrder: 'Drag to reorder: {name}', draggingOrder: 'Move to a new position and release. Esc cancels.', orderHint: 'Drag a photo or the ⋮⋮ handle. Release to save its position.',
+      photoSizes: 'Available sizes', allSizes: 'All, including future sizes', savePhotoSizes: 'Save photo sizes', marginHint: 'Minimum margins: left/right {x} cm, top/bottom {y} cm. Additional spacing depends on photo proportions.', noSizesHint: 'Unchecking every size disables ordering for this photo.', posterSettings: 'Posters and prices', posterSettingsHint: 'Add sizes in cm, e.g. 30 × 40 cm. Select available sizes for each photo. New photos default to all sizes.', posterAdd: 'Add size', posterSave: 'Save sizes and prices', posterFormat: 'Size (cm)', posterPrice: 'Price (PLN)', posterRemove: 'Remove size', posterSaved: 'Global sizes and prices saved. Prepare a new ZIP before publishing.',
+      dragOrder: 'Drag to reorder: {name}', draggingOrder: 'Move to a new position and release. Esc cancels.', orderHint: 'Drag the ⋮⋮ handle to reorder. Clear active filters before sorting.',
       orderPosition: 'Position {index} of {total}', moveEarlier: 'Move earlier: {name}', moveLater: 'Move later: {name}', orderSaved: 'Order saved. Refresh the website preview. Prepare a new ZIP before publishing.',
       libraryTitle: 'Photo library', libraryHint: 'Photos removed from collections. Add them again without uploading the file.', libraryEmpty: 'There are no detached photos.', libraryTarget: 'Adding to collection: {collection}', libraryChoose: 'Choose or create a collection to add photos from the library.', libraryAdd: 'Add to collection', libraryAdded: 'Added “{name}” from the library. Refresh the website preview.',
       purgePhoto: 'Delete permanently', purgePhotoLabel: 'Permanently delete photo {name}', purging: 'Permanently deleting the file and application copies…', purged: 'Photo permanently removed from application files. Previews for remaining photos have been rebuilt. Prepare a new publishing package.',
-      confirmPurge: 'Permanently delete “{name}”?\n\nThis removes the original and identical copies from all collections and the library/trash. It also clears ALL local previews and publishing packages (folders and ZIPs); previews for remaining photos will be rebuilt.\n\nIt does not remove previously published hosting files, downloaded copies or system backups. This cannot be undone in the panel.',
       deletePhoto: 'Remove from collection', deletePhotoLabel: 'Remove photo {name} from collection', deleteCollection: 'Delete collection',
-      confirmDeletePhoto: 'Remove “{name}” from “{collection}”? It will stay in the library, ready to add again.',
       confirmDeleteCollection: 'Delete collection “{collection}”? Its photos ({count}) will remain in the library.',
       photoDeleted: 'Photo “{name}” removed from the collection and kept in the library. Refresh the website preview. Prepare a new ZIP before publishing.',
       collectionDeleted: 'Collection “{collection}” deleted. Refresh the website preview. Prepare a new ZIP before publishing.',
@@ -238,6 +261,22 @@ window.WizjeSortable = (() => {
       alps: 'Alps', cars: 'Cars', dolomites: 'Dolomites', planes: 'Planes', torun: 'Toruń',
     },
   };
+  Object.assign(text.pl, {
+    searchCollections:'Szukaj kolekcji',searchPhotos:'Szukaj zdjęcia',searchHint:'Nazwa lub kod zdjęcia',all:'Wszystkie',availability:'Zamawianie',available:'Dostępne',unavailable:'Niedostępne',missingData:'Brakujące dane',resetFilters:'Wyczyść filtry',noMatches:'Brak zdjęć pasujących do filtrów.',
+    selectVisible:'Zaznacz widoczne',clearSelection:'Odznacz wszystkie',selectedCount:'Zaznaczono: {count}',filterResults:'Widoczne: {visible} z {total}',bulkEdit:'Edycja zaznaczonych zdjęć',bulkHint:'Ustaw tylko pola, które chcesz zmienić. Pozostałe zachowają swoje wartości.',unchanged:'Bez zmian',applyBulk:'Zastosuj do zaznaczonych',bulkSaved:'Zaktualizowano zdjęcia: {count}.',moveTo:'Przenieś do kolekcji',keepCollection:'Pozostaw w obecnej kolekcji',sizeKeep:'Bez zmian',sizeInherit:'Wszystkie obecne i przyszłe',sizeChoose:'Wybrane formaty',sizeNone:'Wyłącz zamawianie',clearValue:'Wyczyść',
+    editPhoto:'Edytuj zdjęcie',photoSettings:'Ustawienia zdjęcia',close:'Zamknij',previousPhoto:'Poprzednie',nextPhoto:'Następne',previewSize:'Format podglądu',previewFrame:'Ramka',previewMargins:'Marginesy',previewColor:'Kolor marginesów',black:'Czarne',white:'Białe',previewFailed:'Nie udało się wczytać podglądu.',previewDimensions:'Zdjęcie: {w} × {h} cm. Marginesy: lewy/prawy {x} cm, góra/dół {y} cm.',
+    undoShort:'Cofnij',undo:'Cofnij ostatnią zmianę',undone:'Zmiana cofnięta.',retry:'Spróbuj ponownie',fieldSaved:'Zapisano',fieldFailed:'Błąd zapisu',saved:'Zapisano ustawienia: {name}.',autoSave:'Ustawienia zapisują się automatycznie.',
+    packageDirty:'Masz zmiany niewłączone do ostatniego ZIP-a.',packageClean:'Ostatnia paczka zawiera aktualne dane.',packageNone:'Przygotuj pierwszą paczkę w panelu.',packageChanges:'Dodane: {added}, usunięte: {removed}, zmienione zdjęcia: {changed}.',packageCollections:'Zmienione kolekcje: {count}',packagePrices:'Zmiany formatów lub cen',packageAppearance:'Zmiany strony lub ustawień',
+    retryUploads:'Ponów nieudane pliki',uploadWaiting:'Oczekuje',uploadSending:'Przesyłanie: {percent}%',uploadProcessing:'Przygotowywanie podglądów…',uploadDone:'Dodano',uploadFailed:'Błąd: {message}',
+  });
+  Object.assign(text.en, {
+    searchCollections:'Search collections',searchPhotos:'Search photos',searchHint:'File name or photo reference',all:'All',availability:'Ordering',available:'Available',unavailable:'Unavailable',missingData:'Missing information',resetFilters:'Reset filters',noMatches:'No photographs match these filters.',
+    selectVisible:'Select visible',clearSelection:'Clear selection',selectedCount:'Selected: {count}',filterResults:'Showing {visible} of {total}',bulkEdit:'Edit selected photos',bulkHint:'Set only the fields you want to change. Other values will be preserved.',unchanged:'Keep current values',applyBulk:'Apply to selected',bulkSaved:'Photos updated: {count}.',moveTo:'Move to collection',keepCollection:'Keep current collection',sizeKeep:'Keep current values',sizeInherit:'All current and future sizes',sizeChoose:'Selected sizes',sizeNone:'Disable ordering',clearValue:'Clear value',
+    editPhoto:'Edit photo',photoSettings:'Photo settings',close:'Close',previousPhoto:'Previous',nextPhoto:'Next',previewSize:'Preview size',previewFrame:'Frame',previewMargins:'Margins',previewColor:'Margin color',black:'Black',white:'White',previewFailed:'Could not load the preview.',previewDimensions:'Photo: {w} × {h} cm. Margins: left/right {x} cm, top/bottom {y} cm.',
+    undoShort:'Undo',undo:'Undo last change',undone:'Change undone.',retry:'Try again',fieldSaved:'Saved',fieldFailed:'Save failed',saved:'Photo settings saved: {name}.',autoSave:'Settings are saved automatically.',
+    packageDirty:'Changes are not included in the last ZIP.',packageClean:'The last package contains the current data.',packageNone:'Prepare the first package in the panel.',packageChanges:'Added: {added}, removed: {removed}, changed photos: {changed}.',packageCollections:'Changed collections: {count}',packagePrices:'Size or price changes',packageAppearance:'Website or settings changes',
+    retryUploads:'Retry failed files',uploadWaiting:'Waiting',uploadSending:'Uploading: {percent}%',uploadProcessing:'Preparing previews…',uploadDone:'Added',uploadFailed:'Error: {message}',
+  });
   let language = 'pl';
   try { if (localStorage.getItem('wizje-admin-language') === 'en') language = 'en'; } catch {}
   const t = (key, values = {}) => (text[language][key] ?? key).replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '');
@@ -246,6 +285,14 @@ window.WizjeSortable = (() => {
   let selectedId = null;
   let busy = false;
   let uploadDetails = {};
+  const photoTools = window.WizjePhotoTools;
+  const selectedPhotos = new Set();
+  let selectionCollection = null, editingPhoto = null, undoToken = null, retryAction = null;
+  let importItems = [], importContext = null;
+  const fieldStates = new Map();
+  const filters = () => ({search:$('#photo-search').value.trim(),medium:$('#photo-filter-medium').value,orientation:$('#photo-filter-orientation').value,color:$('#photo-filter-color').value,available:$('#photo-filter-available').value,missing:$('#photo-filter-missing').checked});
+  const hasFilters = () => Object.values(filters()).some(Boolean);
+  const visiblePhotos = collection => collection.photos.filter(photo => photoTools.matches(photo,filters(),state.posters || []));
   const collectionKey = collection => `${collection.year || '2026'}/${collection.id}`;
   const targetCollection = collection => ({ collection: collection.id, year: collection.year || '2026' });
   $('#collection-year').value = String(new Date().getFullYear());
@@ -292,7 +339,7 @@ window.WizjeSortable = (() => {
   }
   const collectionName = collection => collection.customTitle ? collection.title : (text[language][collection.id] || collection.title);
   const collectionTitle = collection => `${collectionName(collection)} · ${collection.year || '2026'}`;
-  const photoReference = photo => String(photo.preview || '').match(/\/([a-f0-9]{10,})-(?:480|2000)\.jpg/i)?.[1].slice(0, 10).toUpperCase() || '';
+  const photoReference = photo => photoTools.reference(photo);
   function referenceRow(photo) {
     const reference = document.createElement('p'); reference.className = 'photo-reference';
     const label = document.createElement('span'); label.textContent = `${t('photoReference')}:`;
@@ -334,7 +381,7 @@ window.WizjeSortable = (() => {
   }));
   function lock(value) {
     busy = value;
-    document.querySelectorAll('button, input, select').forEach(control => { control.disabled = value || control.dataset.orderBoundary === 'true' || control.dataset.sizeInherited === 'true' || (control.dataset.requiresCollection === 'true' && !selected()); });
+    document.querySelectorAll('button, input, select').forEach(control => { control.disabled = (value && control.dataset.alwaysEnabled !== 'true') || control.dataset.orderBoundary === 'true' || control.dataset.sizeInherited === 'true' || (control.dataset.requiresCollection === 'true' && !selected()); });
     updateYearControls();
   }
   async function request(path, data, binary = false) {
@@ -347,6 +394,9 @@ window.WizjeSortable = (() => {
     const result = await response.json();
     if (response.status === 401) window.location.assign('/admin');
     if (!response.ok) throw new Error(result.error || t('failed'));
+    if (result.publication) { state.publication = result.publication; renderPublication(); }
+    if (result.undo) { undoToken = result.undo; updateUndoButtons(); }
+    if (data !== undefined && !result.undo && path !== 'undo') { undoToken = null; updateUndoButtons(); }
     return result;
   }
   function options(select, value, allowEmpty = true) {
@@ -447,7 +497,6 @@ window.WizjeSortable = (() => {
     button.append(actionIcon('trash')); button.title = t('purgePhoto'); button.setAttribute('aria-label', t('purgePhotoLabel', { name: photo.name }));
     button.addEventListener('click', () => {
       if (busy) return;
-      if (!window.confirm(t('confirmPurge', { name: photo.name }))) return;
       return mutate(async () => {
         status('purging'); invalidateExport();
         await request('purge-photo', { ...target, confirmed: true });
@@ -624,7 +673,7 @@ window.WizjeSortable = (() => {
   }
   function enableSorting(container, collection, photos = false) {
     window.WizjeSortable.attach(container, {
-      canStart: () => !busy,
+      canStart: () => !busy && !(photos ? hasFilters() : $('#collection-search').value.trim()),
       onStart: () => status('draggingOrder'),
       onCancel: () => status('blank'),
       onDrop: (order, expected) => mutate(async () => {
@@ -640,6 +689,8 @@ window.WizjeSortable = (() => {
     renderPosterSettings();
     renderLibrary();
     renderUploadFilm();
+    renderPublication();
+    renderImports();
     const navigation = $('#collections');
     const expanded = new Map([...navigation.querySelectorAll('details')].map(group => [group.dataset.year, group.open]));
     navigation.replaceChildren();
@@ -661,12 +712,14 @@ window.WizjeSortable = (() => {
       const count = document.createElement('span'); count.className = 'collection-tree-count'; count.textContent = collection.photos.length;
       button.append(actionIcon('folder'), title, count); button.addEventListener('click', () => {
         if (busy) return;
-        selectedId = collectionKey(collection); $('#upload-form').reset(); render(); status('blank');
+        selectedId = collectionKey(collection); selectedPhotos.clear(); $('#upload-form').reset(); render(); status('blank');
       });
       const siblings = state.collections.filter(item => item.year === collection.year);
       const row = document.createElement('div'); row.className = 'collection-order-row';
       row.dataset.sortKey = collection.id; button.dataset.sortHandle = 'true';
       row.append(button, orderControls(siblings, siblings.indexOf(collection), collection));
+      row.dataset.collectionName = `${collectionName(collection)} ${collection.year || '2026'}`.toLocaleLowerCase();
+      row.hidden = !row.dataset.collectionName.includes($('#collection-search').value.toLocaleLowerCase().trim());
       branches.get(collection.year || '2026').append(row);
     }
     for (const [year, branch] of branches) {
@@ -679,42 +732,88 @@ window.WizjeSortable = (() => {
     $('#collection-title').textContent = collectionTitle(collection);
     $('#photo-count').textContent = t('photoCount', { count: collection.photos.length });
     $('#empty').hidden = collection.photos.length > 0;
+    if (selectionCollection !== selectedId) { selectedPhotos.clear(); selectionCollection = selectedId; }
+    for (const name of selectedPhotos) if (!collection.photos.some(photo => photo.name === name)) selectedPhotos.delete(name);
+    renderGrid(); renderBulkFields();
+    if (editingPhoto) renderPhotoEditor();
+  }
+  function renderGrid() {
+    const collection = selected(); if (!collection) return;
     const grid = $('#photo-grid'); grid.replaceChildren();
     enableSorting(grid, collection, true);
-    if (!$('#sort-hint')) {
-      const hint = document.createElement('p'); hint.id = 'sort-hint'; hint.className = 'sort-hint';
-      grid.before(hint);
+    const photos = visiblePhotos(collection);
+    photos.forEach(photo => grid.append(renderPhotoCard(photo,collection.photos.indexOf(photo),collection)));
+    $('#filter-empty').hidden = photos.length > 0 || !collection.photos.length;
+    $('#filter-results').textContent = t('filterResults',{visible:photos.length,total:collection.photos.length});
+    updateSelection();
+  }
+  function updateSelection() {
+    const collection = selected(); if (!collection) return;
+    const visible = visiblePhotos(collection), count = visible.filter(photo => selectedPhotos.has(photo.name)).length;
+    $('#select-visible').checked = visible.length > 0 && count === visible.length;
+    $('#select-visible').indeterminate = count > 0 && count < visible.length;
+    $('#selection-count').textContent = t('selectedCount',{count:selectedPhotos.size});
+    $('#bulk-form').hidden = !selectedPhotos.size;
+    for (const card of $('#photo-grid').children) {
+      card.dataset.selected = String(selectedPhotos.has(card.dataset.sortKey));
+      const input = card.querySelector('input[type="checkbox"]'); if (input) input.checked = selectedPhotos.has(card.dataset.sortKey);
     }
-    $('#sort-hint').textContent = t('orderHint');
-    $('#sort-hint').hidden = collection.photos.length < 2;
-    collection.photos.forEach((photo, index) => {
-      const card = document.createElement('article'); card.className = 'photo';
-      card.dataset.sortKey = photo.name;
-      const image = document.createElement('img'); image.src = photo.preview; image.alt = photo.name; image.loading = 'lazy';
-      image.draggable = false; image.dataset.sortHandle = 'true';
-      image.title = t('dragOrder', { name: photo.name });
-      const name = document.createElement('p'); name.className = 'photo-name'; name.textContent = photo.name;
-      const reference = referenceRow(photo);
-      const badgeRow = document.createElement('div'); badgeRow.className = 'badges'; badges(badgeRow, photo.medium); filmBadges(badgeRow, photo);
-      const label = document.createElement('label'); label.htmlFor = `photo-medium-${index}`; label.textContent = t('medium');
-      const select = document.createElement('select'); select.id = label.htmlFor; options(select, photo.medium);
-      select.setAttribute('aria-label', t('photoMedium', { name: photo.name }));
-      select.addEventListener('change', () => mutate(async () => {
-        await request('medium', { ...targetCollection(selected()), name: photo.name, medium: select.value || null });
-        await reload(); status('saved', { name: photo.name });
-      }));
-      const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'secondary photo-action';
-      remove.append(actionIcon('exit')); remove.title = t('deletePhoto'); remove.setAttribute('aria-label', t('deletePhotoLabel', { name: photo.name }));
-      remove.addEventListener('click', () => {
-        if (busy || !window.confirm(t('confirmDeletePhoto', { name: photo.name, collection: collectionTitle(collection) }))) return;
-        return mutate(async () => {
-          await request('delete-photo', { ...targetCollection(collection), name: photo.name });
-          invalidateExport(); await reload(); status('photoDeleted', { name: photo.name });
-        });
-      });
-      const actions = document.createElement('div'); actions.className = 'photo-actions';
-      actions.append(remove, permanentButton(photo, { ...targetCollection(collection), name: photo.name }));
-      card.append(orderControls(collection.photos, index, collection, photo), image, name, reference, badgeRow, label, select);
+  }
+  async function savePhoto(path, collection, photo, changes) {
+    setFieldState(path,'saving');
+    let result;
+    try { result = await request(path, { ...targetCollection(collection), name: photo.name, ...changes }); }
+    catch (error) { setFieldState(path,'error',() => mutate(() => savePhoto(path,collection,photo,changes))); throw error; }
+    invalidateExport();
+    if (!result.photo) { await reload(); return; }
+    const currentCollection = state.collections.find(item => collectionKey(item) === collectionKey(collection));
+    const index = currentCollection?.photos.findIndex(item => item.name === photo.name) ?? -1;
+    if (index < 0) { await reload(); return; }
+    currentCollection.photos[index] = result.photo;
+    const grid = $('#photo-grid');
+    const old = [...grid.children].find(card => card.dataset.sortKey === photo.name);
+    if (collectionKey(collection) === selectedId && old) {
+      if (photoTools.matches(result.photo,filters(),state.posters || [])) old.replaceWith(renderPhotoCard(result.photo,index,currentCollection));
+      else old.remove();
+    }
+    fieldStates.set(path,{state:'saved'});
+    if (editingPhoto?.name === photo.name && editingPhoto.collection === collectionKey(collection)) renderPhotoEditor();
+    $('#filter-results').textContent = t('filterResults',{visible:visiblePhotos(currentCollection).length,total:currentCollection.photos.length});
+    $('#filter-empty').hidden = visiblePhotos(currentCollection).length > 0 || !currentCollection.photos.length;
+    updateSelection();
+  }
+  function renderPhotoCard(photo, index, collection) {
+    const card = document.createElement('article'); card.className = 'photo compact-photo'; card.dataset.sortKey = photo.name;
+    const choose = document.createElement('label'); choose.className = 'check-label photo-selection';
+    const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = selectedPhotos.has(photo.name);
+    checkbox.setAttribute('aria-label',`${t('selectVisible')}: ${photo.name}`);
+    checkbox.addEventListener('change',() => { if (checkbox.checked) selectedPhotos.add(photo.name); else selectedPhotos.delete(photo.name); updateSelection(); });
+    choose.append(checkbox);
+    const image = document.createElement('img'); image.src = photo.preview; image.alt = photo.name; image.loading = 'lazy'; image.decoding = 'async'; image.draggable = false;
+    const open = () => { if (!busy && !window.WizjeSortable.isDragging()) openPhotoEditor(collection,photo); };
+    image.addEventListener('click',open);
+    const name = document.createElement('p'); name.className = 'photo-name'; name.textContent = photo.name;
+    const badgeRow = document.createElement('div'); badgeRow.className = 'badges'; badges(badgeRow,photo.medium); filmBadges(badgeRow,photo);
+    if (photoTools.missing(photo)) { const missing = document.createElement('span'); missing.className = 'missing-badge'; missing.textContent = t('missingData'); badgeRow.append(missing); }
+    const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'primary edit-photo'; edit.textContent = t('editPhoto'); edit.addEventListener('click',open);
+    card.append(choose,orderControls(collection.photos,index,collection,photo),image,name,referenceRow(photo),badgeRow,edit,photoActions(photo,collection));
+    return card;
+  }
+  function photoActions(photo,collection) {
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'secondary photo-action'; remove.append(actionIcon('exit')); remove.title = t('deletePhoto'); remove.setAttribute('aria-label',t('deletePhotoLabel',{name:photo.name}));
+    remove.addEventListener('click',() => {
+      if (busy) return;
+      return mutate(async () => { await request('delete-photo',{...targetCollection(collection),name:photo.name}); invalidateExport(); await reload(); status('photoDeleted',{name:photo.name}); });
+    });
+    const actions = document.createElement('div'); actions.className = 'photo-actions'; actions.append(remove,permanentButton(photo,{...targetCollection(collection),name:photo.name})); return actions;
+  }
+  function renderPhotoFields(photo,index,collection) {
+      const card = document.createElement('div'); card.className = 'photo-fields';
+      const label = document.createElement('label'); label.htmlFor = 'editor-photo-medium'; label.textContent = t('medium');
+      const select = document.createElement('select'); select.id = label.htmlFor; options(select,photo.medium);
+      select.setAttribute('aria-label',t('photoMedium',{name:photo.name}));
+      select.addEventListener('change',() => mutate(async () => { await savePhoto('medium',collection,photo,{medium:select.value || null}); status('saved',{name:photo.name}); }));
+      card.append(label,select,fieldStatus('medium'));
       const orientationGroup = document.createElement('fieldset'); orientationGroup.className = 'orientation-picker';
       const orientationLegend = document.createElement('legend'); orientationLegend.textContent = t('orientation');
       const orientationOptions = document.createElement('div'); orientationOptions.className = 'orientation-options';
@@ -724,12 +823,11 @@ window.WizjeSortable = (() => {
         input.checked = value === (photo.orientation || 'portrait'); input.setAttribute('aria-label', t(value));
         const icon = document.createElement('span'); icon.className = `orientation-icon orientation-icon--${value}`; icon.setAttribute('aria-hidden', 'true');
         input.addEventListener('change', () => mutate(async () => {
-          await request('orientation', { ...targetCollection(collection), name: photo.name, orientation: value });
-          invalidateExport(); await reload(); status('saved', { name: photo.name });
+          await savePhoto('orientation', collection, photo, { orientation: value }); status('saved', { name: photo.name });
         }));
         optionLabel.append(input, icon); orientationOptions.append(optionLabel);
       }
-      orientationGroup.append(orientationLegend, orientationOptions); card.append(orientationGroup);
+      orientationGroup.append(orientationLegend, orientationOptions); card.append(orientationGroup,fieldStatus('orientation'));
       const colorLabel = document.createElement('label'); colorLabel.className = 'color-mode-field'; colorLabel.textContent = t('colorMode');
       const colorSelect = document.createElement('select'); colorSelect.setAttribute('aria-label', t('colorMode') + ': ' + photo.name);
       if (!photo.colorMode) {
@@ -740,16 +838,15 @@ window.WizjeSortable = (() => {
       }
       colorSelect.value = photo.colorMode || '';
       colorSelect.addEventListener('change', () => mutate(async () => {
-        await request('color-mode', { ...targetCollection(collection), name: photo.name, colorMode: colorSelect.value });
-        invalidateExport(); await reload(); status('saved', { name: photo.name });
+        await savePhoto('color-mode', collection, photo, { colorMode: colorSelect.value }); status('saved', { name: photo.name });
       }));
-      colorLabel.append(colorSelect); card.append(colorLabel);
+      colorLabel.append(colorSelect); card.append(colorLabel,fieldStatus('color-mode'));
 
 
       if (photo.medium === 'analog') card.append(filmControls(photo, next => mutate(async () => {
-        await request('film', { ...targetCollection(collection), name: photo.name, ...next });
-        invalidateExport(); await reload(); status('filmSaved');
+        await savePhoto('film', collection, photo, next); status('filmSaved');
       })));
+      card.append(fieldStatus('film'));
       const sizes = document.createElement('fieldset'); sizes.className = 'photo-sizes';
       const legend = document.createElement('legend'); legend.textContent = t('photoSizes'); sizes.append(legend);
       const allLabel = document.createElement('label');
@@ -775,13 +872,140 @@ window.WizjeSortable = (() => {
       const note = document.createElement('p'); note.className = 'crop-note'; note.textContent = t('noSizesHint'); sizes.append(note);
       const saveSizes = document.createElement('button'); saveSizes.type = 'button'; saveSizes.className = 'secondary'; saveSizes.textContent = t('savePhotoSizes');
       saveSizes.addEventListener('click', () => mutate(async () => {
-        await request('photo-sizes', { ...targetCollection(collection), name: photo.name, posterSizes: all.checked ? null : choices.filter(input => input.checked).map(input => input.value) });
-        invalidateExport(); await reload(); status('saved', { name: photo.name });
+        await savePhoto('photo-sizes', collection, photo, { posterSizes: all.checked ? null : choices.filter(input => input.checked).map(input => input.value) }); status('saved', { name: photo.name });
       }));
       sizes.append(saveSizes); card.append(sizes);
-      card.append(actions); grid.append(card);
-    });
+      card.append(fieldStatus('photo-sizes'),photoActions(photo,collection));
+      return card;
   }
+  function fieldStatus(path) {
+    const node = document.createElement('div'); node.className = 'field-status'; node.dataset.field = path; node.setAttribute('role','status');
+    fillFieldStatus(node,path); return node;
+  }
+  function fillFieldStatus(node,path) {
+    node.replaceChildren(); const entry = fieldStates.get(path); if (!entry) return;
+    node.dataset.state = entry.state;
+    const label = document.createElement('span'); label.textContent = t(entry.state === 'saving' ? 'saving' : entry.state === 'error' ? 'fieldFailed' : 'fieldSaved'); node.append(label);
+    if (entry.retry) { const button = document.createElement('button'); button.type = 'button'; button.className = 'quiet'; button.textContent = t('retry'); button.addEventListener('click',entry.retry); node.append(button); }
+  }
+  function setFieldState(path,value,retry=null) {
+    fieldStates.set(path,{state:value,retry});
+    for (const node of $('#photo-editor-fields').querySelectorAll('.field-status')) if (node.dataset.field === path) fillFieldStatus(node,path);
+  }
+  function openPhotoEditor(collection,photo) {
+    const next = {collection:collectionKey(collection),name:photo.name};
+    if (editingPhoto?.name !== next.name || editingPhoto?.collection !== next.collection) fieldStates.clear();
+    editingPhoto = next; renderPhotoEditor();
+    if (!$('#photo-dialog').open) $('#photo-dialog').showModal();
+  }
+  function renderPhotoEditor() {
+    if (!editingPhoto) return;
+    const collection = state.collections.find(item => collectionKey(item) === editingPhoto.collection);
+    const photo = collection?.photos.find(item => item.name === editingPhoto.name);
+    if (!photo) { editingPhoto = null; if ($('#photo-dialog').open) $('#photo-dialog').close(); return; }
+    $('#photo-editor-title').textContent = `${photo.name} · ${collectionTitle(collection)}`;
+    $('#photo-editor-fields').replaceChildren(renderPhotoFields(photo,collection.photos.indexOf(photo),collection));
+    const image = $('#admin-preview-image'), source = photo.detail || photo.preview;
+    if (image.getAttribute('src') !== source) {
+      $('#preview-load-state').textContent = t('loading');
+      image.onload = () => { $('#preview-load-state').textContent = ''; };
+      image.onerror = () => { $('#preview-load-state').textContent = t('previewFailed'); };
+      image.src = source;
+    }
+    image.alt = photo.name;
+    const size = $('#preview-size'), previous = size.value; size.replaceChildren();
+    let posters = (state.posters || []).filter(poster => photo.posterSizes == null || photo.posterSizes.includes(poster.name));
+    if (!posters.length) posters = state.posters?.length ? state.posters : [{name:'50 × 70 cm'}];
+    for (const poster of posters) { const option = document.createElement('option'); option.value = option.textContent = poster.name; size.append(option); }
+    size.value = posters.some(poster => poster.name === previous) ? previous : posters[0].name;
+    const visible = collectionKey(collection) === selectedId ? visiblePhotos(collection) : collection.photos;
+    const index = visible.findIndex(item => item.name === photo.name);
+    $('#editor-position').textContent = `${index < 0 ? '—' : index+1} / ${visible.length}`;
+    updateAdminPreview();
+  }
+  function updateAdminPreview() {
+    if (!editingPhoto) return;
+    const collection = state.collections.find(item => collectionKey(item) === editingPhoto.collection);
+    const photo = collection?.photos.find(item => item.name === editingPhoto.name); if (!photo) return;
+    const fit = photoTools.fit(photo,$('#preview-size').value,$('#preview-margins').checked);
+    const artwork = $('#admin-artwork'); artwork.dataset.frame = String($('#preview-frame').checked);
+    artwork.style.setProperty('--paper-ratio',fit.paperWidth/fit.paperHeight);
+    artwork.style.setProperty('--mat-color',$('#preview-color').value === 'white' ? '#f5f3ee' : '#050505');
+    const image = $('#admin-preview-image'); image.style.width = `${100*fit.w/fit.paperWidth}%`; image.style.height = `${100*fit.h/fit.paperHeight}%`;
+    const format = value => new Intl.NumberFormat(language,{maximumFractionDigits:2}).format(value);
+    $('#preview-dimensions').textContent = t('previewDimensions',Object.fromEntries(['w','h','x','y'].map(key => [key,format(fit[key])])));
+  }
+  function navigateEditor(direction) {
+    if (busy || !editingPhoto) return;
+    const collection = state.collections.find(item => collectionKey(item) === editingPhoto.collection); if (!collection) return;
+    const photos = collectionKey(collection) === selectedId ? visiblePhotos(collection) : collection.photos; if (!photos.length) return;
+    const index = photos.findIndex(photo => photo.name === editingPhoto.name);
+    const next = index < 0 ? (direction > 0 ? 0 : photos.length-1) : (index+direction+photos.length)%photos.length;
+    openPhotoEditor(collection,photos[next]);
+  }
+  function addSelect(host,id,label,entries) {
+    const group = document.createElement('label'), title = document.createElement('span'); title.textContent = label;
+    const select = document.createElement('select'); select.id = id;
+    for (const [value,name] of entries) { const option = document.createElement('option'); option.value = value; option.textContent = name; select.append(option); }
+    group.append(title,select); host.append(group); return select;
+  }
+  function renderBulkFields() {
+    const host = $('#bulk-fields'); host.replaceChildren();
+    const keep = ['',t('unchanged')];
+    addSelect(host,'bulk-medium',t('medium'),[keep,['analog','ANALOG'],['digital','DIGITAL'],['__clear__',t('clearValue')]]);
+    addSelect(host,'bulk-orientation',t('orientation'),[keep,['portrait',t('portrait')],['landscape',t('landscape')]]);
+    addSelect(host,'bulk-color',t('colorMode'),[keep,['color',t('color')],['monochrome',t('monochrome')]]);
+    addSelect(host,'bulk-film',t('film'),[keep,['__clear__',t('clearValue')],...(state.films || []).map(film => [film.id,film.name])]);
+    addSelect(host,'bulk-iso',t('filmIso'),[keep,['__clear__',t('clearValue')],...(state.isoValues || []).map(iso => [String(iso),String(iso)])]);
+    const mode = addSelect(host,'bulk-size-mode',t('photoSizes'),[['',t('sizeKeep')],['inherit',t('sizeInherit')],['choose',t('sizeChoose')],['none',t('sizeNone')]]);
+    const sizes = document.createElement('fieldset'); sizes.id = 'bulk-size-choices'; sizes.className = 'bulk-size-choices'; sizes.hidden = true;
+    for (const poster of state.posters || []) { const label = document.createElement('label'); label.className = 'check-label'; const input = document.createElement('input'); input.type = 'checkbox'; input.value = poster.name; const text = document.createElement('span'); text.textContent = poster.name; label.append(input,text); sizes.append(label); }
+    mode.addEventListener('change',() => { sizes.hidden = mode.value !== 'choose'; }); host.append(sizes);
+    addSelect(host,'bulk-target',t('moveTo'),[['',t('keepCollection')],...state.collections.filter(collection => collectionKey(collection) !== selectedId).map(collection => [collectionKey(collection),collectionTitle(collection)])]);
+  }
+  function renderPublication() {
+    const publication = state.publication, changes = publication?.changes;
+    if (publication?.dirty) { $('#export-download').hidden = true; $('#export-details').hidden = true; }
+    $('#publication-state').textContent = t(!publication?.lastExport ? 'packageNone' : publication.dirty ? 'packageDirty' : 'packageClean');
+    $('#publication-state').dataset.dirty = String(publication?.dirty !== false);
+    const list = $('#publication-changes'); list.replaceChildren();
+    if (!publication?.dirty || !changes) return;
+    const add = value => { const item = document.createElement('li'); item.textContent = value; list.append(item); };
+    add(t('packageChanges',changes));
+    if (changes.collections) add(t('packageCollections',{count:changes.collections}));
+    if (changes.prices) add(t('packagePrices'));
+    if (!changes.added && !changes.removed && !changes.changed && !changes.collections && !changes.prices) add(t('packageAppearance'));
+  }
+  function updateUndoButtons() { for (const id of ['undo-change','undo-editor-change']) $('#'+id).hidden = !undoToken; }
+  function undoChange() {
+    if (!undoToken) return;
+    return mutate(async () => { await request('undo',{token:undoToken}); undoToken = null; fieldStates.clear(); updateUndoButtons(); invalidateExport(); await reload(); status('undone'); });
+  }
+  $('#undo-change').addEventListener('click',undoChange);
+  $('#undo-editor-change').addEventListener('click',undoChange);
+  $('#retry-change').addEventListener('click',() => { if (retryAction) return mutate(retryAction); });
+  $('#close-photo-editor').addEventListener('click',() => $('#photo-dialog').close());
+  $('#photo-dialog').addEventListener('close',() => { editingPhoto = null; });
+  $('#previous-editor-photo').addEventListener('click',() => navigateEditor(-1));
+  $('#next-editor-photo').addEventListener('click',() => navigateEditor(1));
+  $('#photo-dialog').addEventListener('keydown',event => { if (['INPUT','SELECT','TEXTAREA'].includes(event.target.tagName)) return; if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); navigateEditor(event.key === 'ArrowLeft' ? -1 : 1); } });
+  for (const id of ['preview-size','preview-margins','preview-frame','preview-color']) $('#'+id).addEventListener('change',updateAdminPreview);
+  for (const id of ['photo-search','photo-filter-medium','photo-filter-orientation','photo-filter-color','photo-filter-available','photo-filter-missing']) $('#'+id).addEventListener(id === 'photo-search' ? 'input' : 'change',renderGrid);
+  $('#reset-photo-filters').addEventListener('click',() => { for (const id of ['photo-search','photo-filter-medium','photo-filter-orientation','photo-filter-color','photo-filter-available']) $('#'+id).value = ''; $('#photo-filter-missing').checked = false; renderGrid(); });
+  $('#select-visible').addEventListener('change',() => { const collection = selected(); if (!collection) return; for (const photo of visiblePhotos(collection)) { if ($('#select-visible').checked) selectedPhotos.add(photo.name); else selectedPhotos.delete(photo.name); } updateSelection(); });
+  $('#clear-selection').addEventListener('click',() => { selectedPhotos.clear(); updateSelection(); });
+  $('#collection-search').addEventListener('input',() => { const query = $('#collection-search').value.toLocaleLowerCase().trim(); for (const row of $('#collections').querySelectorAll('.collection-order-row')) row.hidden = !row.dataset.collectionName.includes(query); });
+  $('#bulk-form').addEventListener('submit',event => {
+    event.preventDefault(); const collection = selected(); if (!collection || !selectedPhotos.size || busy) return;
+    const changes = {};
+    for (const [id,key] of [['bulk-medium','medium'],['bulk-orientation','orientation'],['bulk-color','colorMode'],['bulk-film','film'],['bulk-iso','iso']]) { const value = $('#'+id).value; if (value) changes[key] = value === '__clear__' ? null : key === 'iso' ? Number(value) : value; }
+    const sizes = $('#bulk-size-mode').value;
+    if (sizes) changes.posterSizes = sizes === 'inherit' ? null : sizes === 'none' ? [] : [...$('#bulk-size-choices').querySelectorAll('input')].filter(input => input.checked).map(input => input.value);
+    const destination = $('#bulk-target').value.split('/');
+    const data = {...targetCollection(collection),names:[...selectedPhotos],changes};
+    if (destination.length === 2) data.target = {year:destination[0],collection:destination[1]};
+    return mutate(async () => { const result = await request('bulk-photos',data); selectedPhotos.clear(); invalidateExport(); await reload(); status('bulkSaved',result); });
+  });
   async function reload() {
     state = await request('state');
     if (!state.collections.some(collection => collectionKey(collection) === selectedId)) selectedId = (state.collections[0] ? collectionKey(state.collections[0]) : null);
@@ -790,8 +1014,8 @@ window.WizjeSortable = (() => {
   async function mutate(action) {
     if (busy) return;
     lock(true); status('saving');
-    try { await action(); return true; }
-    catch (error) { status('error', { message: error.message }, true); await reload().catch(() => {}); return false; }
+    try { await action(); retryAction = null; $('#retry-change').hidden = true; if (lastStatus.key === 'saving') status('blank'); return true; }
+    catch (error) { retryAction = action; $('#retry-change').hidden = false; status('error', { message: error.message }, true); return false; }
     finally { lock(false); }
   }
   function invalidateExport() {
@@ -818,27 +1042,95 @@ window.WizjeSortable = (() => {
       $('#create-form').reset(); $('#collection-year').value = year; $('#upload-form').reset(); await reload(); status('created');
     });
   });
-  $('#upload-form').addEventListener('submit', event => {
-    event.preventDefault(); const files = [...$('#photos').files]; const medium = $('input[name="upload-medium"]:checked')?.value;
-    if (!files.length || !medium) return;
-    mutate(async () => {
-      const errors = []; let count = 0;
-      for (const [index, file] of files.entries()) {
-        status('uploading', { index: index + 1, total: files.length, name: file.name });
+  function renderImports() {
+    const list = $('#upload-progress'); list.replaceChildren();
+    for (const item of importItems) {
+      const row = document.createElement('li'); item.row = row;
+      const name = document.createElement('span'); name.textContent = item.file.name;
+      item.label = document.createElement('span'); item.progress = document.createElement('progress'); item.progress.max = 100;
+      row.append(name,item.label,item.progress); list.append(row); updateImportItem(item);
+    }
+    $('#retry-uploads').hidden = !importItems.some(item => item.state === 'error');
+  }
+  function updateImportItem(item) {
+    item.row.dataset.state = item.state;
+    const key = {waiting:'uploadWaiting',uploading:'uploadSending',processing:'uploadProcessing',done:'uploadDone',error:'uploadFailed'}[item.state];
+    item.label.textContent = t(key,{percent:item.percent || 0,message:item.error || ''});
+    item.progress.hidden = item.state === 'error';
+    if (item.state === 'processing') item.progress.removeAttribute('value');
+    else item.progress.value = item.state === 'done' ? 100 : item.percent || 0;
+  }
+  function uploadRequest(path,body,progress) {
+    return new Promise((resolve,reject) => {
+      const xhr = new XMLHttpRequest(); xhr.open('POST','/admin/api/'+path); xhr.timeout = 180000;
+      xhr.setRequestHeader('X-Wizje-CSRF',state.csrf); xhr.setRequestHeader('Accept-Language',language); xhr.setRequestHeader('Content-Type','application/octet-stream');
+      xhr.upload.onprogress = event => { if (event.lengthComputable) progress(event.loaded,event.total,false); };
+      xhr.upload.onload = () => progress(body.size,body.size,true);
+      xhr.onload = () => {
         try {
-          if (file.size > 50 * 1024 * 1024) throw new Error(t('tooLarge'));
-          const params = new URLSearchParams({ ...targetCollection(selected()), name: file.name, medium, orientation: $('input[name="upload-orientation"]:checked').value, colorMode: $('#upload-color-mode').value });
-          if (medium === 'analog') {
-            if (uploadDetails.film) params.set('film', uploadDetails.film);
-            if (uploadDetails.iso) params.set('iso', uploadDetails.iso);
-          }
-          await request('upload?' + params, file, true); count++;
-        } catch (error) { errors.push(`${file.name}: ${error.message}`); }
-      }
-      $('#upload-form').reset(); await reload();
-      status('error', { message: t('uploaded', { count }) + (errors.length ? '\n' + errors.join('\n') : ' ' + t('refresh')) }, errors.length > 0);
+          const result = JSON.parse(xhr.responseText);
+          if (xhr.status === 401) window.location.assign('/admin');
+          if (xhr.status < 200 || xhr.status >= 300) throw new Error(result.error || t('failed'));
+          if (result.publication) { state.publication = result.publication; renderPublication(); }
+          undoToken = null; updateUndoButtons();
+          resolve(result);
+        } catch (error) { reject(error); }
+      };
+      xhr.onerror = xhr.ontimeout = () => reject(new Error(t('failed')));
+      xhr.send(body);
     });
+  }
+  async function runImports(items) {
+    const params = new URLSearchParams(importContext.params);
+    const groups = [];
+    for (const item of items) {
+      item.error = ''; item.percent = 0; item.state = 'waiting';
+      if (!item.file.size || item.file.size > 50*1024*1024) { item.state = 'error'; item.error = t('tooLarge'); continue; }
+      let group = groups[groups.length-1];
+      if (!group || group.bytes+item.file.size > 50*1024*1024 || group.items.length >= 50) { group = {items:[],bytes:0}; groups.push(group); }
+      group.items.push(item); group.bytes += item.file.size;
+    }
+    renderImports();
+    for (const group of groups) {
+      const metadata = new TextEncoder().encode(JSON.stringify(group.items.map(item => ({name:item.file.name,size:item.file.size}))));
+      const header = new ArrayBuffer(4); new DataView(header).setUint32(0,metadata.byteLength);
+      const payload = new Blob([header,metadata,...group.items.map(item => item.file)]);
+      const progress = (loaded,total,processing) => {
+        let offset = 4+metadata.byteLength;
+        for (const item of group.items) { item.state = processing ? 'processing' : 'uploading'; item.percent = Math.max(0,Math.min(100,Math.round(100*(loaded-offset)/item.file.size))); offset += item.file.size; updateImportItem(item); }
+      };
+      try {
+        await uploadRequest('upload-batch?'+params,payload,progress);
+        for (const item of group.items) { item.state = 'done'; updateImportItem(item); }
+      } catch {
+        // The batch is atomic. Retry its files separately to identify the bad file.
+        let known = new Set();
+        try { const fresh = await request('state'); const collection = fresh.collections.find(value => collectionKey(value) === importContext.collection); known = new Set(collection?.photos.map(photo => photo.name) || []); } catch {}
+        for (const item of group.items) {
+          if (known.has(item.file.name) && !importContext.existing.has(item.file.name)) { item.state = 'done'; updateImportItem(item); continue; }
+          item.state = 'uploading'; item.percent = 0; updateImportItem(item);
+          const single = new URLSearchParams(params); single.set('name',item.file.name);
+          try {
+            await uploadRequest('upload?'+single,item.file,(loaded,total,processing) => { item.state = processing ? 'processing' : 'uploading'; item.percent = Math.round(100*loaded/total); updateImportItem(item); });
+            item.state = 'done'; known.add(item.file.name);
+          } catch (error) { item.state = 'error'; item.error = error.message; }
+          updateImportItem(item);
+        }
+      }
+    }
+    invalidateExport(); $('#upload-form').reset(); await reload(); renderImports();
+    const count = importItems.filter(item => item.state === 'done').length;
+    status('uploaded',{count});
+  }
+  $('#upload-form').addEventListener('submit',event => {
+    event.preventDefault(); const collection = selected(), files = [...$('#photos').files], medium = $('input[name="upload-medium"]:checked')?.value;
+    if (busy || !collection || !files.length || !medium) return;
+    importContext = {collection:collectionKey(collection),existing:new Set(collection.photos.map(photo => photo.name)),params:{...targetCollection(collection),medium,orientation:$('input[name="upload-orientation"]:checked').value,colorMode:$('#upload-color-mode').value}};
+    if (medium === 'analog') { if (uploadDetails.film) importContext.params.film = uploadDetails.film; if (uploadDetails.iso) importContext.params.iso = uploadDetails.iso; }
+    importItems = files.map(file => ({file,state:'waiting',percent:0}));
+    return mutate(() => runImports(importItems));
   });
+  $('#retry-uploads').addEventListener('click',() => { const failed = importItems.filter(item => item.state === 'error'); if (failed.length && importContext) return mutate(() => runImports(failed)); });
   $('#export-site').addEventListener('click', () => mutate(async () => {
     status('exporting');
     $('#export-download').hidden = true;
@@ -856,7 +1148,6 @@ window.WizjeSortable = (() => {
   for (const type of ['dragenter', 'dragover']) dropzone.addEventListener(type, event => { event.preventDefault(); if (!busy) dropzone.classList.add('is-dragging'); });
   for (const type of ['dragleave', 'drop']) dropzone.addEventListener(type, event => { event.preventDefault(); dropzone.classList.remove('is-dragging'); });
   dropzone.addEventListener('drop', event => { if (!busy && event.dataTransfer.files.length) $('#photos').files = event.dataTransfer.files; });
-  $('#logout').addEventListener('click', () => mutate(async () => { await request('logout', {}); window.location.assign('/admin'); }));
   document.querySelectorAll('[data-language]').forEach(button => button.addEventListener('click', () => setLanguage(button.dataset.language)));
   async function start() {
     try {

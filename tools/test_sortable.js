@@ -49,8 +49,10 @@ window.scrollBy = () => {};
 var document;
 var innerHeight = 800;
 var matchMedia = () => ({ matches: true });
-var requestAnimationFrame = () => 1;
-var cancelAnimationFrame = () => {};
+const frames = new Map(); let frameId = 0;
+var requestAnimationFrame = fn => { frames.set(++frameId, fn); return frameId; };
+var cancelAnimationFrame = id => frames.delete(id);
+function flushFrame() { const pending = [...frames.values()]; frames.clear(); pending.forEach(fn => fn(16)); }
 var setTimeout = () => 1;
 eval(readFile('tools/admin/editor.js').split('/* Workshop editor. */')[0]);
 function assert(value, message) { if (!value) throw new Error(message); }
@@ -64,7 +66,7 @@ function fixture() {
   window.WizjeSortable.attach(container, { canStart: () => true, onDrop: (order, expected) => drops.push({ order, expected }) });
   return { container, drops, keys: () => container.children.map(n => n.dataset.sortKey).join(''),
     down: (index = 0) => container.dispatch('pointerdown', { target: container.children[index], clientY: index * 100 + 50 }),
-    move: y => document.dispatch('pointermove', { clientY: y }),
+    move: y => { document.dispatch('pointermove', { clientY: y }); flushFrame(); },
     up: (y, x = 50) => document.dispatch('pointerup', { clientY: y, clientX: x }) };
 }
 let f = fixture(); f.down(); f.move(250);

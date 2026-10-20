@@ -8,13 +8,17 @@ class Element {
   setAttribute(k,v) { this[k] = v; }
   removeAttribute(k) { delete this[k]; }
   addEventListener(k,v) { (this.handlers[k] ||= []).push(v); }
-  emit(k,v = {}) { (this.handlers[k] || []).forEach(fn => fn(v)); }
+  emit(k,v = {}) { (this.handlers[k] || []).forEach(fn => fn(v)); flushFrame(); }
   querySelectorAll(selector) { return this.children.filter(child => selector === 'label'); }
   querySelector() { return this.children.flatMap(child => child.children).find(node => node.checked); }
   getBoundingClientRect() { return { left:0, top:0, right:300, bottom:400, width:300, height:400 }; }
-  getContext() { return { scale() {}, fillRect() {}, drawImage(...args) { globalThis.lastDraw = args; } }; }
+  getContext() { return { setTransform() {}, fillRect() {}, drawImage(...args) { globalThis.lastDraw = args; } }; }
   setPointerCapture() {}
 }
+const frames = new Map(); let frameId = 0;
+const requestAnimationFrame = fn => { frames.set(++frameId, fn); return frameId; };
+const cancelAnimationFrame = id => frames.delete(id);
+function flushFrame() { const pending = [...frames.values()]; frames.clear(); pending.forEach(fn => fn()); }
 const nodes = new Map();
 const node = key => { if (!nodes.has(key)) nodes.set(key, new Element()); return nodes.get(key); };
 const dialog = new Element(); dialog.open = true; dialog.dataset.margins = 'true';
@@ -36,10 +40,12 @@ eval(code.slice(0, code.indexOf('  class DrumCard')) + `
 })();`);
 const galleryImage = new Element();
 api.configureGalleryImage(galleryImage, {src:'small.jpg',previewHigh:'large.jpg',orientation:'portrait'});
-assert(galleryImage.srcset === 'small.jpg 480w, large.jpg 1440w' && galleryImage.sizes.includes('280px'), 'Retina candidates and portrait sizing');
+assert(galleryImage.srcset === 'small.jpg 480w, large.jpg 1440w' && galleryImage.sizes.includes('240px'), 'Retina candidates and portrait sizing');
+api.configureGalleryImage(galleryImage, {src:'small.jpg',previewMedium:'medium.jpg',previewHigh:'large.jpg'});
+assert(galleryImage.srcset.includes('medium.jpg 960w'), 'intermediate resolution available');
 api.configureGalleryImage(galleryImage, {src:'other.jpg',orientation:'landscape'});
 assert(!galleryImage.srcset && !galleryImage.sizes && galleryImage.src === 'other.jpg', 'missing Retina candidate clears stale sources');
-assert(api.pose(0,3).transform === 'translate(-50%, -50%)', 'center photo does not keep a 3D raster layer');
+assert(api.pose(0,3).transform === 'translate(-50%, -50%) translateX(0%) translateZ(0px) rotateY(0deg) scale(1)', 'center retains the same 3D transform list at rest');
 assert(JSON.stringify(api.paperDimensions({name:'30 × 40 cm'}, false)) === '[30,40]', 'portrait dimensions');
 assert(JSON.stringify(api.paperDimensions({name:'30 x 40 cm'}, true)) === '[40,30]', 'landscape dimensions');
 assert(api.paperDimensions({name:'0 × 40 cm'}, false) === null, 'zero rejected');
@@ -82,7 +88,7 @@ api.resetMagnifier();
 preview.emit('pointermove',{pointerType:'touch',pointerId:1,clientX:150,clientY:200});
 assert(!nextImage && lens.hidden, 'touch requires a held pointer');
 preview.emit('pointerdown',{pointerType:'touch',pointerId:1,clientX:150,clientY:200});
-nextImage.onload();
+nextImage.onload(); flushFrame();
 assert(!lens.hidden && lastDraw[0].naturalWidth === 3360, 'touch down loads source and shows lens');
 preview.emit('pointermove',{pointerType:'touch',pointerId:1,clientX:200,clientY:200});
 assert(lastDraw[1] < -1595, 'held touch moves source sample');
@@ -108,7 +114,7 @@ assert(lens.hidden, 'lost capture hides lens');
 api.resetMagnifier();
 preview.emit('pointerdown',{pointerType:'touch',pointerId:6,clientX:150,clientY:200});
 preview.emit('pointerup',{pointerType:'touch',pointerId:6});
-nextImage.onload();
+nextImage.onload(); flushFrame();
 assert(lens.hidden, 'source arriving after release cannot reopen lens');
 preview.emit('pointerenter',{pointerType:'mouse',clientX:150,clientY:200});
 assert(!lens.hidden, 'mouse hover opens automatically');
@@ -125,7 +131,14 @@ const failed = nextImage;
 preview.emit('pointerleave',{pointerType:'mouse'});
 preview.emit('pointerenter',{pointerType:'mouse',clientX:150,clientY:200});
 assert(nextImage !== failed, 'new hover retries a failed load');
-const stale = nextImage; api.resetMagnifier(); stale.onload();
+const stale = nextImage; api.resetMagnifier(); stale.onload(); flushFrame();
 assert(lens.hidden, 'stale load cannot show previous photo');
 assert(!code.includes('class="photo-detail__magnify"') && !code.includes('data-detail-copy="magnifierHint"'), 'button and description removed');
 print('Detail checks passed: sizes, margins, orders, held-touch lifecycle, multitouch, mouse hover, retries and stale loads.');
+
+api.resetMagnifier();
+const moves = preview.handlers.pointermove;
+for (let i = 0; i < 50; i++) moves.forEach(fn => fn({pointerType:'mouse',clientX:150,clientY:200}));
+assert(frames.size === 1, 'pointer bursts schedule only one render per frame');
+api.resetMagnifier();
+assert(frames.size === 0, 'closing cancels the pending render');

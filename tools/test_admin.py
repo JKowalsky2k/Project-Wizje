@@ -27,6 +27,42 @@ class FakeHandler:
 
 
 class AdminTests(unittest.TestCase):
+    def test_batch_upload_builds_once_and_rolls_back_failed_groups(self):
+        folder = self.photos / 'batch'; folder.mkdir()
+        self.store.upload_batch('batch', [('a.jpg', b'\xff\xd8\xffa'), ('b.jpg', b'\xff\xd8\xffb')], 'digital')
+        self.assertEqual(self.rebuilds, 1)
+        before = self.store.types()
+        with self.assertRaises(EditorError):
+            self.store.upload_batch('batch', [('c.jpg', b'\xff\xd8\xffc'), ('a.jpg', b'\xff\xd8\xffnew')], 'digital')
+        self.assertFalse((folder / 'c.jpg').exists())
+        self.assertEqual((folder / 'a.jpg').read_bytes(), b'\xff\xd8\xffa')
+        self.assertEqual(self.store.types(), before)
+        def fail(): raise RuntimeError('decoder rejected a photo')
+        self.store.rebuild = fail
+        with self.assertRaises(RuntimeError):
+            self.store.upload_batch('batch', [('c.jpg', b'\xff\xd8\xffc'), ('d.jpg', b'\xff\xd8\xffd')], 'digital')
+        self.assertFalse((folder / 'c.jpg').exists())
+        self.assertFalse((folder / 'd.jpg').exists())
+        self.assertEqual(self.store.types(), before)
+
+    def test_batch_endpoint_validates_envelope_and_returns_saved_photo(self):
+        folder = self.photos / 'batch'; folder.mkdir()
+        headers = {'Cookie': self.login(), 'X-Wizje-CSRF': self.admin.csrf}
+        metadata = json.dumps([{'name': 'photo.jpg', 'size': 4}]).encode()
+        body = len(metadata).to_bytes(4, 'big') + metadata + b'\xff\xd8\xffa'
+        request = FakeHandler('/admin/api/upload-batch?collection=batch&medium=digital', headers, body[:-1])
+        self.admin.post(request)
+        self.assertEqual(request.status, 400)
+        self.assertFalse((folder / 'photo.jpg').exists())
+        request = FakeHandler('/admin/api/upload-batch?collection=batch&medium=digital', headers, body)
+        self.admin.post(request)
+        self.assertEqual(request.status, 200)
+        self.assertEqual(json.loads(request.wfile.getvalue())['count'], 1)
+        request = FakeHandler('/admin/api/color-mode', headers, json.dumps({'collection': 'batch', 'name': 'photo.jpg', 'colorMode': 'monochrome'}).encode())
+        self.admin.post(request)
+        self.assertEqual(request.status, 200)
+        self.assertEqual(json.loads(request.wfile.getvalue())['photo']['colorMode'], 'monochrome')
+
     def setUp(self):
         temp = TemporaryDirectory(); self.addCleanup(temp.cleanup)
         self.root = Path(temp.name).resolve() / 'website'
@@ -307,12 +343,34 @@ class AdminTests(unittest.TestCase):
         for path in ['/admin/editor.js', '/admin/api/state']:
             request = FakeHandler(path); self.admin.get(request)
             self.assertEqual(request.status, 401)
-        for path in ['/admin', '/admin/login.js', '/admin/editor.css', '/admin/api/auth']:
+        for path in ['/admin', '/admin/editor.css', '/admin/api/auth']:
             request = FakeHandler(path); self.admin.get(request)
             self.assertEqual(request.status, 200)
         request = FakeHandler('/admin/access?token=old'); self.admin.get(request)
         self.assertEqual(request.status, 303)
         self.assertNotIn('Set-Cookie', request.response_headers)
+
+    def test_local_editor_opens_without_password_and_keeps_session_guards(self):
+        request = FakeHandler('/admin')
+        self.admin.get(request)
+        self.assertEqual(request.status, 200)
+        self.assertIn(b'id="collections"', request.wfile.getvalue())
+        self.assertNotIn(b'id="logout"', request.wfile.getvalue())
+        self.assertFalse(self.admin.password_path.exists())
+        cookie = request.response_headers['Set-Cookie'].split(';')[0]
+        for path in ['/admin/api/state', '/admin/editor.js', '/admin']:
+            request = FakeHandler(path, {'Cookie': cookie})
+            self.admin.get(request)
+            self.assertEqual(request.status, 200)
+            self.assertNotIn('Set-Cookie', request.response_headers)
+        request = FakeHandler('/admin/api/collections', {'Cookie': cookie}, b'{}')
+        self.admin.post(request)
+        self.assertEqual(request.status, 403)
+        for headers in [{'Sec-Fetch-Site': 'cross-site'}, {'X-Forwarded-For': '1.2.3.4'}, {'Host': 'example.com'}]:
+            request = FakeHandler('/admin', headers)
+            self.admin.get(request)
+            self.assertEqual(request.status, 403)
+            self.assertNotIn('Set-Cookie', request.response_headers)
 
     def test_password_survives_restart_and_two_browser_sessions(self):
         first = self.login()
@@ -595,7 +653,7 @@ class AdminTests(unittest.TestCase):
         self.assertEqual(request.response_headers['Cache-Control'], 'no-store')
         for route in ['library-attach', 'purge-photo']:
             for auth in [{}, {'Cookie': cookie}]:
-                request = FakeHandler('/admin/api/' + route, auth, json.dumps({'id': item['id'], 'collection': slug, 'confirmation': '01.jpg'}).encode())
+                request = FakeHandler('/admin/api/' + route, auth, json.dumps({'id': item['id'], 'collection': slug, 'confirmed': True}).encode())
                 self.admin.post(request)
                 self.assertIn(request.status, (401, 403))
         request = FakeHandler('/admin/api/library-attach', headers, json.dumps({'id': item['id'], 'collection': slug}).encode())
@@ -604,7 +662,7 @@ class AdminTests(unittest.TestCase):
         request = FakeHandler('/admin/api/purge-photo', headers, json.dumps({'collection': slug, 'name': '01.jpg', 'confirmation': 'wrong'}).encode())
         self.admin.post(request); self.assertEqual(request.status, 400)
         self.assertTrue(original.exists())
-        request = FakeHandler('/admin/api/purge-photo', headers, json.dumps({'collection': slug, 'name': '01.jpg', 'confirmation': '01.jpg'}).encode())
+        request = FakeHandler('/admin/api/purge-photo', headers, json.dumps({'collection': slug, 'name': '01.jpg', 'confirmed': True}).encode())
         self.admin.post(request); self.assertEqual(request.status, 200)
         self.assertFalse(original.exists())
         request = FakeHandler(item['preview'], {'Cookie': cookie}); self.admin.get(request)

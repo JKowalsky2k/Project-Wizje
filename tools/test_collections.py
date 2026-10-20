@@ -11,22 +11,48 @@ spec.loader.exec_module(collections)
 
 
 class ManifestTests(unittest.TestCase):
+    def test_local_etag_detects_replacements_even_with_restored_mtime(self):
+        import os
+        from email.message import Message
+        from unittest.mock import patch
+        from http.server import SimpleHTTPRequestHandler
+        asset = self.root / 'styles.css'
+        asset.write_text('body{color:red}')
+        initial = asset.stat()
+        handler = collections.Handler.__new__(collections.Handler)
+        handler.path = '/styles.css'
+        handler.headers = Message()
+        handler.send_response = lambda status: setattr(handler, 'status', status)
+        handler.end_headers = lambda: None
+        with patch.object(collections, 'ROOT', self.root), patch.object(SimpleHTTPRequestHandler, 'send_head', return_value='body'):
+            self.assertEqual(handler.send_head(), 'body')
+            previous = handler._public_etag
+            handler.headers['If-None-Match'] = previous
+            self.assertIsNone(handler.send_head())
+            self.assertEqual(handler.status, 304)
+            asset.write_text('body{color:tan}')
+            os.utime(asset, ns=(initial.st_atime_ns, initial.st_mtime_ns))
+            self.assertEqual(handler.send_head(), 'body')
+            self.assertNotEqual(handler._public_etag, previous)
+
     def setUp(self):
         self.temp = TemporaryDirectory()
         self.root = Path(self.temp.name)
         self.addCleanup(self.temp.cleanup)
 
-    def test_public_responses_disable_cache_for_html_css_js_and_images(self):
+    def test_public_responses_revalidate_documents_and_cache_hashed_images(self):
         from unittest.mock import patch
         from http.server import SimpleHTTPRequestHandler
         for path in ['/', '/styles.css?v=release', '/collections.js', '/assets/collections/previews/abc-1440.jpg']:
             handler = collections.Handler.__new__(collections.Handler)
             handler.path = path
+            handler.command = 'GET'
             headers = []
             handler.send_header = lambda name, value: headers.append((name, value))
             with patch.object(SimpleHTTPRequestHandler, 'end_headers'):
                 handler.end_headers()
-            self.assertIn(('Cache-Control', 'no-store, no-transform'), headers)
+            expected = 'public, max-age=31536000, immutable, no-transform' if '/previews/' in path else 'no-cache, no-transform'
+            self.assertIn(('Cache-Control', expected), headers)
 
     def test_photo_sizes_export_preserves_explicit_and_inherited_choices(self):
         folder = self.root / 'test'; folder.mkdir()

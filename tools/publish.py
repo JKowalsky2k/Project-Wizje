@@ -40,6 +40,8 @@ def build_public_tree(root, destination, collections):
 
     def copy(relative):
         relative = PurePosixPath(relative).as_posix()
+        if PurePosixPath(relative).parts[0] in ('admin', 'tools'):
+            raise ValueError(f'Panel lokalny nie może być publikowany: {relative}')
         if relative in copied:
             return
         source = source_file(root, relative)
@@ -53,6 +55,10 @@ def build_public_tree(root, destination, collections):
 
     # Follow only the site's CSS/font dependencies, with an explicit asset boundary.
     pending = ['styles.css']
+    # The logo stylesheet may be linked directly to avoid a CSS import waterfall.
+    if re.search(r'href=[\'\"]assets/logo/logo\.css(?:\?[^\'\"]*)?[\'\"]', source_file(root, 'index.html').read_text()):
+        copy('assets/logo/logo.css')
+        pending.append('assets/logo/logo.css')
     visited = set()
     while pending:
         css = pending.pop()
@@ -90,7 +96,11 @@ def build_public_tree(root, destination, collections):
                 raise ValueError('Kolekcja wymaga osobnych zdjęć i wygenerowanych podglądów. '
                                  'Dodaj zdjęcia przez panel; stare plansze Canva nie są publikowane.')
             copy(src)
-            public_photo = {key: photo[key] for key in ('src', 'width', 'height', 'medium', 'film', 'filmBrand', 'iso', 'detail', 'sourceWidth', 'sourceHeight', 'detailWidth', 'detailHeight', 'orientation', 'colorMode', 'posterSizes', 'inspection', 'previewHigh') if key in photo}
+            public_photo = {key: photo[key] for key in ('src', 'width', 'height', 'medium', 'film', 'filmBrand', 'iso', 'detail', 'sourceWidth', 'sourceHeight', 'detailWidth', 'detailHeight', 'orientation', 'colorMode', 'posterSizes', 'inspection', 'previewHigh', 'previewMedium') if key in photo}
+            if photo.get('previewMedium'):
+                if not re.fullmatch(r'assets/collections/previews/[a-f0-9]+-960\.jpg', photo['previewMedium']):
+                    raise ValueError('Nieprawidłowy pośredni podgląd zdjęcia.')
+                copy(photo['previewMedium'])
             if photo.get('previewHigh'):
                 if not re.fullmatch(r'assets/collections/previews/[a-f0-9]+-1440\.jpg', photo['previewHigh']):
                     raise ValueError('Nieprawidłowy podgląd Retina.')
@@ -144,7 +154,7 @@ def publish(root=ROOT):
     spec = spec_from_file_location('wizje_collection_builder', Path(__file__).with_name('collections.py'))
     builder = module_from_spec(spec)
     spec.loader.exec_module(builder)
-    collections = prepare_previews(builder.build_all_manifests(root / 'assets/collections'), root)
+    collections = prepare_previews(builder.build_all_manifests(root / 'assets/collections'), root, verify=True)
     output = root / 'dist'
     if output.is_symlink():
         raise ValueError('Folder dist nie może być dowiązaniem symbolicznym.')
@@ -162,7 +172,8 @@ def publish(root=ROOT):
         with zipfile.ZipFile(staged_zip, 'w', zipfile.ZIP_DEFLATED) as bundle:
             for file in sorted(site.rglob('*')):
                 if file.is_file():
-                    bundle.write(file, file.relative_to(site).as_posix())
+                    compression = zipfile.ZIP_STORED if file.suffix.lower() in ('.jpg', '.woff2') else zipfile.ZIP_DEFLATED
+                    bundle.write(file, file.relative_to(site).as_posix(), compress_type=compression)
         site.rename(folder)
         staged_zip.rename(archive)
     return folder, archive, count, len(collections)

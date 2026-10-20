@@ -6,9 +6,11 @@ Dodaj kolekcje i zdjęcia w lokalnym panelu. Poczekaj na zakończenie przesyłan
 
 ## 2. Przygotuj paczkę w panelu
 
+Panel pokazuje zmiany od ostatniej paczki przygotowanej w panelu: dodane, usunięte i zmienione zdjęcia, kolekcje oraz ceny. Informacja pozostaje po ponownym uruchomieniu.
+
 W lokalnym panelu otwórz sekcję **Publikacja strony** po lewej i kliknij **Przygotuj ZIP**. Poczekaj na komunikat o zakończeniu, potem kliknij **Pobierz ZIP ↓**. Paczka zapisuje się również w `dist/`. Jeżeli zmienisz zdjęcia po jej przygotowaniu, utwórz nową paczkę.
 
-Przygotowanie i pobranie wymagają zalogowania. Link pobierania działa tylko w przeglądarce, w której powstała paczka, i wygasa po godzinie lub zakończeniu sesji. Wtedy przygotuj nową paczkę. Panel niczego sam nie wysyła na hosting.
+Panel otwiera się lokalnie bez ekranu logowania. Przygotowanie i pobranie wymagają sesji tworzonej automatycznie przy otwarciu panelu. Link pobierania działa tylko w przeglądarce, w której powstała paczka, i wygasa po godzinie lub zakończeniu sesji. Wtedy przygotuj nową paczkę. Panel niczego sam nie wysyła na hosting.
 
 Możesz też uruchomić skrypt w Terminalu:
 
@@ -53,7 +55,7 @@ Paczka pomija panel administratora, ewentualny stary katalog `.local-admin`, rep
 
 ## Ochrona przy przypadkowym wysłaniu projektu
 
-Hasło administratora jest przechowywane **poza projektem**, na macOS w `~/Library/Application Support/Wizje/<identyfikator projektu>/password.json`. Dokładną ścieżkę wyświetla terminal po uruchomieniu lokalnego serwera. Dotychczasowy zapis z `.local-admin/password.json` jest przenoszony automatycznie po sprawdzeniu kopii; hasło pozostaje takie samo. Nie kopiuj katalogu danych aplikacji na hosting.
+Panel nie wymaga hasła. Ewentualne dane wcześniejszego logowania pozostają **poza projektem**, na macOS w `~/Library/Application Support/Wizje/<identyfikator projektu>/password.json`. Dokładną ścieżkę wyświetla terminal po uruchomieniu lokalnego serwera. Dotychczasowy zapis z `.local-admin/password.json` jest przenoszony automatycznie po sprawdzeniu kopii; hasło pozostaje takie samo. Nie kopiuj katalogu danych aplikacji na hosting.
 
 Lokalny serwer odrzuca dostęp do panelu od klientów i adresów nasłuchu innych niż loopback, obce nagłówki Host, żądania cross-site oraz nagłówki przekazywania ruchu przez proxy. Pliki publiczne są serwowane z listy dozwolonych ścieżek; katalogi, oryginały, dane panelu i dowiązania są blokowane. Nie konfiguruj tunelu ani proxy do tego serwera — nadal jest przeznaczony wyłącznie do pracy lokalnej.
 
@@ -68,9 +70,9 @@ Jeśli cały projekt trafił już do internetu, usuń prywatne pliki z hostingu 
 
 ## Usunięcie zdjęcia a paczki publikacji
 
-Odłączenie zdjęcia od kolekcji zachowuje je w prywatnej bibliotece. Nowa paczka zawiera tylko zdjęcia aktualnie przypisane do kolekcji.
+Odłączenie zdjęcia od kolekcji działa bez pytania o potwierdzenie i zachowuje je w prywatnej bibliotece. Przycisk **Cofnij ostatnią zmianę** przywraca ostatnio odłączone zdjęcie. Nowa paczka zawiera tylko zdjęcia aktualnie przypisane do kolekcji.
 
-Opcja **Usuń trwale** wymaga osobnego potwierdzenia i usuwa także wszystkie wygenerowane lokalne paczki `wizje-*` oraz cache podglądów. Podglądy zachowanych zdjęć są odbudowywane; po zakończeniu przygotuj nowy ZIP. Kopie ZIP pobrane poza `dist`, wcześniejsze pliki na hostingu i backupy nie są automatycznie usuwane. Szczegóły opisuje [instrukcja biblioteki](assets/collections/README.md#biblioteka-zdjęć-i-trwałe-usuwanie).
+Opcja **Usuń trwale** działa od razu po kliknięciu i usuwa także wszystkie wygenerowane lokalne paczki `wizje-*` oraz cache podglądów. Podglądy zachowanych zdjęć są odbudowywane; po zakończeniu przygotuj nowy ZIP. Kopie ZIP pobrane poza `dist`, wcześniejsze pliki na hostingu i backupy nie są automatycznie usuwane. Szczegóły opisuje [instrukcja biblioteki](assets/collections/README.md#biblioteka-zdjęć-i-trwałe-usuwanie).
 
 
 ## SEO dla wizje.eu
@@ -100,18 +102,18 @@ Mapa i metadane ułatwiają wykrycie treści, ale nie gwarantują indeksacji ani
 
 Nowe paczki automatycznie nadają wersję adresom CSS, JS i ikon na podstawie plików
 wydania. Nie trzeba ręcznie zmieniać `?v=` po edycji strony lub cennika.
-Konfiguracja Apache i przykład Nginx wysyłają `Cache-Control: no-store, no-transform`:
-przeglądarka ponownie pobiera potrzebne zasoby po odświeżeniu, a pośrednicy nie powinni
-zmieniać jakości zdjęć. Obrazy niewidoczne i lupa nadal są ładowane na żądanie.
-Oznacza to większy transfer przy kolejnych wejściach.
+Konfiguracja Apache i przykład Nginx rozdzielają pamięć podręczną:
 
-Na Apache prześlij również ukryty `.htaccess` z paczki i upewnij się, że hosting
-obsługuje `mod_headers`. Na Nginx administrator stosuje aktualny przykład konfiguracji.
-Jeśli CDN lub hosting nadpisuje nagłówki, trzeba wyłączyć jego regułę cache dla strony.
-Nowe nagłówki nie usuwają wcześniej zapisanych kopii HTML: po pierwszym wdrożeniu
-może być potrzebne jednorazowe twarde odświeżenie lub wyczyszczenie cache hostingu.
+- HTML, skrypty, arkusze CSS i manifest mają `Cache-Control: no-cache, no-transform`.
+  Przeglądarka może przechować pliki, ale sprawdza ich aktualność przed ponownym użyciem.
+- Zdjęcia z nazwami zależnymi od zawartości mają `public, max-age=31536000, immutable, no-transform`.
+  Zmiana zdjęcia lub sposobu generowania daje nowy adres, więc aktualizacja nie wymaga czyszczenia cache.
+- Prywatne odpowiedzi panelu nadal mają `no-store`.
 
-Galeria ma miniatury 480 i 1440 px dobierane przez przeglądarkę do szerokości i
+Apache i przykład Nginx włączają również kompresję tekstu. Jeżeli hosting lub CDN
+nadpisuje te ustawienia, dopasuj jego reguły do powyższego podziału.
+
+Galeria ma miniatury 480, 960 i 1440 px dobierane przez przeglądarkę do szerokości i
 gęstości pikseli ekranu. Duży podgląd i lupa zachowują osobne obrazy; oryginały
 pozostają bez zmian.
 

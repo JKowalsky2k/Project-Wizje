@@ -2,11 +2,19 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from publish import build_public_tree, version_public_assets
 
 
 class PublishTests(unittest.TestCase):
+    def test_admin_cannot_be_added_to_public_files(self):
+        for name in ['admin/index.html', 'tools/admin/index.html', 'tools/admin_panel.py']:
+            self.write(name, 'private editor')
+            with patch('publish.PUBLIC_FILES', (name,)):
+                with self.assertRaisesRegex(ValueError, 'Panel lokalny'):
+                    build_public_tree(self.root, self.output, self.data)
+
     def setUp(self):
         temporary = TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -62,6 +70,19 @@ class PublishTests(unittest.TestCase):
         self.assertIn('previewHigh', (self.output / 'assets/collections/manifest.js').read_text())
         self.data[0]['photos'][0]['previewHigh'] = 'assets/collections/2026/private.jpg'
         with self.assertRaisesRegex(ValueError, 'Retina'): build_public_tree(self.root, self.output, self.data)
+
+    def test_medium_preview_and_direct_logo_stylesheet_are_published(self):
+        medium = 'assets/collections/previews/abcdef-960.jpg'
+        self.write(medium, 'medium preview')
+        self.data[0]['photos'][0]['previewMedium'] = medium
+        self.write('styles.css', 'body {margin:0}')
+        self.write('index.html', '<link href="assets/logo/logo.css?v=release" rel="stylesheet"><link href="styles.css" rel="stylesheet">')
+        build_public_tree(self.root, self.output, self.data)
+        self.assertTrue((self.output / medium).is_file())
+        self.assertTrue((self.output / 'assets/fonts/test.woff2').is_file())
+        self.assertIn('previewMedium', (self.output / 'assets/collections/manifest.js').read_text())
+        self.data[0]['photos'][0]['previewMedium'] = 'assets/collections/2026/private.jpg'
+        with self.assertRaises(ValueError): build_public_tree(self.root, self.output, self.data)
 
     def test_exports_inspection_and_sizes_without_originals(self):
         inspection = 'assets/collections/previews/abcdef-inspect.jpg'

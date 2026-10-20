@@ -6,19 +6,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Wizje — pracownia</title>
   <link rel="stylesheet" href="/assets/logo/logo.css">
-  <link rel="stylesheet" href="/admin/editor.css?v=20261015-1">
-  <script src="/admin/editor.js?v=20261015-1" defer></script>
+  <link rel="stylesheet" href="/admin/editor.css?v=20261020-6">
+  <script src="/admin/editor.js?v=20261020-7" defer></script>
   <link rel="icon" href="/favicon.ico?v=ffec70d8f2" sizes="16x16 32x32 48x48">
   <link rel="icon" href="/favicon.svg?v=ffec70d8f2" type="image/svg+xml" sizes="any">
 </head>
 <body>
   <header class="header">
     <a class="brand" href="/admin" aria-label="Wizje — pracowania" data-i18n-aria="brandLabel"><span class="site-logo" aria-hidden="true"><span class="logo-letter logo-letter--z">w</span><span class="logo-letter logo-letter--w">i</span><span class="logo-letter logo-letter--i">z</span><span class="logo-letter logo-letter--d">j</span><span class="logo-letter logo-letter--y">e</span></span><span class="brand-caption" aria-hidden="true" data-i18n="workshop">pracowania</span></a>
-    <div class="header-actions"><div class="language-switch" role="group" data-i18n-aria="languageLabel" aria-label="Język panelu"><button type="button" data-language="pl" aria-pressed="true">PL</button><button type="button" data-language="en" aria-pressed="false">EN</button></div><a href="/" target="_blank" rel="noopener" data-i18n="preview">Podgląd strony ↗</a><button id="logout" data-i18n="logout" class="quiet" type="button">Wyloguj</button></div>
+    <div class="header-actions"><div class="language-switch" role="group" data-i18n-aria="languageLabel" aria-label="Język panelu"><button type="button" data-language="pl" aria-pressed="true">PL</button><button type="button" data-language="en" aria-pressed="false">EN</button></div><a href="/" target="_blank" rel="noopener" data-i18n="preview">Podgląd strony ↗</a></div>
   </header>
   <div class="workspace">
     <aside>
       <div class="section-label" data-i18n="yourCollections">TWOJE KOLEKCJE</div>
+      <input id="collection-search" type="search" data-i18n-placeholder="searchCollections" data-i18n-aria="searchCollections" placeholder="Szukaj kolekcji">
       <nav id="collections" aria-label="Wybierz kolekcję" data-i18n-aria="chooseCollection"></nav>
       <form id="create-form" class="create-form">
         <h2 data-i18n="newCollection">Nowa kolekcja</h2>
@@ -44,6 +45,8 @@
       <section class="export-panel" aria-labelledby="export-title">
         <h2 id="export-title" data-i18n="exportTitle">Publikacja strony</h2>
         <p class="crop-note" data-i18n="exportHint">Przygotuj paczkę na hosting. Zawiera wyłącznie publiczną stronę i zdjęcia do wyświetlania.</p>
+        <p id="publication-state" class="publication-state" role="status"></p>
+        <ul id="publication-changes" class="publication-changes"></ul>
         <button id="export-site" class="primary" type="button" data-i18n="exportButton">Przygotuj ZIP</button>
         <a id="export-download" class="export-download" hidden data-i18n="exportDownload">Pobierz ZIP ↓</a>
         <p id="export-details" class="crop-note" hidden></p>
@@ -51,6 +54,7 @@
     </aside>
     <main>
       <div id="status" role="status" aria-live="polite">Wczytywanie kolekcji…</div>
+      <div class="feedback-actions"><button id="undo-change" class="secondary" type="button" data-i18n="undo" hidden>Cofnij ostatnią zmianę</button><button id="retry-change" class="secondary" type="button" data-i18n="retry" hidden>Spróbuj ponownie</button></div>
       <div id="welcome" hidden><h1 data-i18n="welcomeTitle">Twoje zdjęcia, Twoje kolekcje.</h1><p data-i18n="welcomeCopy">Utwórz pierwszą kolekcję, aby dodać zdjęcia.</p></div>
       <section id="editor" hidden aria-labelledby="collection-title">
         <div class="collection-heading"><div><div class="section-label" data-i18n="editingCollection">EDYCJA KOLEKCJI</div><h1 id="collection-title"></h1><p id="photo-count"></p></div><button id="delete-collection" class="danger" type="button" data-i18n="deleteCollection">Usuń kolekcję</button></div>
@@ -90,9 +94,29 @@
             <button type="submit" class="primary" data-i18n="uploadPhotos">Dodaj zdjęcia</button>
           </div>
           <div id="upload-film" hidden></div>
+          <ul id="upload-progress" class="upload-progress" aria-live="polite"></ul>
+          <button id="retry-uploads" class="secondary" type="button" data-i18n="retryUploads" hidden>Ponów nieudane pliki</button>
         </form>
         <div class="grid-heading"><h2 data-i18n="photos">Zdjęcia</h2><span data-i18n="autoSave">Zmiany techniki zapisują się automatycznie.</span></div>
+        <div class="photo-filters">
+          <label><span data-i18n="searchPhotos">Szukaj zdjęcia</span><input id="photo-search" type="search" data-i18n-placeholder="searchHint" placeholder="Nazwa lub kod zdjęcia"></label>
+          <label><span data-i18n="medium">Technika</span><select id="photo-filter-medium"><option value="" data-i18n="all">Wszystkie</option><option value="analog">ANALOG</option><option value="digital">DIGITAL</option></select></label>
+          <label><span data-i18n="orientation">Orientacja</span><select id="photo-filter-orientation"><option value="" data-i18n="all">Wszystkie</option><option value="portrait" data-i18n="portrait">Pionowa</option><option value="landscape" data-i18n="landscape">Pozioma</option></select></label>
+          <label><span data-i18n="colorMode">Kolorystyka</span><select id="photo-filter-color"><option value="" data-i18n="all">Wszystkie</option><option value="color" data-i18n="color">Kolorowe</option><option value="monochrome" data-i18n="monochrome">Czarno-białe</option></select></label>
+          <label><span data-i18n="availability">Zamawianie</span><select id="photo-filter-available"><option value="" data-i18n="all">Wszystkie</option><option value="yes" data-i18n="available">Dostępne</option><option value="no" data-i18n="unavailable">Niedostępne</option></select></label>
+          <label class="check-label"><input id="photo-filter-missing" type="checkbox"><span data-i18n="missingData">Brakujące dane</span></label>
+          <button id="reset-photo-filters" class="secondary" type="button" data-i18n="resetFilters">Wyczyść filtry</button>
+        </div>
+        <div class="selection-toolbar"><label class="check-label"><input id="select-visible" type="checkbox"><span data-i18n="selectVisible">Zaznacz widoczne</span></label><span id="selection-count" role="status"></span><button id="clear-selection" class="quiet" type="button" data-i18n="clearSelection">Odznacz wszystkie</button></div>
+        <form id="bulk-form" class="bulk-form" hidden>
+          <h2 data-i18n="bulkEdit">Edycja zaznaczonych zdjęć</h2>
+          <p class="crop-note" data-i18n="bulkHint">Ustaw tylko pola, które chcesz zmienić. Pozostałe zachowają swoje wartości.</p>
+          <div id="bulk-fields" class="bulk-fields"></div>
+          <button class="primary" type="submit" data-i18n="applyBulk">Zastosuj do zaznaczonych</button>
+        </form>
+        <p id="filter-results" class="crop-note" role="status"></p>
         <div id="photo-grid" class="photo-grid"></div>
+        <p id="filter-empty" class="empty" data-i18n="noMatches" hidden>Brak zdjęć pasujących do filtrów.</p>
         <p id="empty" data-i18n="emptyCollection" class="empty" hidden>Ta kolekcja czeka na pierwsze zdjęcie. Po dodaniu pojawi się na stronie.</p>
       </section>
       <section class="library-section" aria-labelledby="library-title">
@@ -104,5 +128,23 @@
       </section>
     </main>
   </div>
+  <dialog id="photo-dialog" class="photo-editor" aria-labelledby="photo-editor-title">
+    <div class="photo-editor-header"><h2 id="photo-editor-title"></h2><button id="undo-editor-change" class="secondary" type="button" data-i18n="undoShort" data-i18n-aria="undo" hidden>Cofnij</button><button id="close-photo-editor" class="secondary" type="button" data-i18n="close" data-always-enabled="true">Zamknij</button></div>
+    <div class="photo-editor-layout">
+      <section class="photo-editor-art">
+        <div id="admin-artwork" class="admin-artwork" data-frame="true"><div class="admin-paper"><img id="admin-preview-image" alt="" decoding="async"></div></div>
+        <p id="preview-load-state" class="crop-note" role="status"></p>
+        <div class="preview-options">
+          <label><span data-i18n="previewSize">Format podglądu</span><select id="preview-size"></select></label>
+          <label><span data-i18n="previewColor">Kolor marginesów</span><select id="preview-color"><option value="black" data-i18n="black">Czarne</option><option value="white" data-i18n="white">Białe</option></select></label>
+          <label class="check-label"><input id="preview-frame" type="checkbox" checked><span data-i18n="previewFrame">Ramka</span></label>
+          <label class="check-label"><input id="preview-margins" type="checkbox" checked><span data-i18n="previewMargins">Marginesy</span></label>
+        </div>
+        <p id="preview-dimensions" class="crop-note"></p>
+        <div class="photo-editor-navigation"><button id="previous-editor-photo" class="secondary" type="button" data-i18n="previousPhoto">Poprzednie</button><span id="editor-position"></span><button id="next-editor-photo" class="secondary" type="button" data-i18n="nextPhoto">Następne</button></div>
+      </section>
+      <section id="photo-editor-fields" class="photo-editor-fields" aria-label="Ustawienia zdjęcia" data-i18n-aria="photoSettings"></section>
+    </div>
+  </dialog>
 </body>
 </html>

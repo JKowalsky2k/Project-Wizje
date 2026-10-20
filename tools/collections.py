@@ -11,7 +11,7 @@ import posixpath
 from threading import Lock
 
 from film_catalog import public_film
-from photo_previews import prepare_previews
+from photo_previews import prepare_previews, source_digest
 from admin_panel import LocalAdmin
 from display_order import read_order, ordered
 from seo import write_seo
@@ -58,10 +58,11 @@ def build_manifest(photo_root=PHOTO_ROOT, year=None):
     display_order = read_order(photo_root)
     overrides = read_photo_types(photo_root)
     types_path = photo_root / 'photo-types.json'
-    details = json.loads(types_path.read_text()).get('filmDetails', {}) if types_path.exists() else {}
-    color_modes = json.loads(types_path.read_text()).get('colorModes', {}) if types_path.exists() else {}
-    orientations = json.loads(types_path.read_text()).get('orientations', {}) if types_path.exists() else {}
-    poster_sizes = json.loads(types_path.read_text()).get("posterSizes", {}) if types_path.exists() else {}
+    config = json.loads(types_path.read_text()) if types_path.exists() else {}
+    details = config.get('filmDetails', {})
+    color_modes = config.get('colorModes', {})
+    orientations = config.get('orientations', {})
+    poster_sizes = config.get('posterSizes', {})
     info_path = photo_root / "collection-info.json"
     info = json.loads(info_path.read_text(encoding="utf-8")) if info_path.exists() else {}
     known = dict(COLLECTIONS)
@@ -92,7 +93,7 @@ def build_manifest(photo_root=PHOTO_ROOT, year=None):
             if medium == 'analog':
                 photo.update(public_film(details.get(f'{name}/{p.name}', {})))
             photos.append(photo)
-        if not photos and name in known and (photo_root / f'{name}.png').is_file():
+        if not photos and not folder.is_dir() and name in known and (photo_root / f'{name}.png').is_file():
             photos = [{'src': f'{prefix}.png', 'crop': crop, 'sourceSize': [2000, 2000]}
                       for crop in known[name]]
         if photos:
@@ -123,7 +124,27 @@ def write_manifest():
         write_seo(ROOT, collections)
 
 
+class LocalHTTPServer(ThreadingHTTPServer):
+    # A cold page opens connections for scripts, styles and fonts together.
+    # The default backlog of 5 can drop a script before a worker accepts it.
+    request_queue_size = 128
+
+
 class Handler(SimpleHTTPRequestHandler):
+    def send_head(self):
+        # Strong validators avoid stale local edits made within the same second.
+        path = ROOT / (unquote(urlsplit(self.path).path).lstrip('/') or 'index.html')
+        if path.suffix in ('.html', '.css', '.js', '.svg', '.xml', '.txt') and path.is_file():
+            self._public_etag = '"' + source_digest(path) + '"'
+            candidates = self.headers.get('If-None-Match', '').split(',')
+            if any(value.strip().removeprefix('W/') in ('*', self._public_etag) for value in candidates):
+                self.send_response(304)
+                self.end_headers()
+                return None
+            if 'If-Modified-Since' in self.headers:
+                del self.headers['If-Modified-Since']
+        return super().send_head()
+
     def do_GET(self):
         if self.server.admin.get(self):
             return
@@ -135,7 +156,7 @@ class Handler(SimpleHTTPRequestHandler):
             r'/(?:index\.html|styles\.css|script\.js|collections\.js|globe\.js|favicon\.svg|favicon\.ico|robots\.txt|sitemap\.xml|gallery\.html|font-preview\.html)?'
             r'|/assets/logo/(?:logo\.css|social\.jpg)'
             r'|/assets/fonts/[a-zA-Z0-9_-]+\.(?:woff2?|ttf|otf|txt)'
-            r'|/assets/collections/(?:manifest\.js|posters\.js|previews/[a-f0-9]+-(?:480|1440|2000|inspect)\.jpg)', path)
+            r'|/assets/collections/(?:manifest\.js|posters\.js|previews/[a-f0-9]+-(?:480|960|1440|2000|inspect)\.jpg)', path)
         if not public:
             self.send_error(404)
             return
@@ -162,7 +183,11 @@ class Handler(SimpleHTTPRequestHandler):
 
     def end_headers(self):
         if not urlsplit(self.path).path.startswith('/admin'):
-            self.send_header('Cache-Control', 'no-store, no-transform')
+            if getattr(self, '_public_etag', None):
+                self.send_header('ETag', self._public_etag)
+            path = urlsplit(self.path).path
+            immutable = re.fullmatch(r'/assets/collections/previews/[a-f0-9]+-(?:480|960|1440|2000|inspect)\.jpg', path)
+            self.send_header('Cache-Control', 'public, max-age=31536000, immutable, no-transform' if immutable and self.command == 'GET' else 'no-cache, no-transform')
         super().end_headers()
 
 
@@ -173,11 +198,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     write_manifest()
     if args.serve:
-        server = ThreadingHTTPServer(('127.0.0.1', args.port), partial(Handler, directory=str(ROOT)))
+        server = LocalHTTPServer(('127.0.0.1', args.port), partial(Handler, directory=str(ROOT)))
         server.admin = LocalAdmin(ROOT, PHOTO_ROOT, write_manifest, MANIFEST_LOCK)
         print(f'Wizje: http://127.0.0.1:{args.port} (Ctrl+C to stop)', flush=True)
-        print(f'Panel administratora: http://127.0.0.1:{args.port}/admin (logowanie hasłem)', flush=True)
-        print(f'Lokalne dane logowania (poza stroną): {server.admin.password_path}', flush=True)
+        print(f'Panel administratora: http://127.0.0.1:{args.port}/admin (lokalnie, bez logowania)', flush=True)
         try:
             server.serve_forever()
         except KeyboardInterrupt:
