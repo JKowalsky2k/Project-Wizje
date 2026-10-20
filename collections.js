@@ -167,11 +167,18 @@
     return landscape ? dims.reverse() : dims;
   }
   const chosenPoster = () => availablePosters().find(poster => poster.name === detailDialog.querySelector('input[name="poster-size"]:checked')?.value) || availablePosters()[0];
+  function fittedPhoto(dims) {
+    const fraction = detailDialog.dataset.margins === 'true' ? .08 : 0;
+    const width = detailPhoto.detailWidth || detailPhoto.sourceWidth || dims[0];
+    const height = detailPhoto.detailHeight || detailPhoto.sourceHeight || dims[1];
+    const scale = Math.min(dims[0] / width, dims[1] / height) * (1 - 2 * fraction);
+    const w = width * scale, h = height * scale;
+    return { x: (dims[0] - w) / 2, y: (dims[1] - h) / 2, w, h };
+  }
   function marginDescription() {
     const dims = paperDimensions(chosenPoster(), detailPhoto.orientation === 'landscape');
     if (!dims) return copy().marginUnknown;
-    const fraction = detailDialog.dataset.margins === 'true' ? .08 : 0;
-    const values = { x: dims[0] * fraction, y: dims[1] * fraction, w: dims[0] * (1 - 2 * fraction), h: dims[1] * (1 - 2 * fraction) };
+    const values = fittedPhoto(dims);
     return copy().marginDimensions.replace(/\{(\w+)\}/g, (_, key) => new Intl.NumberFormat(document.documentElement.lang, { maximumFractionDigits: 2 }).format(values[key]));
   }
   function renderMarginInfo() {
@@ -182,13 +189,13 @@
     const dims = paperDimensions(chosenPoster(), detailPhoto.orientation === 'landscape');
     if (!dims) { box.textContent = copy().marginUnknown; return; }
     const format = value => new Intl.NumberFormat(document.documentElement.lang, { maximumFractionDigits: 2 }).format(value);
-    const fraction = detailDialog.dataset.margins === 'true' ? .08 : 0;
+    const fitted = fittedPhoto(dims);
     const title = document.createElement('span'); title.className = 'margin-info__title'; title.textContent = copy().marginInfoTitle;
     const list = document.createElement('dl'); list.className = 'margin-info__list';
     const rows = [
-      [copy().marginLeftRight, `${format(dims[0] * fraction)} cm`],
-      [copy().marginTopBottom, `${format(dims[1] * fraction)} cm`],
-      [copy().marginImageSize, `${format(dims[0] * (1 - 2 * fraction))} cm × ${format(dims[1] * (1 - 2 * fraction))} cm`],
+      [copy().marginLeftRight, `${format(fitted.x)} cm`],
+      [copy().marginTopBottom, `${format(fitted.y)} cm`],
+      [copy().marginImageSize, `${format(fitted.w)} cm × ${format(fitted.h)} cm`],
     ];
     rows.forEach(([label, value], index) => {
       const row = document.createElement('div'); row.className = index === 2 ? 'margin-info__image' : 'margin-info__row';
@@ -213,9 +220,9 @@
     }
   }
 
-  // Native source pixels, with the same centered object-fit:cover mapping as the preview.
+  // Native source pixels, with the same centered object-fit:contain mapping as the preview.
   function sourcePoint(x, y, rect, width, height) {
-    const scale = Math.max(rect.width / width, rect.height / height);
+    const scale = Math.min(rect.width / width, rect.height / height);
     return { x: (x + (width * scale - rect.width) / 2) / scale, y: (y + (height * scale - rect.height) / 2) / scale };
   }
   let inspectionImage = null, inspectionURL = '', inspectionState = '', lensPoint = null, touchPointer = null;
@@ -347,6 +354,9 @@
     const preview = detailDialog.querySelector('.detail-preview');
     preview.style.setProperty('--detail-ratio', `${dims[0]} / ${dims[1]}`);
     preview.style.setProperty('--detail-height-ratio', dims[1] / dims[0]);
+    const fitted = fittedPhoto(dims);
+    preview.style.setProperty('--detail-image-width', `${100 * fitted.w / dims[0]}%`);
+    preview.style.setProperty('--detail-image-height', `${100 * fitted.h / dims[1]}%`);
     const field = detailDialog.querySelector('.photo-detail__order-summary');
     field.value = orderSummaryText();
     field.style.height = 'auto';
