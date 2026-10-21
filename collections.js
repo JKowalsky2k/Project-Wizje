@@ -181,10 +181,20 @@
     return landscape ? dims.reverse() : dims;
   }
   const chosenPoster = () => availablePosters().find(poster => poster.name === detailDialog.querySelector('input[name="poster-size"]:checked')?.value) || availablePosters()[0];
+  function posterLabel(poster) {
+    const dims = paperDimensions(poster, detailPhoto.orientation === 'landscape');
+    return dims ? `${dims[0]} × ${dims[1]} cm` : poster.name;
+  }
+  function previewPhoto() {
+    const variant = detailPhoto?.printCrops?.[chosenPoster()?.name];
+    return variant ? { ...detailPhoto, ...variant } : detailPhoto;
+  }
   function fittedPhoto(dims) {
+    if (detailDialog.dataset.margins !== 'true') return { x: 0, y: 0, w: dims[0], h: dims[1] };
     const fraction = detailDialog.dataset.margins === 'true' ? .08 : 0;
-    const width = detailPhoto.detailWidth || detailPhoto.sourceWidth || dims[0];
-    const height = detailPhoto.detailHeight || detailPhoto.sourceHeight || dims[1];
+    const photo = previewPhoto();
+    const width = photo.detailWidth || photo.sourceWidth || dims[0];
+    const height = photo.detailHeight || photo.sourceHeight || dims[1];
     const scale = Math.min(dims[0] / width, dims[1] / height) * (1 - 2 * fraction);
     const w = width * scale, h = height * scale;
     return { x: (dims[0] - w) / 2, y: (dims[1] - h) / 2, w, h };
@@ -198,7 +208,7 @@
   function renderMarginInfo() {
     const box = detailDialog.querySelector('.photo-detail__margin-dimensions');
     box.replaceChildren();
-    box.hidden = !chosenPoster();
+    box.hidden = !chosenPoster() || detailDialog.dataset.margins !== 'true';
     if (box.hidden) return;
     const dims = paperDimensions(chosenPoster(), detailPhoto.orientation === 'landscape');
     if (!dims) { box.textContent = copy().marginUnknown; return; }
@@ -229,14 +239,14 @@
     for (const poster of options) {
       const label = document.createElement('label');
       const input = document.createElement('input'); input.type = 'radio'; input.name = 'poster-size'; input.value = poster.name; input.checked = poster.name === selected;
-      const span = document.createElement('span'); const strong = document.createElement('strong'); strong.textContent = poster.name; span.append(strong);
+      const span = document.createElement('span'); const strong = document.createElement('strong'); strong.textContent = posterLabel(poster); span.append(strong);
       label.append(input, span); field.append(label);
     }
   }
 
-  // Native source pixels, with the same centered object-fit:contain mapping as the preview.
-  function sourcePoint(x, y, rect, width, height) {
-    const scale = Math.min(rect.width / width, rect.height / height);
+  // Map the displayed contain/cover crop back to native source pixels.
+  function sourcePoint(x, y, rect, width, height, cover = false) {
+    const scale = (cover ? Math.max : Math.min)(rect.width / width, rect.height / height);
     return { x: (x + (width * scale - rect.width) / 2) / scale, y: (y + (height * scale - rect.height) / 2) / scale };
   }
   let inspectionImage = null, inspectionURL = '', inspectionState = '', lensPoint = null, touchPointer = null, lensFrame = null;
@@ -269,7 +279,7 @@
     if (inspectionState !== 'ready') return;
     const canvas = detailDialog.querySelector('.photo-detail__lens');
     const diameter = Math.min(170, outer.width, outer.height);
-    const point = sourcePoint(x, y, rect, inspectionImage.naturalWidth, inspectionImage.naturalHeight);
+    const point = sourcePoint(x, y, rect, inspectionImage.naturalWidth, inspectionImage.naturalHeight, detailDialog.dataset.margins !== 'true');
     const dpr = window.devicePixelRatio || 1;
     const pixels = Math.round(diameter * dpr);
     if (canvas.width !== pixels || canvas.height !== pixels) { canvas.width = pixels; canvas.height = pixels; }
@@ -284,7 +294,7 @@
     canvas.hidden = false;
   }
   function loadInspection() {
-    const url = detailPhoto?.inspection;
+    const url = previewPhoto()?.inspection;
     if (!url) return;
     if (inspectionURL === url && inspectionState) return;
     inspectionURL = url; inspectionState = 'loading';
@@ -354,7 +364,7 @@
     const title = c[`${detailCollection.id}Title`] || detailCollection.title;
     const poster = chosenPoster();
     if (!poster) return '';
-    const size = poster.name;
+    const size = posterLabel(poster);
     const margins = detailDialog.querySelector('#detail-margins').checked;
     const matColor = detailDialog.dataset.matColor === 'white' ? c.whiteMat : c.blackMat;
     const lines = [
@@ -555,7 +565,7 @@
     detailDialog.querySelectorAll('input[name="detail-color"]').forEach(input => input.addEventListener('change', () => {
       if (input.checked) { detailDialog.dataset.matColor = input.value; updateOrderSummary(); }
     }));
-    find('.photo-detail__sizes').addEventListener('change', () => { hideLens(); updateOrderSummary(); });
+    find('.photo-detail__sizes').addEventListener('change', () => { showDetailPhoto(detailPhoto); });
     find('.photo-detail__copy-order').addEventListener('click', async event => {
       const field = find('.photo-detail__order-summary');
       try {
@@ -599,7 +609,7 @@
     detailDialog.dataset.landscape = String(detailPhoto.orientation === 'landscape');
     detailDialog.style.setProperty("--photo-ratio", detailPhoto.sourceWidth > detailPhoto.sourceHeight ? `${detailPhoto.sourceWidth} / ${detailPhoto.sourceHeight}` : "7 / 5");
     detailDialog.querySelector('.photo-detail__load-error').hidden = true;
-    const entry = loadDetail(photo, 'high');
+    const entry = loadDetail(previewPhoto(), 'high');
     const previousImage = detailDialog.querySelector('.photo-detail__image');
     entry.image.className = 'photo-detail__image';
     if (previousImage !== entry.image) previousImage.replaceWith(entry.image);

@@ -56,6 +56,7 @@ class MediaLibrary:
                                   'original': name.as_posix(), 'medium': data.get('photos', {}).get(name.as_posix()),
                                   'colorMode': data.get('colorModes', {}).get(name.as_posix()),
                                   'posterSizes': data.get('posterSizes', {}).get(name.as_posix()),
+                                  'printCrops': data.get('printCrops', {}).get(name.as_posix(), {}),
                                   'orientation': data.get('orientations', {}).get(name.as_posix(), 'portrait'),
                                   'filmDetails': data.get('filmDetails', {}).get(name.as_posix(), {}),
                                   'preview': '/admin/library-image/' + identifier})
@@ -89,6 +90,9 @@ class MediaLibrary:
         config.setdefault('posterSizes', {}).pop(key, None)
         if item.get('posterSizes') is not None:
             config['posterSizes'][key] = item['posterSizes']
+        config.setdefault('printCrops', {}).pop(key, None)
+        if item.get('printCrops'):
+            config['printCrops'][key] = item['printCrops']
         config.setdefault('filmDetails', {}).pop(key, None)
         if item['medium'] == 'analog' and item['filmDetails']:
             config['filmDetails'][key] = item['filmDetails']
@@ -114,6 +118,7 @@ class MediaLibrary:
     def _safe(self, path):
         allowed = [*(root.resolve() for root in self.photo_roots()), self.store.trash_root.resolve(),
                    (self.store.root / 'assets/collections/previews').resolve(),
+                   (self.store.root / 'assets/collections/.print-crops').resolve(),
                    (self.store.root / 'dist').resolve()]
         return (not any(p.is_symlink() for p in (path, *path.parents))
                 and any(path.resolve().is_relative_to(root) and path.resolve() != root for root in allowed))
@@ -139,6 +144,27 @@ class MediaLibrary:
                 if path.is_file() and self._safe(path) and path.name not in ('restore.json', 'photo-types.json', 'collection-info.json'):
                     if path.stat().st_size == source.stat().st_size and digest(path) == fingerprint:
                         targets.add(path)
+        from print_crops import crop_source
+        crop_maps = []
+        for root in self.photo_roots():
+            for key, variants in read_json(root / 'photo-types.json', {}).get('printCrops', {}).items():
+                if root / key in targets: crop_maps.append(variants)
+        for entry in self.entries():
+            if entry['path'] in targets: crop_maps.append(entry.get('printCrops', {}))
+        for variants in crop_maps:
+            for relative in variants.values():
+                targets.add(crop_source(self.store.root, relative))
+        private_crops = self.store.root / 'assets/collections/.print-crops'
+        if private_crops.is_symlink():
+            raise EditorError('Nieprawidłowa ścieżka kadru.')
+        for record in private_crops.glob('*.json'):
+            if record.is_symlink():
+                raise EditorError('Nieprawidłowa ścieżka kadru.')
+            saved = read_json(record, {})
+            if saved.get('photoDigest') == fingerprint:
+                path = self.store.root / saved.get('file', '')
+                if path.exists(): targets.add(crop_source(self.store.root, saved['file']))
+                targets.add(record)
         # Historical preview names cannot always be traced back to an original.
         # Clear all generated preview caches and releases, then rebuild only retained photos.
         previews = self.store.root / 'assets/collections/previews'
@@ -197,6 +223,7 @@ class MediaLibrary:
                 config['colorModes'] = {key: value for key, value in config.get('colorModes', {}).items() if (root / key).is_file()}
                 config['orientations'] = {key: value for key, value in config.get('orientations', {}).items() if (root / key).is_file()}
                 config['posterSizes'] = {key: value for key, value in config.get('posterSizes', {}).items() if (root / key).is_file()}
+                config['printCrops'] = {key: value for key, value in config.get('printCrops', {}).items() if (root / key).is_file()}
                 write_json(types, config)
             self.store.rebuild()
             self.journal.unlink()

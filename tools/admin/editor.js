@@ -162,6 +162,13 @@ window.WizjeSortable = (() => {
 
 /* Shared photo view calculations, independent of the DOM. */
 window.WizjePhotoTools = {
+  sizeLabel(photo, name) {
+    const match = String(name).match(/^(\d+(?:[.,]\d+)?)\s*[×xX]\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?$/);
+    if (!match) return name;
+    const dims = match.slice(1).sort((a,b) => Number(a.replace(',','.')) - Number(b.replace(',','.')));
+    if (photo.orientation === 'landscape') dims.reverse();
+    return dims.join(' × ') + ' cm';
+  },
   reference(photo) { return String(photo.preview || '').match(/\/([a-f0-9]{10,})-(?:480|2000)\.jpg/i)?.[1].slice(0, 10).toUpperCase() || ''; },
   available(photo, posters) { return posters.some(poster => photo.posterSizes == null || photo.posterSizes.includes(poster.name)); },
   missing(photo) { return !photo.medium || !photo.colorMode || (photo.medium === 'analog' && (!photo.film || !photo.iso)); },
@@ -178,6 +185,7 @@ window.WizjePhotoTools = {
     let dims = match ? match.slice(1).map(value => Number(value.replace(',', '.'))).sort((a,b) => a-b) : [50,70];
     if (dims.some(value => !Number.isFinite(value) || value <= 0)) dims = [50,70];
     if (photo.orientation === 'landscape') dims.reverse();
+    if (!margins) return {paperWidth:dims[0],paperHeight:dims[1],w:dims[0],h:dims[1],x:0,y:0};
     const width = photo.detailWidth || photo.sourceWidth || dims[0], height = photo.detailHeight || photo.sourceHeight || dims[1];
     const scale = Math.min(dims[0]/width, dims[1]/height) * (margins ? .84 : 1);
     const w = width * scale, h = height * scale;
@@ -262,6 +270,9 @@ window.WizjePhotoTools = {
     },
   };
   Object.assign(text.pl, {
+    cropUploadReady: 'Kadr wgrany poprawnie',
+    cropSizeDisabled: 'Aby wgrać kadr, zaznacz ten format powyżej i zapisz dostępne formaty.',
+    printCrops: 'Własne kadry do formatów', printCropsHint: 'Wgraj gotowy kadr dla wybranego formatu. Zachowaj proporcje formatu i orientację zdjęcia. Pozostałe formaty użyją zdjęcia głównego. JPG, PNG, WebP lub AVIF, do 50 MB.', cropAssigned: 'Własny kadr', cropAutomatic: 'Zdjęcie główne', cropUpload: 'Wgraj lub zastąp kadr', cropRemove: 'Usuń przypisanie',
     searchCollections:'Szukaj kolekcji',searchPhotos:'Szukaj zdjęcia',searchHint:'Nazwa lub kod zdjęcia',all:'Wszystkie',availability:'Zamawianie',available:'Dostępne',unavailable:'Niedostępne',missingData:'Brakujące dane',resetFilters:'Wyczyść filtry',noMatches:'Brak zdjęć pasujących do filtrów.',
     selectVisible:'Zaznacz widoczne',clearSelection:'Odznacz wszystkie',selectedCount:'Zaznaczono: {count}',filterResults:'Widoczne: {visible} z {total}',bulkEdit:'Edycja zaznaczonych zdjęć',bulkHint:'Ustaw tylko pola, które chcesz zmienić. Pozostałe zachowają swoje wartości.',unchanged:'Bez zmian',applyBulk:'Zastosuj do zaznaczonych',bulkSaved:'Zaktualizowano zdjęcia: {count}.',moveTo:'Przenieś do kolekcji',keepCollection:'Pozostaw w obecnej kolekcji',sizeKeep:'Bez zmian',sizeInherit:'Wszystkie obecne i przyszłe',sizeChoose:'Wybrane formaty',sizeNone:'Wyłącz zamawianie',clearValue:'Wyczyść',
     editPhoto:'Edytuj zdjęcie',photoSettings:'Ustawienia zdjęcia',close:'Zamknij',previousPhoto:'Poprzednie',nextPhoto:'Następne',previewSize:'Format podglądu',previewFrame:'Ramka',previewMargins:'Marginesy',previewColor:'Kolor marginesów',black:'Czarne',white:'Białe',previewFailed:'Nie udało się wczytać podglądu.',previewDimensions:'Zdjęcie: {w} × {h} cm. Marginesy: lewy/prawy {x} cm, góra/dół {y} cm.',
@@ -270,6 +281,9 @@ window.WizjePhotoTools = {
     retryUploads:'Ponów nieudane pliki',uploadWaiting:'Oczekuje',uploadSending:'Przesyłanie: {percent}%',uploadProcessing:'Przygotowywanie podglądów…',uploadDone:'Dodano',uploadFailed:'Błąd: {message}',
   });
   Object.assign(text.en, {
+    cropUploadReady: 'Crop uploaded successfully',
+    cropSizeDisabled: 'To upload a crop, select this size above and save the available print sizes.',
+    printCrops: 'Custom crops for print sizes', printCropsHint: 'Upload a finished crop for each print size, matching its proportions and the photo orientation. Other sizes use the main photo. JPG, PNG, WebP or AVIF, up to 50 MB.', cropAssigned: 'Custom crop', cropAutomatic: 'Main photo', cropUpload: 'Upload or replace crop', cropRemove: 'Remove assignment',
     searchCollections:'Search collections',searchPhotos:'Search photos',searchHint:'File name or photo reference',all:'All',availability:'Ordering',available:'Available',unavailable:'Unavailable',missingData:'Missing information',resetFilters:'Reset filters',noMatches:'No photographs match these filters.',
     selectVisible:'Select visible',clearSelection:'Clear selection',selectedCount:'Selected: {count}',filterResults:'Showing {visible} of {total}',bulkEdit:'Edit selected photos',bulkHint:'Set only the fields you want to change. Other values will be preserved.',unchanged:'Keep current values',applyBulk:'Apply to selected',bulkSaved:'Photos updated: {count}.',moveTo:'Move to collection',keepCollection:'Keep current collection',sizeKeep:'Keep current values',sizeInherit:'All current and future sizes',sizeChoose:'Selected sizes',sizeNone:'Disable ordering',clearValue:'Clear value',
     editPhoto:'Edit photo',photoSettings:'Photo settings',close:'Close',previousPhoto:'Previous',nextPhoto:'Next',previewSize:'Preview size',previewFrame:'Frame',previewMargins:'Margins',previewColor:'Margin color',black:'Black',white:'White',previewFailed:'Could not load the preview.',previewDimensions:'Photo: {w} × {h} cm. Margins: left/right {x} cm, top/bottom {y} cm.',
@@ -381,7 +395,7 @@ window.WizjePhotoTools = {
   }));
   function lock(value) {
     busy = value;
-    document.querySelectorAll('button, input, select').forEach(control => { control.disabled = (value && control.dataset.alwaysEnabled !== 'true') || control.dataset.orderBoundary === 'true' || control.dataset.sizeInherited === 'true' || (control.dataset.requiresCollection === 'true' && !selected()); });
+    document.querySelectorAll('button, input, select').forEach(control => { control.disabled = (value && control.dataset.alwaysEnabled !== 'true') || control.dataset.orderBoundary === 'true' || control.dataset.sizeInherited === 'true' || control.dataset.cropUnavailable === 'true' || (control.dataset.requiresCollection === 'true' && !selected()); });
     updateYearControls();
   }
   async function request(path, data, binary = false) {
@@ -858,7 +872,7 @@ window.WizjePhotoTools = {
         const row = document.createElement('label');
         const input = document.createElement('input'); input.type = 'checkbox'; input.value = poster.name;
         input.checked = all.checked || photo.posterSizes.includes(poster.name); input.disabled = all.checked; input.dataset.sizeInherited = String(all.checked);
-        const text = document.createElement('span'); text.textContent = poster.name;
+        const text = document.createElement('span'); text.textContent = photoTools.sizeLabel(photo,poster.name);
         const match = poster.name.match(/^(\d+(?:[.,]\d+)?)\s*[×xX]\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?$/);
         if (match) {
           const dims = match.slice(1).map(v => Number(v.replace(',', '.'))).sort((a, b) => a - b);
@@ -868,13 +882,74 @@ window.WizjePhotoTools = {
         }
         row.append(input, text); sizes.append(row); choices.push(input);
       }
-      all.addEventListener('change', () => choices.forEach(input => { input.disabled = all.checked; input.dataset.sizeInherited = String(all.checked); if (all.checked) input.checked = true; }));
+      all.addEventListener('change', () => {
+        choices.forEach(input => { input.disabled = all.checked; input.dataset.sizeInherited = String(all.checked); if (all.checked) input.checked = true; });
+        syncCropAvailability();
+      });
       const note = document.createElement('p'); note.className = 'crop-note'; note.textContent = t('noSizesHint'); sizes.append(note);
       const saveSizes = document.createElement('button'); saveSizes.type = 'button'; saveSizes.className = 'secondary'; saveSizes.textContent = t('savePhotoSizes');
       saveSizes.addEventListener('click', () => mutate(async () => {
         await savePhoto('photo-sizes', collection, photo, { posterSizes: all.checked ? null : choices.filter(input => input.checked).map(input => input.value) }); status('saved', { name: photo.name });
       }));
       sizes.append(saveSizes); card.append(sizes);
+      const crops = document.createElement('fieldset'); crops.className = 'print-crops';
+      const cropTitle = document.createElement('legend'); cropTitle.textContent = t('printCrops'); crops.append(cropTitle);
+      const cropNote = document.createElement('p'); cropNote.className = 'crop-note'; cropNote.textContent = t('printCropsHint'); crops.append(cropNote);
+      const cropControls = [];
+      function syncCropAvailability() {
+        for (const {input,row,hint,size} of cropControls) {
+          const saved = photo.posterSizes == null || photo.posterSizes.includes(size);
+          const selected = all.checked || choices.some(choice => choice.value === size && choice.checked);
+          const unavailable = !saved || !selected;
+          input.dataset.cropUnavailable = String(unavailable);
+          input.disabled = busy || unavailable;
+          row.dataset.unavailable = String(unavailable);
+          hint.hidden = !unavailable;
+        }
+      }
+      for (const poster of state.posters || []) {
+        const row = document.createElement('div'); row.className = 'print-crop-row';
+        const displaySize = photoTools.sizeLabel(photo,poster.name);
+        const label = document.createElement('label'); label.textContent = displaySize;
+        const assigned = photo.printCrops?.[poster.name];
+        const badge = document.createElement('small');
+        if (assigned) {
+          badge.className = 'crop-upload-success';
+          const check = document.createElement('span'); check.className = 'crop-upload-check'; check.textContent = '✓'; check.setAttribute('aria-hidden','true');
+          const message = document.createElement('span'); message.textContent = t('cropUploadReady');
+          badge.append(check,message);
+        } else badge.textContent = t('cropAutomatic');
+        label.append(badge);
+        const input = document.createElement('input'); input.type = 'file'; input.accept = '.jpg,.jpeg,.png,.webp,.avif';
+        input.setAttribute('aria-label', t('cropUpload') + ': ' + displaySize); input.dataset.cropSize = poster.name;
+        input.addEventListener('change', () => {
+          if (input.disabled || input.dataset.cropUnavailable === 'true') return;
+          const file = input.files?.[0]; if (!file) return;
+          return mutate(async () => {
+            if (file.size > 50 * 1024 * 1024) throw new Error(t('tooLarge'));
+            const params = new URLSearchParams({...targetCollection(collection),name:photo.name,size:poster.name,filename:file.name});
+            await uploadRequest('print-crop?' + params.toString(),file,() => {});
+            invalidateExport(); await reload(); status('saved',{name:photo.name});
+          });
+        });
+        label.append(input); row.append(label);
+        const hint = document.createElement('p'); hint.className = 'print-crop-hint'; hint.textContent = t('cropSizeDisabled');
+        row.append(hint); cropControls.push({input,row,hint,size:poster.name});
+        if (assigned) {
+          const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'print-crop-remove'; remove.textContent = t('cropRemove');
+          remove.setAttribute('aria-label', t('cropRemove') + ': ' + displaySize);
+          remove.dataset.removeCropSize = poster.name;
+          remove.addEventListener('click', () => mutate(async () => {
+            await request('remove-print-crop',{...targetCollection(collection),name:photo.name,size:poster.name});
+            invalidateExport(); await reload(); status('saved',{name:photo.name});
+          }));
+          row.append(remove);
+        }
+        crops.append(row);
+      }
+      choices.forEach(choice => choice.addEventListener('change', syncCropAvailability));
+      syncCropAvailability();
+      card.append(crops);
       card.append(fieldStatus('photo-sizes'),photoActions(photo,collection));
       return card;
   }
@@ -905,18 +980,12 @@ window.WizjePhotoTools = {
     if (!photo) { editingPhoto = null; if ($('#photo-dialog').open) $('#photo-dialog').close(); return; }
     $('#photo-editor-title').textContent = `${photo.name} · ${collectionTitle(collection)}`;
     $('#photo-editor-fields').replaceChildren(renderPhotoFields(photo,collection.photos.indexOf(photo),collection));
-    const image = $('#admin-preview-image'), source = photo.detail || photo.preview;
-    if (image.getAttribute('src') !== source) {
-      $('#preview-load-state').textContent = t('loading');
-      image.onload = () => { $('#preview-load-state').textContent = ''; };
-      image.onerror = () => { $('#preview-load-state').textContent = t('previewFailed'); };
-      image.src = source;
-    }
+    const image = $('#admin-preview-image');
     image.alt = photo.name;
     const size = $('#preview-size'), previous = size.value; size.replaceChildren();
     let posters = (state.posters || []).filter(poster => photo.posterSizes == null || photo.posterSizes.includes(poster.name));
     if (!posters.length) posters = state.posters?.length ? state.posters : [{name:'50 × 70 cm'}];
-    for (const poster of posters) { const option = document.createElement('option'); option.value = option.textContent = poster.name; size.append(option); }
+    for (const poster of posters) { const option = document.createElement('option'); option.value = poster.name; option.textContent = photoTools.sizeLabel(photo,poster.name); size.append(option); }
     size.value = posters.some(poster => poster.name === previous) ? previous : posters[0].name;
     const visible = collectionKey(collection) === selectedId ? visiblePhotos(collection) : collection.photos;
     const index = visible.findIndex(item => item.name === photo.name);
@@ -927,11 +996,22 @@ window.WizjePhotoTools = {
     if (!editingPhoto) return;
     const collection = state.collections.find(item => collectionKey(item) === editingPhoto.collection);
     const photo = collection?.photos.find(item => item.name === editingPhoto.name); if (!photo) return;
-    const fit = photoTools.fit(photo,$('#preview-size').value,$('#preview-margins').checked);
+    const variant = photo.printCrops?.[$('#preview-size').value];
+    const fittedPhoto = variant ? {...photo,...variant} : photo;
+    const fit = photoTools.fit(fittedPhoto,$('#preview-size').value,$('#preview-margins').checked);
     const artwork = $('#admin-artwork'); artwork.dataset.frame = String($('#preview-frame').checked);
     artwork.style.setProperty('--paper-ratio',fit.paperWidth/fit.paperHeight);
     artwork.style.setProperty('--mat-color',$('#preview-color').value === 'white' ? '#f5f3ee' : '#050505');
     const image = $('#admin-preview-image'); image.style.width = `${100*fit.w/fit.paperWidth}%`; image.style.height = `${100*fit.h/fit.paperHeight}%`;
+    image.style.objectFit = $('#preview-margins').checked ? 'contain' : 'cover';
+    const source = fittedPhoto.detail || photo.preview;
+    const url = source.startsWith('/') ? source : '/' + source;
+    if (image.getAttribute('src') !== url) {
+      $('#preview-load-state').textContent = t('loading');
+      image.onload = () => { $('#preview-load-state').textContent = ''; };
+      image.onerror = () => { $('#preview-load-state').textContent = t('previewFailed'); };
+      image.src = url;
+    }
     const format = value => new Intl.NumberFormat(language,{maximumFractionDigits:2}).format(value);
     $('#preview-dimensions').textContent = t('previewDimensions',Object.fromEntries(['w','h','x','y'].map(key => [key,format(fit[key])])));
   }
@@ -1072,7 +1152,7 @@ window.WizjePhotoTools = {
           if (xhr.status === 401) window.location.assign('/admin');
           if (xhr.status < 200 || xhr.status >= 300) throw new Error(result.error || t('failed'));
           if (result.publication) { state.publication = result.publication; renderPublication(); }
-          undoToken = null; updateUndoButtons();
+          undoToken = result.undo || null; updateUndoButtons();
           resolve(result);
         } catch (error) { reject(error); }
       };

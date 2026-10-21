@@ -191,14 +191,6 @@
       "30 x 40 cm",
       "15 x 21 cm"
     ],
-    "cars/Car 1.png": [
-      "30 x 40 cm",
-      "15 x 21 cm"
-    ],
-    "cars/Car 5.png": [
-      "30 x 40 cm",
-      "15 x 21 cm"
-    ],
     "cars/Car 4.png": [
       "30 x 40 cm",
       "15 x 21 cm"
@@ -222,6 +214,142 @@
     "dolomites/Dolomity 6.png": [
       "30 x 40 cm",
       "15 x 21 cm"
+    ],
+    "cars/Car 5.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "cars/Car 1.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
+    ],
+    "art/Art 2.png": [
+      "30 x 40 cm",
+      "15 x 21 cm"
     ]
+  },
+  "printCrops": {
+    "dolomites/Dolomity 1.png": {
+      "15 x 21 cm": "assets/collections/.print-crops/5e3bb9d77dbafea276acde211294906a.png"
+    },
+    "dolomites/Dolomity 3.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/bcd14c0cc5776524858d527d12c277b8.png",
+      "15 x 21 cm": "assets/collections/.print-crops/683e245c601723543436c79beade44ae.png"
+    },
+    "dolomites/Dolomity 5.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/95e43244e2d2b76381440890fc13ccc9.png",
+      "15 x 21 cm": "assets/collections/.print-crops/93d6c571f38bd3f7e4f0721b166fc41a.png"
+    },
+    "dolomites/Dolomity 2.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/2678125bfc8b5e7de7514241464bf046.png",
+      "15 x 21 cm": "assets/collections/.print-crops/2821e9850b3d35ea6a71fd816ea3c343.png"
+    },
+    "dolomites/Dolomity 6.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/119c3240b9dbe3932c5ffa159fcce192.png",
+      "15 x 21 cm": "assets/collections/.print-crops/aa9a64e97cd95c9d687dffa21815b7c7.png"
+    },
+    "dolomites/Dolomity 4.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/a3f84e829b1731b72f8649664f898700.png",
+      "15 x 21 cm": "assets/collections/.print-crops/09a8a968cda26bb9cf6e5605a1af7dfe.png"
+    },
+    "alps/Alpy 1.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/3342092960f4cf5fca7a413e7122d1da.png",
+      "15 x 21 cm": "assets/collections/.print-crops/ad8a19730a34f6e9f6fe311e0bd76b49.png"
+    },
+    "alps/Alpy 2.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/0135b4ca8e66fed567074bf25c8baa8d.png",
+      "15 x 21 cm": "assets/collections/.print-crops/8d025d3d251cb314c20be2ab98eea6ab.png"
+    },
+    "alps/9.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/5025d5054a619b39b1e6e236de41677c.png",
+      "15 x 21 cm": "assets/collections/.print-crops/b26c94280d48b0b57fc1a568f1e97ba0.png"
+    },
+    "alps/Alpy 3.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/7db19078338f44fb1b13e05119733935.png",
+      "15 x 21 cm": "assets/collections/.print-crops/68b2337b8e48af8c6ba86ec64e029d09.png"
+    },
+    "alps/Alpy 4.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/587d53f283a2884b67bb801dcc5f76a7.png",
+      "15 x 21 cm": "assets/collections/.print-crops/5185824a804ff62e9a333e7db2fd00d8.png"
+    },
+    "alps/Alpy 5.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/a0301519ac19fd7c58b9cb5cb4352f9d.png",
+      "15 x 21 cm": "assets/collections/.print-crops/1171e3bfab7e5cf73d4c2e943fd40668.png"
+    },
+    "mazury/Art 7.png": {
+      "50 × 70 cm": "assets/collections/.print-crops/9cc8c1a733c0d4e18f72d6fb0a30f158.png",
+      "30 x 40 cm": "assets/collections/.print-crops/88eed062b427ea4666e81a5d57681b59.png",
+      "15 x 21 cm": "assets/collections/.print-crops/caec2105df6caeca6ca43ac01941cf47.png"
+    },
+    "mazury/Mazury 1.png": {
+      "50 × 70 cm": "assets/collections/.print-crops/71cbfa63f273ef6e0b39db16f507ed16.png",
+      "30 x 40 cm": "assets/collections/.print-crops/e22800d65e599853428fdf0b16a921fd.png",
+      "15 x 21 cm": "assets/collections/.print-crops/2fbaecd5d8b50e2c35bd6b2b44578742.png"
+    },
+    "mazury/Mazury 4.png": {
+      "50 × 70 cm": "assets/collections/.print-crops/5089cf0b983ad8f719d0c64edca160dd.png",
+      "30 x 40 cm": "assets/collections/.print-crops/6ba90229c8cba5695d1236aaeb0b29ff.png",
+      "15 x 21 cm": "assets/collections/.print-crops/e28b4652a7515d172d692923a05b8fd0.png"
+    },
+    "mazury/Mazury 2.png": {
+      "50 × 70 cm": "assets/collections/.print-crops/5fda885d4bcc5bcef2ee8ac6be057dca.png",
+      "30 x 40 cm": "assets/collections/.print-crops/333e1fc245391a0d3b55183f7d003e83.png",
+      "15 x 21 cm": "assets/collections/.print-crops/7ed09e94448424d8710007e500d0d7e3.png"
+    },
+    "mazury/Mazury 5 7.png": {
+      "50 × 70 cm": "assets/collections/.print-crops/453b8b725c026201bc54ec0a2ab11505.png",
+      "30 x 40 cm": "assets/collections/.print-crops/4c077fccdf159eea9646582a490aba4a.png",
+      "15 x 21 cm": "assets/collections/.print-crops/ed15625daacf6f0262d4ea8e911386d4.png"
+    },
+    "cars/Car 2.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/39469b7945a590e83480a327e6fc0f7b.png",
+      "15 x 21 cm": "assets/collections/.print-crops/d3b9213bed44a28abca81e94cfe08ea5.png",
+      "50 × 70 cm": "assets/collections/.print-crops/4a7edab25536405e74e8fc177ba904cc.png"
+    },
+    "cars/Car 3 _ Art X.png": {
+      "50 × 70 cm": "assets/collections/.print-crops/b246e09b80ec01cb66d827161ca6b6bc.png",
+      "30 x 40 cm": "assets/collections/.print-crops/99cc7eb067d7381c87221d6437ebd04f.png",
+      "15 x 21 cm": "assets/collections/.print-crops/de52dda4cb3e22fb0c65ca446fb3b1c5.png"
+    },
+    "cars/Car 1.png": {
+      "15 x 21 cm": "assets/collections/.print-crops/2a74c390fbce24700ea50fb30103098e.png",
+      "30 x 40 cm": "assets/collections/.print-crops/1fb86408c5d09560c812b01f5e616a75.png"
+    },
+    "cars/Car 5.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/8703b57add532aa572477c2646b6a1bd.png",
+      "15 x 21 cm": "assets/collections/.print-crops/4ec4d6986bdcfeca28940aa4e5148e57.png"
+    },
+    "cars/Car 4.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/345558a15707862581043a76c8a6c0b3.png",
+      "15 x 21 cm": "assets/collections/.print-crops/559445a2bf013235926a6f985e0e999b.png"
+    },
+    "art/Art 4.png": {
+      "50 × 70 cm": "assets/collections/.print-crops/631e192acb60661c9f81f1a6084058f4.png",
+      "30 x 40 cm": "assets/collections/.print-crops/e0c6d6a31fe55ebf3ac59e822d919fbf.png",
+      "15 x 21 cm": "assets/collections/.print-crops/7fe24ef64ab5791b6bab7100726e5e2f.png"
+    },
+    "art/Art 1.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/07a78df6c3ebda2d068dc6d8769b09ef.png",
+      "15 x 21 cm": "assets/collections/.print-crops/6b8531415b88d007187e62f319a7e6e3.png"
+    },
+    "art/Art 2.png": {
+      "30 x 40 cm": "assets/collections/.print-crops/26eb1f2c78090bf08f34ab086fd89ab9.png",
+      "15 x 21 cm": "assets/collections/.print-crops/7171c5e357ea33f756f4c8904c0d5875.png"
+    },
+    "art/Art 5.png": {
+      "50 × 70 cm": "assets/collections/.print-crops/a2a40108ad5bd3c7ee67a81ca5e3c833.png",
+      "30 x 40 cm": "assets/collections/.print-crops/0d511196d79e6de2e871610ddc863aa1.png",
+      "15 x 21 cm": "assets/collections/.print-crops/d74d80af3b6f345289b4c5ec121c73a8.png"
+    },
+    "art/Art 6.png": {
+      "50 × 70 cm": "assets/collections/.print-crops/90b244f5c3d5578b46dfb9ed5f8bdfc2.png",
+      "30 x 40 cm": "assets/collections/.print-crops/3da8281c1854491557772a18f6f7bc23.png",
+      "15 x 21 cm": "assets/collections/.print-crops/031240998d2c4df19f4a4c5b195177a5.png"
+    },
+    "art/Art 7 (2).png": {
+      "50 × 70 cm": "assets/collections/.print-crops/a9166755f606763050e1a8152e2fbfba.png",
+      "30 x 40 cm": "assets/collections/.print-crops/7f0450cfc393787ee6d249f3d2abeeec.png",
+      "15 x 21 cm": "assets/collections/.print-crops/ea30215b2be66b608b27436a84ef5105.png"
+    }
   }
 }

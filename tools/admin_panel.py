@@ -26,6 +26,7 @@ KNOWN_TITLES = {'alps': 'Alpy', 'cars': 'Samochody', 'dolomites': 'Dolomity', 't
 
 
 ERRORS_EN = {
+    'Najpierw włącz i zapisz ten format dla zdjęcia.': 'Enable and save this print size for the photo first.',
  'Nieprawidłowa ścieżka biblioteki.': 'Invalid library path.',
  'Nie znaleziono zdjęcia w bibliotece.': 'Photo not found in the library.',
  'Kolekcja zawiera już plik o tej nazwie.': 'This collection already contains a file with that name.',
@@ -163,6 +164,8 @@ class EditorStore:
                                'orientation': config.get('orientations', {}).get(key, 'portrait'),
                                'colorMode': config.get('colorModes', {}).get(key),
                                'posterSizes': config.get('posterSizes', {}).get(key),
+                               'printCrops': {size: {k: value for k, value in crop.items() if k != 'original'}
+                                              for size, crop in preview.get('printCrops', {}).items()},
                                **config.get('filmDetails', {}).get(key, {})})
             photos = ordered(photos, display_order.get('photos', {}).get(folder.name, []), key=lambda p: p['name'])
             items.append({'id': folder.name, 'title': info.get(folder.name, {}).get('title', KNOWN_TITLES.get(folder.name, folder.name.capitalize())),
@@ -477,12 +480,14 @@ class EditorStore:
         config['orientations'] = {k: v for k, v in config.get('orientations', {}).items() if k not in selected_orientations}
         selected_sizes = {k: v for k, v in config.get('posterSizes', {}).items() if (k.startswith(collection + '/') if whole else k == key)}
         config['posterSizes'] = {k: v for k, v in config.get('posterSizes', {}).items() if k not in selected_sizes}
+        selected_crops = {k: v for k, v in config.get('printCrops', {}).items() if (k.startswith(collection + '/') if whole else k == key)}
+        config['printCrops'] = {k: v for k, v in config.get('printCrops', {}).items() if k not in selected_crops}
         snapshot_paths = [self.types_path, self.info_path, self.root / 'assets/collections/manifest.js']
         snapshots = {path: path.read_bytes() if path.exists() else None for path in snapshot_paths}
         restore = {'year': self.photo_root.name, 'kind': 'collection' if whole else 'photo', 'collection': collection,
                    'files': [{'stored': str(index), 'original': item.relative_to(self.photo_root).as_posix()}
                              for index, item in enumerate(sources)],
-                   'photos': selected_types, 'posterSizes': selected_sizes, 'filmDetails': selected_film, 'orientations': selected_orientations, 'colorModes': selected_colors, 'collectionInfo': before_info.get(collection), 'status': 'pending'}
+                   'photos': selected_types, 'posterSizes': selected_sizes, 'printCrops': selected_crops, 'filmDetails': selected_film, 'orientations': selected_orientations, 'colorModes': selected_colors, 'collectionInfo': before_info.get(collection), 'status': 'pending'}
         write_json(trash / 'restore.json', restore)
         moved = []
         try:
@@ -799,7 +804,7 @@ class LocalAdmin:
                 maximum = 2048
             elif url.path.endswith('/upload-batch'):
                 maximum = MAX_UPLOAD + 65540
-            elif url.path.endswith('/upload'):
+            elif url.path.endswith('/upload') or url.path.endswith('/print-crop'):
                 maximum = MAX_UPLOAD
             elif url.path.endswith('/bulk-photos'):
                 maximum = 256 * 1024
@@ -815,7 +820,16 @@ class LocalAdmin:
                     self.login(handler, json.loads(content))
                     return
                 self.store.library.finish_pending()
-                if url.path == '/admin/api/upload-batch':
+                if url.path == '/admin/api/print-crop':
+                    from print_crops import set_crop
+                    from admin_actions import snapshot
+                    args = parse_qs(url.query)
+                    store = self.year_store(args.get('year', [None])[0])
+                    before = snapshot([store.types_path])
+                    set_crop(store, args.get('collection', [''])[0], args.get('name', [''])[0],
+                             args.get('size', [''])[0], self.poster_catalog(), args.get('filename', [''])[0], content)
+                    result = {'ok': True, 'undo': self.actions.remember(handler, before)}
+                elif url.path == '/admin/api/upload-batch':
                     if len(content) < 4:
                         raise EditorError('Nieprawidłowe dane.')
                     size = int.from_bytes(content[:4], 'big')
@@ -849,7 +863,7 @@ class LocalAdmin:
                     data = json.loads(content)
                     if not isinstance(data, dict):
                         raise EditorError('Nieprawidłowe dane.')
-                    metadata_routes = ('/admin/api/medium', '/admin/api/orientation', '/admin/api/color-mode', '/admin/api/film', '/admin/api/photo-sizes')
+                    metadata_routes = ('/admin/api/medium', '/admin/api/orientation', '/admin/api/color-mode', '/admin/api/film', '/admin/api/photo-sizes', '/admin/api/remove-print-crop')
                     before = None
                     if url.path in metadata_routes:
                         from admin_actions import snapshot
@@ -905,6 +919,10 @@ class LocalAdmin:
                         result = {'ok': True}
                     elif url.path == '/admin/api/film':
                         self.year_store(data.get('year')).set_film(data.get('collection'), data.get('name'), data.get('film'), data.get('iso'))
+                        result = {'ok': True}
+                    elif url.path == '/admin/api/remove-print-crop':
+                        from print_crops import set_crop
+                        set_crop(self.year_store(data.get('year')), data.get('collection'), data.get('name'), data.get('size'), self.poster_catalog())
                         result = {'ok': True}
                     elif url.path == '/admin/api/photo-sizes':
                         self.year_store(data.get('year')).set_poster_sizes(data.get('collection'), data.get('name'), data.get('posterSizes'), self.poster_catalog())

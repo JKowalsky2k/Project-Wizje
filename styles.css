@@ -569,11 +569,14 @@ html[data-theme="light"] .photo-detail__navigation button:hover{background:#dce1
 /* Proportional insets keep the opening and outer frame at the same ratio
    in both orientations, accounting for the 1px border. */
 .photo-detail .detail-preview .drum-card__frame{--detail-frame-padding:clamp(5px,1vw,9px);box-sizing:border-box;width:100%;aspect-ratio:var(--detail-ratio);padding:calc((var(--detail-frame-padding) + 1px) * var(--detail-height-ratio) - 1px) var(--detail-frame-padding)}
-.photo-detail .detail-preview .drum-card__mat{position:relative;contain:layout paint;box-sizing:border-box;width:100%;height:100%;padding:0;background:var(--detail-mat);box-shadow:none}
+/* Resolve the opening from its edges, not a percentage height inside an
+   auto-height aspect-ratio box (which Safari can size differently). */
+.photo-detail .detail-preview .drum-card__mat{position:absolute;inset:calc((var(--detail-frame-padding) + 1px) * var(--detail-height-ratio) - 1px) var(--detail-frame-padding);contain:layout paint;box-sizing:border-box;width:auto;height:auto;padding:0;background:var(--detail-mat);box-shadow:none}
 /* Animate the actual image dimensions so each frame uses the decoded source,
    without scaling a cached compositor bitmap or re-rasterizing at the end. */
 .photo-detail .detail-preview .photo-detail__image{position:absolute;inset:0;display:block;margin:auto;width:var(--detail-image-width,var(--detail-image-size));height:var(--detail-image-height,var(--detail-image-size));max-width:100%;max-height:100%;object-fit:contain;object-position:center;transform:none;transition:width .42s cubic-bezier(.2,.75,.25,1),height .42s cubic-bezier(.2,.75,.25,1)}
 .photo-detail[data-margins="false"]{--detail-image-size:100%}.photo-detail[data-mat-color="white"]{--detail-mat:#f5f3ee}
+.photo-detail[data-margins="false"] .detail-preview .photo-detail__image{object-fit:cover}
 /* Fade only the decoration; the paper opening and photo dimensions stay fixed. */
 .photo-detail .detail-preview .drum-card__frame{border-color:transparent;border-radius:0;background:none;box-shadow:none}
 .detail-frame-decoration{position:absolute;inset:-1px;border:1px solid #d2ae63;background:repeating-linear-gradient(93deg,#71502220 0 1px,transparent 1px 4px),linear-gradient(135deg,#e0c383,#7d592a 18%,#c09a54 35%,#3b2918 52%,#9a7337 75%,#d4b270);box-shadow:inset 0 0 0 2px #392611,inset 0 0 0 3px #edce8c,inset 0 0 0 5px #8a652d,0 14px 30px #000b;pointer-events:none}

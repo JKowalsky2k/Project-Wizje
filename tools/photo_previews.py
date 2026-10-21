@@ -42,6 +42,14 @@ def render_jobs(renderer, jobs):
 
 
 def prepare_previews(collections, root, verify=False):
+    # Reuse the same EXIF-aware, fingerprinted pipeline for private print crops.
+    from print_crops import crop_source
+    variants = [variant for collection in collections for photo in collection['photos']
+                for variant in photo.get('printCrops', {}).values()]
+    for variant in variants:
+        crop_source(root, variant['src'])
+    if variants:
+        prepare_previews([{'photos': variants}], root, verify=verify)
     renderer = Path(__file__).with_suffix('.swift')
     recipe = hashlib.sha256(renderer.read_bytes()).hexdigest()
     medium_renderer = Path(__file__).with_name('photo_preview_medium.swift')

@@ -75,6 +75,10 @@ var fetch=async (url,options={})=>{
   lastUndo=clone(server); for (const photo of photos) if (data.names.includes(photo.name)) Object.assign(photo,data.changes); result.count=data.names.length; result.undo='undo-token';
  } else if (url==='/admin/api/delete-photo') {
   lastUndo=clone(server); const index=photos.findIndex(value=>value.name===data.name); const photo=photos.splice(index,1)[0]; server.library.push({...photo,id:'detached'}); result.undo='undo-token';
+ } else if (url==='/admin/api/photo-sizes') {
+  lastUndo=clone(server); const photo=photos.find(photo=>photo.name===data.name); photo.posterSizes=data.posterSizes; result.photo=photo; result.undo='undo-token';
+ } else if (url==='/admin/api/remove-print-crop') {
+  lastUndo=clone(server); delete photos.find(photo=>photo.name===data.name).printCrops[data.size]; result.undo='undo-token';
  } else if (url==='/admin/api/undo') {server=lastUndo; lastUndo=null;}
  else if (url==='/admin/api/purge-photo') {assert(data.confirmed===true,'permanent delete supplies authorization automatically'); server.collections[0].photos=photos.filter(photo=>photo.name!==data.name);server.library=[];}
  else throw new Error('Unexpected request '+url);
@@ -94,6 +98,12 @@ var XMLHttpRequest=class {
  setRequestHeader() {}
  send(body) {Promise.resolve().then(()=>{
   this.upload.onprogress?.({loaded:body.size,total:body.size,lengthComputable:true}); this.upload.onload?.();
+  if (this.url.includes('print-crop?')) {
+   const params=new URLSearchParams(this.url.split('?')[1]); lastUndo=clone(server);
+   const photo=server.collections[0].photos.find(photo=>photo.name===params.get('name'));
+   (photo.printCrops ||= {})[params.get('size')]={detail:'assets/collections/previews/custom-2000.jpg',inspection:'assets/collections/previews/custom-inspect.jpg',detailWidth:1500,detailHeight:2000};
+   this.status=200; this.responseText=JSON.stringify({ok:true,undo:'undo-token',publication:server.publication}); this.onload(); return;
+  }
   const batch=this.url.includes('upload-batch');
   const names=batch ? JSON.parse(String.fromCharCode(...body.parts[1])).map(value=>value.name) : [new URLSearchParams(this.url.split('?')[1]).get('name')];
   uploadCalls.push({batch,names}); const bad=names.includes('bad.jpg')&&!allowBad;
@@ -127,6 +137,32 @@ eval(readFile('tools/admin/editor.js'));
  assert(failedField.dataset.state==='error' && failedField.querySelector('button'),'failed fields expose a local retry');
  await click(failedField.querySelector('button'));
  assert(server.collections[0].photos[0].colorMode==='monochrome','field retry applies the requested value');
+
+ const cropInput=get('#photo-editor-fields').querySelectorAll('input').find(node=>node.dataset.cropSize==='30 × 40 cm');
+ assert(cropInput,'each print size accepts a photographer-supplied crop');
+ cropInput.files=[{name:'custom.jpg',size:20}]; await change(cropInput);
+ assert(get('#admin-preview-image').src==='/assets/collections/previews/custom-2000.jpg','upload switches the selected print preview to the custom crop');
+ assert(!get('#undo-editor-change').hidden,'crop upload supports undo');
+ await click(get('#photo-editor-fields').querySelectorAll('button').find(node=>node.dataset.removeCropSize==='30 × 40 cm'));
+ assert(get('#admin-preview-image').src.endsWith('abcdefabcdef-2000.jpg'),'removing the assignment restores the main photograph');
+ await click(get('#undo-editor-change'));
+ assert(get('#admin-preview-image').src.endsWith('custom-2000.jpg'),'undo restores the custom crop and its preview');
+ await click(get('#photo-editor-fields').querySelectorAll('button').find(node=>node.dataset.removeCropSize==='30 × 40 cm'));
+
+ let sizeFields=get('#photo-editor-fields').querySelector('.photo-sizes');
+ let sizeChecks=sizeFields.querySelectorAll('input');
+ sizeChecks[0].checked=false; await change(sizeChecks[0]);
+ sizeChecks[1].checked=false; await change(sizeChecks[1]);
+ let blockedCrop=get('#photo-editor-fields').querySelectorAll('input').find(node=>node.dataset.cropSize==='30 × 40 cm');
+ assert(blockedCrop.disabled,'unchecking a size immediately blocks its crop upload');
+ await click(sizeFields.querySelector('button'));
+ blockedCrop=get('#photo-editor-fields').querySelectorAll('input').find(node=>node.dataset.cropSize==='30 × 40 cm');
+ assert(blockedCrop.disabled,'saving disabled sizes keeps the crop upload disabled after the busy state clears');
+ sizeFields=get('#photo-editor-fields').querySelector('.photo-sizes'); sizeChecks=sizeFields.querySelectorAll('input');
+ sizeChecks[1].checked=true; await change(sizeChecks[1]);
+ assert(blockedCrop.disabled,'unsaved size selection does not enable the upload yet');
+ await click(sizeFields.querySelector('button'));
+ assert(!get('#photo-editor-fields').querySelectorAll('input').find(node=>node.dataset.cropSize==='30 × 40 cm').disabled,'saving an enabled size unlocks crop upload');
 
  get('#preview-frame').checked=false; await change(get('#preview-frame'));
  assert(get('#admin-artwork').dataset.frame==='false','preview frame toggle works');

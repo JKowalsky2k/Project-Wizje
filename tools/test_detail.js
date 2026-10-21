@@ -35,7 +35,7 @@ const code = readFile('collections.js');
 // Keep the production dialog code, omit gallery bootstrap and expose its closures for the fixture.
 eval(code.slice(0, code.indexOf('  class DrumCard')) + `
   const source = [];
-  api = {configureGalleryImage, pose, paperDimensions, sourcePoint, availablePosters, renderPhotoSizes, updateOrderSummary, marginDescription, setupMagnifier, resetMagnifier,
+  api = {configureGalleryImage, pose, paperDimensions, sourcePoint, availablePosters, renderPhotoSizes, updateOrderSummary, marginDescription, setupMagnifier, resetMagnifier, previewPhoto,
     set(photo) { detailDialog = dialog; detailPhoto = photo; detailCollection = {id:'test',title:'Test',year:'2026',photos:[photo]}; }};
 })();`);
 const galleryImage = new Element();
@@ -50,6 +50,18 @@ assert(JSON.stringify(api.paperDimensions({name:'30 × 40 cm'}, false)) === '[30
 assert(JSON.stringify(api.paperDimensions({name:'30 x 40 cm'}, true)) === '[40,30]', 'landscape dimensions');
 assert(api.paperDimensions({name:'0 × 40 cm'}, false) === null, 'zero rejected');
 assert(api.paperDimensions({name:'custom'}, false) === null, 'unknown size');
+window.ZWIDY_POSTERS.push({name:'15 x 21 cm',priceCents:1499});
+for (const orientation of ['portrait','landscape']) {
+  const landscape = orientation === 'landscape';
+  api.set({orientation,detailWidth:landscape ? 2100 : 1500,detailHeight:landscape ? 1500 : 2100,posterSizes:['15 x 21 cm']});
+  dialog.dataset.margins = 'false'; api.renderPhotoSizes(); api.updateOrderSummary();
+  assert(api.marginDescription() === (landscape ? '0|0|21|15' : '0|0|15|21'), '15x21 has no margins in either orientation');
+  assert(node('.detail-preview').style['--detail-image-width'] === '100%' && node('.detail-preview').style['--detail-image-height'] === '100%', '15x21 fills the complete frame opening');
+  assert(node('.detail-preview').style['--detail-ratio'] === (landscape ? '21 / 15' : '15 / 21'), '15x21 keeps the selected paper proportions');
+  dialog.dataset.margins = 'true'; api.updateOrderSummary();
+  assert(Math.abs(parseFloat(node('.detail-preview').style['--detail-image-width'])-84) < 1e-9, '15x21 adds space only when margins are enabled');
+}
+window.ZWIDY_POSTERS.pop();
 api.set({orientation:'portrait',inspection:'test.jpg',posterSizes:['30 × 40 cm']});
 api.renderPhotoSizes(); api.updateOrderSummary();
 assert(api.marginDescription() === '2,4|3,2|25,2|33,6', '30x40 margins');
@@ -79,8 +91,24 @@ assert(Math.abs(fittedWidth / fittedHeight - 2000 / 1430) < 1e-10, 'different pa
 assert(fittedWidth <= 40 * .84 && fittedHeight <= 30 * .84, 'full photo stays inside margin opening');
 assert(api.marginDescription() === '3,2|2,99|33,6|24,02', 'reported margins include extra space from fitting');
 dialog.dataset.margins = 'false'; api.updateOrderSummary();
-assert(api.marginDescription() === '0|0,7|40|28,6', 'disabling decorative margins still preserves full frame');
+assert(api.marginDescription() === '0|0|40|30', 'disabling margins fills the chosen paper without letterboxing');
+assert(node('.detail-preview').style['--detail-image-width'] === '100%' && node('.detail-preview').style['--detail-image-height'] === '100%', 'borderless photo occupies the entire opening');
+assert(node('.photo-detail__margin-dimensions').hidden, 'margin information is hidden when margins are disabled');
+const coveredEdge = api.sourcePoint(0,0,{width:300,height:400},3360,2240,true);
+assert(coveredEdge.x === 840 && coveredEdge.y === 0, 'cover magnifier accounts for the centered horizontal crop');
+const coveredCenter = api.sourcePoint(150,200,{width:300,height:400},3360,2240,true);
+assert(coveredCenter.x === 1680 && coveredCenter.y === 1120, 'cover magnifier maps the photo center correctly');
 dialog.dataset.margins = 'true';
+api.set({orientation:'landscape',detail:'main.jpg',inspection:'test.jpg',detailWidth:2000,detailHeight:1430,
+ printCrops:{'30 × 40 cm':{detail:'custom.jpg',inspection:'custom-inspect.jpg',detailWidth:1600,detailHeight:1200}}});
+api.renderPhotoSizes();
+assert(api.previewPhoto().detail === 'custom.jpg' && api.previewPhoto().inspection === 'custom-inspect.jpg', 'selected print size uses its custom crop for preview and magnification');
+assert(api.marginDescription() === '3,2|2,4|33,6|25,2', 'margins use the dimensions of the selected crop');
+const sizeOptions = node('.photo-detail__sizes').children.filter(child => child.tagName !== 'legend').flatMap(child => child.children).filter(child => child.name === 'poster-size');
+sizeOptions.forEach(input => { input.checked = input.value === '50 × 70 cm'; });
+assert(api.previewPhoto().detail === 'main.jpg', 'print sizes without a custom crop fall back to the main photograph');
+api.set({orientation:'landscape',detailWidth:2000,detailHeight:1430,posterSizes:['30 × 40 cm'],inspection:'test.jpg'});
+api.renderPhotoSizes();
 api.setupMagnifier();
 const preview = node('.detail-preview');
 const lens = node('.photo-detail__lens');

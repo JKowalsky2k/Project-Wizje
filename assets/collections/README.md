@@ -184,3 +184,7 @@ Po zmianach ustawień przygotuj nowy ZIP przez panel lub `python3 tools/publish.
 - Odłączanie i trwałe usuwanie pojedynczego zdjęcia nie otwierają pytań o potwierdzenie. Trwałego usunięcia nie da się cofnąć.
 - Import pokazuje osobno przesyłanie i przygotowywanie podglądów. Nieudane pliki można ponowić bez ponownego wysyłania dodanych zdjęć.
 - Sekcja publikacji pokazuje zmiany od ostatniego ZIP-a przygotowanego w panelu.
+
+## Własne kadry wydruków
+
+W panelu, w edycji zdjęcia, sekcja „Własne kadry do formatów” przyjmuje gotowe pliki dla poszczególnych formatów. `printCrops` w rocznym `photo-types.json` mapuje `kolekcja/plik` i nazwę formatu na prywatny plik w `.print-crops/`. Nie zmieniaj ani nie usuwaj ręcznie tych ścieżek. Przenoszenie zdjęć i przywracanie z biblioteki zachowuje przypisania. Eksport publikuje wyłącznie wygenerowane podglądy kadrów, bez ich oryginałów.

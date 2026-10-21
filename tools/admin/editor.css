@@ -126,6 +126,18 @@
 .admin-paper img{position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%;object-fit:contain;display:block}
 .admin-artwork::after{content:"";position:absolute;inset:-12px;border:12px solid #b38c44;border-image:linear-gradient(135deg,#f1d994,#715022 18%,#dbb65e 38%,#69431c 55%,#d5b16a 85%,#8e602c) 12;box-shadow:0 0 0 1px #edcf87,0 10px 24px #0009;pointer-events:none;opacity:0;transition:opacity .32s ease}
 .admin-artwork[data-frame=true]::after{opacity:1}
+.print-crops{min-width:0}.print-crop-row{padding:12px 0;border-bottom:1px solid var(--line)}.print-crop-row label{display:grid;gap:8px}.print-crop-row small{font-weight:normal;color:var(--muted)}.print-crop-row input{width:100%;min-width:0}.print-crop-row button{margin-top:8px}
+.print-crop-hint{margin:8px 0 0;color:var(--muted);font-size:11px;line-height:1.6}
+.print-crop-row .crop-upload-success{display:flex;align-items:center;gap:8px;color:#a6dbb2;font-size:11px;line-height:1.5}
+.crop-upload-check{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;border:1.5px solid #69b87e;border-radius:50%;background:#69b87e0d;color:#90d8a3;font-size:14px;font-weight:600;line-height:1}
+.print-crop-row input[data-crop-unavailable="true"]{cursor:not-allowed}
+.print-crop-row input::file-selector-button{padding:7px 10px;margin-right:10px;border:1px solid #535e6c;border-radius:4px;background:#252b30;color:#e0e6ed;font:inherit;cursor:pointer}
+.print-crop-row input:disabled::file-selector-button{cursor:not-allowed}
+.print-crop-row .print-crop-remove{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;max-width:100%;padding:9px 12px;border:1px solid #75544b;border-radius:6px;background:#c36c4a0c;color:#ddb9ac;font-size:12px;line-height:1.4;text-align:left;transition:background-color .15s,border-color .15s,color .15s}
+.print-crop-row .print-crop-remove:hover:not(:disabled){background:#c36c4a20;border-color:#ba8774;color:#f4d7ca}
+.print-crop-row .print-crop-remove:active:not(:disabled){background:#c36c4a30}
+@media(pointer:coarse){.print-crop-row .print-crop-remove{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.print-crop-row .print-crop-remove{transition:none}}
 @media(prefers-reduced-motion:reduce){.admin-artwork::after{transition:none}}
 .preview-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:12px;width:min(100%,440px);flex:none;font-size:12px}
 .preview-options>label{min-width:0}

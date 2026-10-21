@@ -123,7 +123,7 @@ class EditorActions:
                 destination = target_store.photo(target_collection, name)
                 if destination.exists() or destination.is_symlink():
                     raise EditorError(f'Plik już istnieje / File already exists: {name}', 409)
-                for group in ('photos', 'orientations', 'colorModes', 'posterSizes', 'filmDetails'):
+                for group in ('photos', 'orientations', 'colorModes', 'posterSizes', 'filmDetails', 'printCrops'):
                     if key in config.get(group, {}):
                         configs[target_store.types_path].setdefault(group, {})[target_collection + '/' + name] = config[group].pop(key)
                 moves.append((source, destination))

@@ -87,6 +87,9 @@ def build_manifest(photo_root=PHOTO_ROOT, year=None):
                 photo['colorMode'] = color_modes[f'{name}/{p.name}']
             if f'{name}/{p.name}' in poster_sizes:
                 photo['posterSizes'] = poster_sizes[f'{name}/{p.name}']
+            if config.get('printCrops', {}).get(f'{name}/{p.name}'):
+                photo['printCrops'] = {size: {'src': src, 'orientation': photo['orientation']}
+                                       for size, src in config['printCrops'][f'{name}/{p.name}'].items()}
             medium = overrides.get(f'{name}/{p.name}')
             if medium is not None:
                 photo['medium'] = medium

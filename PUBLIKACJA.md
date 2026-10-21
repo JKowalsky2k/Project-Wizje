@@ -4,6 +4,8 @@
 
 Dodaj kolekcje i zdjęcia w lokalnym panelu. Poczekaj na zakończenie przesyłania i zapisu. Na czas przygotowywania paczki nie edytuj kolekcji.
 
+W edycji zdjęcia sekcja **Własne kadry do formatów** pozwala wgrać oddzielny plik dla każdego formatu wydruku. Przygotuj plik w proporcjach wybranego formatu, z uwzględnieniem orientacji zdjęcia. Podgląd i lupa używają przypisanego kadru; formaty bez przypisania korzystają ze zdjęcia głównego. Możesz zastąpić plik, usunąć przypisanie albo cofnąć zmianę. Pliki źródłowe kadrów pozostają lokalnie w `assets/collections/.print-crops/`; ZIP zawiera wyłącznie wygenerowane podglądy. Po dodaniu lub zmianie kadru przygotuj nową paczkę.
+
 ## 2. Przygotuj paczkę w panelu
 
 Panel pokazuje zmiany od ostatniej paczki przygotowanej w panelu: dodane, usunięte i zmienione zdjęcia, kolekcje oraz ceny. Informacja pozostaje po ponownym uruchomieniu.

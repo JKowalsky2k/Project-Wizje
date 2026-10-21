@@ -97,6 +97,17 @@ def build_public_tree(root, destination, collections):
                                  'Dodaj zdjęcia przez panel; stare plansze Canva nie są publikowane.')
             copy(src)
             public_photo = {key: photo[key] for key in ('src', 'width', 'height', 'medium', 'film', 'filmBrand', 'iso', 'detail', 'sourceWidth', 'sourceHeight', 'detailWidth', 'detailHeight', 'orientation', 'colorMode', 'posterSizes', 'inspection', 'previewHigh', 'previewMedium') if key in photo}
+            if photo.get('printCrops'):
+                public_photo['printCrops'] = {}
+                for size, crop in photo['printCrops'].items():
+                    variant = {key: crop[key] for key in ('sourceWidth', 'sourceHeight', 'detailWidth', 'detailHeight') if key in crop}
+                    for key, suffix in (('detail', '2000'), ('inspection', 'inspect')):
+                        path = crop.get(key, '')
+                        if not re.fullmatch(r'assets/collections/previews/[a-f0-9]+-' + suffix + r'\.jpg', path):
+                            raise ValueError('Nieprawidłowy podgląd kadru wydruku.')
+                        copy(path)
+                        variant[key] = path
+                    public_photo['printCrops'][size] = variant
             if photo.get('previewMedium'):
                 if not re.fullmatch(r'assets/collections/previews/[a-f0-9]+-960\.jpg', photo['previewMedium']):
                     raise ValueError('Nieprawidłowy pośredni podgląd zdjęcia.')
