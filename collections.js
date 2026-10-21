@@ -464,7 +464,7 @@
       <div class="photo-detail__layout">
         <div class="photo-detail__art">
           <div class="drum-card detail-preview" data-center="true">
-            <div class="drum-card__frame"><div class="drum-card__mat">
+            <div class="drum-card__frame"><span class="detail-frame-decoration" aria-hidden="true"></span><div class="drum-card__mat">
               <img class="photo-detail__image" decoding="async" draggable="false" alt="">
             </div>${['tl', 'tr', 'bl', 'br'].map(corner => `<span class="museum-corner museum-corner--${corner}" aria-hidden="true">${frameCorner}</span>`).join('')}</div>
             <canvas class="photo-detail__lens" aria-hidden="true" hidden></canvas>
@@ -721,6 +721,8 @@
     }
 
     place(slot) {
+      this.animations.forEach(animation => animation.cancel());
+      this.animations = [];
       this.slot = slot;
       const state = pose(slot, this.collection.photos.length);
       Object.assign(this.element.style, state);
@@ -733,20 +735,18 @@
     async moveTo(slot, startTime) {
       const from = pose(this.slot, this.collection.photos.length);
       const to = pose(slot, this.collection.photos.length);
-      // Keep the final pose underneath the animation. Finishing or cancelling
-      // it then reveals exactly the same position, without a style handoff.
+      // Keep the final pose underneath the animation and retain its last frame.
+      // Removing the effect at rest can flash an image tile at an overlap in Edge.
       this.place(slot);
       if (!reducedMotion.matches && this.element.animate) {
         const animation = this.element.animate([
           { transform: from.transform, opacity: from.opacity },
           { transform: to.transform, opacity: to.opacity },
-        ], { duration: 500, easing: 'cubic-bezier(.22,.8,.25,1)' });
+        ], { duration: 500, easing: 'cubic-bezier(.22,.8,.25,1)', fill: 'both' });
         if (typeof startTime === 'number') animation.startTime = startTime;
         this.animations = [animation];
         await Promise.allSettled([animation.finished]);
       }
-      this.animations.forEach(animation => animation.cancel());
-      this.animations = [];
     }
   }
 

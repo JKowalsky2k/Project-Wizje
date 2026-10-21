@@ -67,8 +67,9 @@ gallery.initialize().then(async () => {
   const decodeGate = new Promise(resolve => { releaseArrival = resolve; });
   arriving.image.decode = () => { decodeCalls++; return decodeGate; };
   gallery.cards.forEach(card => {
-    card.element.animate = function(frames) {
+    card.element.animate = function(frames, options) {
       animations++;
+      assert(options.fill === 'both', 'retain the compositor effect before and after playback');
       assert(frames[1].transform === this.style.transform, 'last animation frame exactly matches the resting style');
       assert(frames.every(frame => frame.transform.includes('translateZ(')), 'both endpoints retain the 3D transform');
       return {finished:Promise.resolve(),cancel() {}};
@@ -80,5 +81,14 @@ gallery.initialize().then(async () => {
   releaseArrival(); await turn;
   assert(animations === 5, 'all cards animate together after the decoded image is ready');
   assert(gallery.cards.find(card => card.slot === 0).element.style.transform === api.pose(0,8).transform, 'center keeps its exact 3D resting pose');
+  for (const direction of [-1, 1, 1, -1]) {
+    await gallery.advance(direction);
+    assert(gallery.cards.every(card => card.animations.length <= 1), 'consecutive turns do not accumulate animation effects');
+    assert(gallery.cards.filter(card => Math.abs(card.slot) <= 1).every(card => card.animations.length === 1), 'visible cards retain their compositor effect at rest');
+    assert(gallery.cards.find(card => card.slot === direction * 2).animations.length === 0, 'recycled hidden card releases the old effect before repositioning');
+  }
+  motion.matches = true;
+  await gallery.advance(-1);
+  assert(gallery.cards.every(card => card.animations.length === 0), 'reduced motion clears retained effects and uses static positions');
   print('Gallery checks passed: lazy loading, recycling, actual element decoding, stable sources and matching 3D animation endpoints.');
 }).catch(error => { print(error.stack); quit(1); });

@@ -384,9 +384,11 @@ html[lang="pl"] .intro__line--accent {
   transform-origin: center;
 }
 
-/* Retain the carousel's image layers across consecutive turns, including rest. */
+/* Keep the whole framed card in one compositing group, including at opacity 1.
+   Edge can otherwise repaint overlapping image/frame tiles as the fade ends. */
 .collection__drum .drum-card {
-  will-change: transform;
+  isolation: isolate;
+  will-change: transform, opacity;
 }
 
 .drum-card__frame {
@@ -572,9 +574,12 @@ html[data-theme="light"] .photo-detail__navigation button:hover{background:#dce1
    without scaling a cached compositor bitmap or re-rasterizing at the end. */
 .photo-detail .detail-preview .photo-detail__image{position:absolute;inset:0;display:block;margin:auto;width:var(--detail-image-width,var(--detail-image-size));height:var(--detail-image-height,var(--detail-image-size));max-width:100%;max-height:100%;object-fit:contain;object-position:center;transform:none;transition:width .42s cubic-bezier(.2,.75,.25,1),height .42s cubic-bezier(.2,.75,.25,1)}
 .photo-detail[data-margins="false"]{--detail-image-size:100%}.photo-detail[data-mat-color="white"]{--detail-mat:#f5f3ee}
-/* The decorative toggle must preserve the paper opening and photo dimensions. */
-.photo-detail[data-frame="false"] .drum-card__frame{border-color:transparent;border-radius:0;background:none;box-shadow:none}
-.photo-detail[data-frame="false"] .drum-card__frame::before,.photo-detail[data-frame="false"] .drum-card__frame::after,.photo-detail[data-frame="false"] .museum-corner{display:none}
+/* Fade only the decoration; the paper opening and photo dimensions stay fixed. */
+.photo-detail .detail-preview .drum-card__frame{border-color:transparent;border-radius:0;background:none;box-shadow:none}
+.detail-frame-decoration{position:absolute;inset:-1px;border:1px solid #d2ae63;background:repeating-linear-gradient(93deg,#71502220 0 1px,transparent 1px 4px),linear-gradient(135deg,#e0c383,#7d592a 18%,#c09a54 35%,#3b2918 52%,#9a7337 75%,#d4b270);box-shadow:inset 0 0 0 2px #392611,inset 0 0 0 3px #edce8c,inset 0 0 0 5px #8a652d,0 14px 30px #000b;pointer-events:none}
+.photo-detail .detail-frame-decoration,.photo-detail .drum-card__frame::before,.photo-detail .drum-card__frame::after,.photo-detail .museum-corner{transition:opacity .32s ease}
+.photo-detail[data-frame="false"] .detail-frame-decoration,.photo-detail[data-frame="false"] .drum-card__frame::before,.photo-detail[data-frame="false"] .drum-card__frame::after,.photo-detail[data-frame="false"] .museum-corner{opacity:0}
+@media(prefers-reduced-motion:reduce){.photo-detail .detail-frame-decoration,.photo-detail .drum-card__frame::before,.photo-detail .drum-card__frame::after,.photo-detail .museum-corner{transition:none}}
 .photo-detail__info{height:100%;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;padding:84px 28px 32px;border-left:1px solid var(--rule);min-width:0}
 .photo-detail__eyebrow{margin:0;font:10px var(--sans);text-transform:uppercase;letter-spacing:.18em;color:var(--muted)}
 .photo-detail .collection__title{justify-content:flex-start;gap:3px;margin:0 0 12px;padding:8px 0;font-size:clamp(22px,calc(260px / var(--letters,8)),44px)}
